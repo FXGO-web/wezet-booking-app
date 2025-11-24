@@ -28,6 +28,7 @@ import { CurrencySelector } from "./CurrencySelector";
 import { statsAPI, bookingsAPI, settingsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { convertCurrency, formatCurrency } from "../utils/currency";
+import { useCurrency } from "../context/CurrencyContext";
 
 interface RecentBooking {
   id: string;
@@ -172,6 +173,12 @@ const navigationCards: NavigationCard[] = [
     route: "digital-content-management",
   },
   {
+    title: "Availability",
+    description: "Manage schedule & blackout dates",
+    icon: Calendar,
+    route: "availability-management",
+  },
+  {
     title: "Platform Settings",
     description: "Configure platform preferences",
     icon: Settings,
@@ -183,15 +190,19 @@ interface AdminDashboardProps {
   onNavigate?: (route: string) => void;
 }
 
+
+
+// ... inside component
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const { getAccessToken } = useAuth();
+  const { currency: selectedCurrency } = useCurrency();
   const [stats, setStats] = useState(overviewStats);
   const [bookings, setBookings] = useState(recentBookings);
   const [loading, setLoading] = useState(true);
-  const [selectedCurrency, setSelectedCurrency] = useState("EUR");
 
   useEffect(() => {
     const fetchDashboardData = async () => {
+      // ... (existing fetch logic using selectedCurrency)
       setLoading(true);
       try {
         const accessToken = getAccessToken();
@@ -202,14 +213,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         }
 
         // Fetch platform settings for default currency
-        try {
-          const { settings } = await settingsAPI.getSettings(accessToken);
-          if (settings?.defaultCurrency) {
-            setSelectedCurrency(settings.defaultCurrency);
-          }
-        } catch (error) {
-          console.warn('Settings endpoint not available');
-        }
+        // Note: We might want to SET the global currency based on backend settings here?
+        // For now, let's just use the global currency preference.
 
         // Fetch stats
         try {
@@ -278,27 +283,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
     fetchDashboardData();
   }, [getAccessToken, selectedCurrency]);
 
-  const handleCurrencyChange = async (newCurrency: string) => {
-    setSelectedCurrency(newCurrency);
-
-    // Update stats to reflect new currency
-    setStats(prevStats => prevStats.map(stat =>
-      stat.currency ? { ...stat, currency: newCurrency } : stat
-    ));
-
-    // Save to backend
-    try {
-      const accessToken = getAccessToken();
-      if (accessToken) {
-        await settingsAPI.updateSettings(accessToken, {
-          defaultCurrency: newCurrency,
-        });
-      }
-    } catch (error) {
-      console.error('Failed to save currency preference:', error);
-    }
-  };
-
   const handleNavigate = (route: string) => {
     if (onNavigate) {
       onNavigate(route);
@@ -316,10 +300,7 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               Manage your WEZET platform
             </p>
           </div>
-          <CurrencySelector
-            selectedCurrency={selectedCurrency}
-            onCurrencyChange={handleCurrencyChange}
-          />
+          <CurrencySelector />
         </div>
 
         {/* Overview Stats */}

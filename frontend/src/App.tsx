@@ -645,115 +645,38 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Demo Data Banner */}
-      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-b">
-        <div className="max-w-7xl mx-auto px-6 py-6">
-          <Card className="bg-background/80 backdrop-blur border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Database className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1 space-y-1">
-                    <h3 className="text-base">
-                      First Time Here?
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Initialize demo data to populate the
-                      calendar with sample services, team
-                      members, and locations. This will help you
-                      explore all platform features.
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  size="lg"
-                  className="shrink-0"
-                  onClick={handleInitializeDemo}
-                  disabled={initializingData}
-                >
-                  {initializingData ? (
-                    <>
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      Initializing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Initialize Demo Data
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Background Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5"></div>
-
-        <div className="relative max-w-7xl mx-auto px-6 md:px-12 py-24 md:py-32">
-          <div className="text-center space-y-8 max-w-4xl mx-auto">
-            {/* WEZET Logo */}
-            <div className="flex justify-center mb-8">
-              <img
-                src={wezetLogo}
-                alt="WEZET Logo"
-                className="h-32 md:h-40 lg:h-48 w-auto"
-              />
-            </div>
-
-            {/* Main Heading */}
-            <div className="space-y-6">
-              <h1 className="text-3xl md:text-4xl lg:text-5xl tracking-[-0.02em]">
-                Wezet | Transformational Breathwork & Education
-              </h1>
-              <p className="text-xl md:text-2xl text-muted-foreground max-w-2xl mx-auto">
-                Breathwork | Bodywork | Coaching | Education |
-                Retreats
-              </p>
-            </div>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-              <Button
-                size="lg"
-                className="text-lg h-14 px-8"
-                onClick={() => setActiveView("calendar")}
-              >
-                <Sparkles className="mr-2 h-5 w-5" />
-                Book a Session
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="text-lg h-14 px-8"
-                onClick={() => setActiveView("design-system")}
-              >
-                View Design System
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Navigation Cards */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 pb-24">
-        <div className="space-y-12">
+      {/* Main Navigation Grid */}
+      <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">
+        <div className="space-y-8">
           {/* Section Header */}
           <div className="text-center space-y-3">
-            <h2>Explore the Platform</h2>
+            <h2>Platform Access</h2>
             <p className="text-muted-foreground">
-              Navigate through different views and experiences
+              Select your dashboard to get started
             </p>
           </div>
 
           {/* Main Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
+
+            {/* Admin Dashboard - PRIMARY */}
+            <button
+              onClick={() => setActiveView("admin-dashboard")}
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
+            >
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3>Admin Dashboard</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Platform management, analytics, and bookings overview
+                  </p>
+                </div>
+              </div>
+            </button>
+
             {/* Public Calendar */}
             <button
               onClick={() => setActiveView("calendar")}
@@ -773,8 +696,25 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Public Calendar</h3>
                   <p className="text-sm text-muted-foreground">
-                    Monthly grid view with available slots and
-                    team selection
+                    Monthly grid view with available slots and team selection
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Team Dashboard */}
+            <button
+              onClick={() => setActiveView("team-dashboard")}
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
+            >
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <Wind className="h-6 w-6 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <h3>Team Dashboard</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Weekly schedule, session management, and analytics
                   </p>
                 </div>
               </div>
@@ -796,555 +736,12 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Client Dashboard</h3>
                   <p className="text-sm text-muted-foreground">
-                    Upcoming sessions, progress tracking, and
-                    quick actions
+                    Upcoming sessions, progress tracking, and quick actions
                   </p>
                 </div>
               </div>
             </button>
 
-            {/* Team Directory */}
-            <button
-              onClick={() => setActiveView("team-directory")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Team Directory</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Meet our expert practitioners and book
-                    sessions
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Team Dashboard */}
-            <button
-              onClick={() => setActiveView("team-dashboard")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Wind className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Team Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Weekly schedule, session management, and
-                    analytics
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Booking Flow */}
-            <button
-              onClick={() => setActiveView("booking")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Booking Flow</h3>
-                  <p className="text-sm text-muted-foreground">
-                    2-step booking process: select session,
-                    complete details & payment
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Design System */}
-            <button
-              onClick={() => setActiveView("design-system")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <div className="h-6 w-6 rounded-md bg-gradient-to-br from-primary to-accent"></div>
-                </div>
-                <div className="space-y-2">
-                  <h3>Design System</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Colors, typography, components, and spacing
-                    scales
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Admin Dashboard */}
-            <button
-              onClick={() => setActiveView("admin-dashboard")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <BarChart3 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Admin Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Platform management, analytics, and bookings
-                    overview
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Analytics Dashboard */}
-            <button
-              onClick={() =>
-                setActiveView("analytics-dashboard")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <BarChart3 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Analytics Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Detailed analytics and insights
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Availability Editor */}
-            <button
-              onClick={() =>
-                setActiveView("availability-editor")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <CalendarIcon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Availability Editor</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Weekly schedule setup and blackout date
-                    management
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Availability Management */}
-            <button
-              onClick={() =>
-                setActiveView("availability-management")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <CalendarIcon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Availability Management</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Manage availability and schedule
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Digital Content Library */}
-            <button
-              onClick={() =>
-                setActiveView("digital-content-library")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Video className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Digital Content Library</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse videos, audio, PDFs, and
-                    transformation programs
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Content Viewer */}
-            <button
-              onClick={() => setActiveView("content-viewer")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Play className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Content Viewer</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Watch videos, listen to audio, and read
-                    educational materials
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* On-Demand Product */}
-            <button
-              onClick={() =>
-                setActiveView("on-demand-product-detail")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Clock className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>On-Demand Product</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Detailed page for paid courses and programs
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Retreat Detail */}
-            <button
-              onClick={() => setActiveView("retreat-detail")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Mountain className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Retreat Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Multi-day retreat page with schedule and
-                    booking
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* WordPress Calendar Widget */}
-            <button
-              onClick={() =>
-                setActiveView("wordpress-calendar-widget")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Grid3x3 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>WordPress Widget</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Embeddable calendar widget for WordPress
-                    sites
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Team Management */}
-            <button
-              onClick={() => setActiveView("team-management")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Team Management</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Manage team members, roles, and availability
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Team Member Detail */}
-            <button
-              onClick={() =>
-                setActiveView("team-member-detail")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Users className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Team Member Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View and edit team member details
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Services Categories */}
-            <button
-              onClick={() =>
-                setActiveView("services-categories")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Services Categories</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse and manage service categories
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Service Detail */}
-            <button
-              onClick={() => setActiveView("public-service-detail")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Service Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View public service page
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Locations Directory */}
-            <button
-              onClick={() =>
-                setActiveView("locations-directory")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Grid3x3 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Locations Directory</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse and manage locations
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Location Detail */}
-            <button
-              onClick={() => setActiveView("location-detail")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Grid3x3 className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Location Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View and edit location details
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Bookings Directory */}
-            <button
-              onClick={() =>
-                setActiveView("bookings-directory")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <CalendarIcon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Bookings Directory</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Browse and manage bookings
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Booking Detail */}
-            <button
-              onClick={() => setActiveView("booking-detail")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <CalendarIcon className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Booking Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View and edit booking details
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Digital Content Management */}
-            <button
-              onClick={() =>
-                setActiveView("digital-content-management")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Video className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Digital Content Management</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Manage digital content
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Digital Content Detail */}
-            <button
-              onClick={() =>
-                setActiveView("digital-content-detail")
-              }
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Video className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Digital Content Detail</h3>
-                  <p className="text-sm text-muted-foreground">
-                    View and edit digital content details
-                  </p>
-                </div>
-              </div>
-            </button>
-
-            {/* Settings Page */}
-            <button
-              onClick={() => setActiveView("settings-page")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Settings className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Settings Page</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Configure platform settings
-                  </p>
-                </div>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Meet Our Team */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 pb-24">
-        <div className="space-y-8">
-          <div className="text-center space-y-3">
-            <h2>Meet Our Team</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Work with experienced practitioners dedicated to
-              your transformation
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {TEAM_MEMBERS.map((member) => (
-              <Card
-                key={member.id}
-                className="overflow-hidden hover:shadow-xl transition-all"
-              >
-                <CardContent className="p-8 space-y-4">
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <Avatar className="h-24 w-24">
-                      {member.avatarUrl && (
-                        <AvatarImage
-                          src={member.avatarUrl}
-                          alt={member.name}
-                        />
-                      )}
-                      <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
-                        {member.initials}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-1">
-                      <h3 className="text-base">
-                        {member.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground">
-                        {member.role}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap gap-1.5 justify-center min-h-[48px]">
-                    {member.specialties
-                      .slice(0, 3)
-                      .map((specialty, idx) => (
-                        <Badge
-                          key={idx}
-                          variant="secondary"
-                          className="text-xs"
-                        >
-                          {specialty}
-                        </Badge>
-                      ))}
-                    {member.specialties.length > 3 && (
-                      <Badge
-                        variant="outline"
-                        className="text-xs"
-                      >
-                        +{member.specialties.length - 3}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    onClick={() => setActiveView("booking")}
-                  >
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Book a Session
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </div>
