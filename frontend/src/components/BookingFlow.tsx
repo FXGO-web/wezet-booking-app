@@ -7,12 +7,12 @@ import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Calendar as CalendarComponent } from "./ui/calendar";
-import { 
-  CheckCircle2, 
-  Calendar, 
-  Clock, 
-  User, 
-  CreditCard, 
+import {
+  CheckCircle2,
+  Calendar,
+  Clock,
+  User,
+  CreditCard,
   Lock,
   Sparkles,
   ArrowLeft,
@@ -22,6 +22,8 @@ import {
 import { servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
 import { toast } from "sonner@2.0.3";
 import { format, parse } from "date-fns";
+import { useAuth } from "../hooks/useAuth";
+import { AuthPage } from "./AuthPage";
 
 type BookingStep = 1 | 2 | 3;
 
@@ -39,17 +41,19 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   const [currentStep, setCurrentStep] = useState<BookingStep>(1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  
+  const { user, getAccessToken } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
+
   // Data from backend
   const [services, setServices] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  
+
   // Selections
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [selectedTeamMember, setSelectedTeamMember] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  
+
   // Form data
   const [formData, setFormData] = useState({
     name: "",
@@ -60,13 +64,21 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     expiry: "",
     cvc: "",
   });
-  
+
   // Created booking data
   const [createdBooking, setCreatedBooking] = useState<any>(null);
 
   useEffect(() => {
     loadData();
   }, []);
+
+  // Auto-advance after login
+  useEffect(() => {
+    if (user && showAuth) {
+      setShowAuth(false);
+      setCurrentStep(2);
+    }
+  }, [user, showAuth]);
 
   useEffect(() => {
     // If we have preselection data from calendar, apply it and skip to step 2
@@ -92,10 +104,10 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       }
 
       // If we have all required data (service, team member, date, time), skip to step 2
-      if (preselection.preselectedService && 
-          preselection.preselectedTeamMember && 
-          preselection.preselectedDate && 
-          preselection.preselectedTime) {
+      if (preselection.preselectedService &&
+        preselection.preselectedTeamMember &&
+        preselection.preselectedDate &&
+        preselection.preselectedTime) {
         setCurrentStep(2);
       }
     }
@@ -115,7 +127,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
       setServices(validServices);
       setTeamMembers(validTeamMembers);
-      
+
     } catch (error) {
       console.error("Error loading booking data:", error);
       // Don't show error toast, just log it and show empty state
@@ -136,6 +148,14 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   ];
 
   const handleNext = () => {
+    if (currentStep === 1) {
+      // Check auth before proceeding to details/payment
+      if (!user) {
+        setShowAuth(true);
+        return;
+      }
+    }
+
     if (currentStep < 3) {
       setCurrentStep((currentStep + 1) as BookingStep);
     }
@@ -181,7 +201,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         status: 'confirmed',
       };
 
-      const bookingRes = await bookingsAPI.create(bookingData);
+      const bookingRes = await bookingsAPI.create(bookingData, getAccessToken() || '');
       setCreatedBooking(bookingRes.booking);
       toast.success("Booking confirmed!");
       setCurrentStep(3);
@@ -197,6 +217,22 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (showAuth) {
+    return (
+      <div className="min-h-screen bg-background relative">
+        <Button
+          variant="ghost"
+          className="absolute top-4 left-4 z-50"
+          onClick={() => setShowAuth(false)}
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Booking
+        </Button>
+        <AuthPage />
       </div>
     );
   }
@@ -230,10 +266,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <div
                         className={`
                           h-10 w-10 rounded-full flex items-center justify-center transition-all
-                          ${
-                            currentStep >= step.num
-                              ? "bg-primary text-primary-foreground shadow-lg"
-                              : "bg-muted text-muted-foreground"
+                          ${currentStep >= step.num
+                            ? "bg-primary text-primary-foreground shadow-lg"
+                            : "bg-muted text-muted-foreground"
                           }
                         `}
                       >
@@ -249,9 +284,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     </div>
                     {index < 1 && (
                       <div
-                        className={`h-0.5 flex-1 mx-2 transition-all ${
-                          currentStep > step.num ? "bg-primary" : "bg-muted"
-                        }`}
+                        className={`h-0.5 flex-1 mx-2 transition-all ${currentStep > step.num ? "bg-primary" : "bg-muted"
+                          }`}
                       />
                     )}
                   </div>
@@ -265,7 +299,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         {currentStep === 1 && (
           <div className="space-y-6">
             <h2>Choose Your Session Type</h2>
-            
+
             {services.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center space-y-4">
@@ -285,11 +319,10 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 {services.map((service) => (
                   <Card
                     key={service.id}
-                    className={`cursor-pointer transition-all hover:shadow-lg ${
-                      selectedService === service.id
-                        ? "border-primary ring-2 ring-primary/20"
-                        : ""
-                    }`}
+                    className={`cursor-pointer transition-all hover:shadow-lg ${selectedService === service.id
+                      ? "border-primary ring-2 ring-primary/20"
+                      : ""
+                      }`}
                     onClick={() => setSelectedService(service.id)}
                   >
                     <CardContent className="p-8">
@@ -341,19 +374,18 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {teamMembers.map((mentor) => {
                     const serviceData = services.find(s => s.id === selectedService);
-                    const isSpecialized = serviceData && mentor.specialties?.some((s: string) => 
-                      serviceData.category.toLowerCase().includes(s.toLowerCase()) || 
+                    const isSpecialized = serviceData && mentor.specialties?.some((s: string) =>
+                      serviceData.category.toLowerCase().includes(s.toLowerCase()) ||
                       s.toLowerCase().includes(serviceData.category.toLowerCase())
                     );
-                    
+
                     return (
                       <Card
                         key={mentor.id}
-                        className={`cursor-pointer transition-all hover:shadow-lg ${
-                          selectedTeamMember === mentor.id
-                            ? "border-primary ring-2 ring-primary/20"
-                            : ""
-                        }`}
+                        className={`cursor-pointer transition-all hover:shadow-lg ${selectedTeamMember === mentor.id
+                          ? "border-primary ring-2 ring-primary/20"
+                          : ""
+                          }`}
                         onClick={() => setSelectedTeamMember(mentor.id)}
                       >
                         <CardContent className="p-6 space-y-4">
@@ -369,7 +401,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                               <p className="text-xs text-muted-foreground">{mentor.role}</p>
                             </div>
                           </div>
-                          
+
                           {mentor.specialties && mentor.specialties.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 justify-center">
                               {mentor.specialties.slice(0, 2).map((specialty: string, idx: number) => (
@@ -379,14 +411,14 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                               ))}
                             </div>
                           )}
-                          
+
                           {isSpecialized && (
                             <Badge className="w-full justify-center text-xs" variant="outline">
                               <Sparkles className="h-3 w-3 mr-1" />
                               Recommended
                             </Badge>
                           )}
-                          
+
                           {selectedTeamMember === mentor.id && (
                             <div className="flex justify-center">
                               <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -399,7 +431,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 </div>
               </div>
             )}
-            
+
             {selectedService && teamMembers.length === 0 && (
               <Card>
                 <CardContent className="p-8 text-center space-y-2">
@@ -512,8 +544,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       )}
                     </div>
                     <div className="text-lg">
-                      {selectedServiceData?.basePrice 
-                        ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}` 
+                      {selectedServiceData?.basePrice
+                        ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}`
                         : 'Price varies'}
                     </div>
                   </div>
@@ -570,7 +602,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                   {/* Payment Fields */}
                   <div className="space-y-4">
                     <h4 className="text-sm">Payment Information</h4>
-                    
+
                     <div className="space-y-2">
                       <Label htmlFor="cardNumber">Card Number</Label>
                       <div className="relative">
@@ -625,8 +657,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Session</span>
                       <span>
-                        {selectedServiceData?.basePrice 
-                          ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}` 
+                        {selectedServiceData?.basePrice
+                          ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}`
                           : 'Price varies'}
                       </span>
                     </div>
@@ -672,9 +704,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Back
               </Button>
-              <Button 
-                size="lg" 
-                onClick={handleBookingSubmit} 
+              <Button
+                size="lg"
+                onClick={handleBookingSubmit}
                 className="min-w-[200px]"
                 disabled={!selectedDate || !selectedTime || !formData.name || !formData.email || submitting}
               >
@@ -684,7 +716,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     Processing...
                   </>
                 ) : (
-                  selectedServiceData?.basePrice 
+                  selectedServiceData?.basePrice
                     ? `Confirm & Pay ${selectedServiceData?.currency} ${(selectedServiceData?.basePrice || 0) + 25}`
                     : "Request Booking"
                 )}

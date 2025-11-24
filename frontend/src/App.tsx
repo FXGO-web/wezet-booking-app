@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./components/ui/button";
 import { DesignSystem } from "./components/DesignSystem";
 import { PublicCalendar } from "./components/PublicCalendar";
@@ -107,9 +107,32 @@ function AppContent() {
     );
   }
 
-  // Show auth page if not logged in
-  if (!user) {
-    return <AuthPage />;
+  // Handle URL parameters for routing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view");
+    if (viewParam) {
+      setActiveView(viewParam);
+    }
+  }, []);
+
+  // Auth Page for explicit login/signup
+  if (activeView === "auth") {
+    return (
+      <div>
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => setActiveView("home")}
+            >
+              ← Back to Home
+            </Button>
+          </div>
+        </div>
+        <AuthPage />
+      </div>
+    );
   }
 
   if (activeView === "design-system") {
@@ -141,6 +164,11 @@ function AppContent() {
             >
               ← Back to Home
             </Button>
+            {!user && (
+              <Button onClick={() => setActiveView("auth")}>
+                Log In
+              </Button>
+            )}
           </div>
         </div>
         <PublicCalendar
@@ -614,7 +642,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Navigation Bar - Only visible when logged in */}
+      {/* Top Navigation Bar */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -623,24 +651,41 @@ function AppContent() {
               alt="WEZET"
               className="h-8 w-auto object-contain"
             />
-            <Badge variant="secondary" className="text-xs">
-              {user.user_metadata?.role || "Client"}
-            </Badge>
+            {user && (
+              <Badge variant="secondary" className="text-xs">
+                {user.user_metadata?.role || "Client"}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-sm text-muted-foreground hidden sm:block">
-              {user.user_metadata?.name || user.email}
-            </div>
-            <CurrencySelector />
-            <NotificationCenter />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={signOut}
-            >
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+            {user ? (
+              <>
+                <div className="text-sm text-muted-foreground hidden sm:block">
+                  {user.user_metadata?.name || user.email}
+                </div>
+                <CurrencySelector />
+                <NotificationCenter />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={signOut}
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <CurrencySelector />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => setActiveView("auth")}
+                >
+                  Log In
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -661,7 +706,7 @@ function AppContent() {
 
             {/* Admin Dashboard - PRIMARY */}
             <button
-              onClick={() => setActiveView("admin-dashboard")}
+              onClick={() => user ? setActiveView("admin-dashboard") : setActiveView("auth")}
               className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
             >
               <div className="space-y-4">
@@ -671,7 +716,7 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Admin Dashboard</h3>
                   <p className="text-sm text-muted-foreground">
-                    Platform management, analytics, and bookings overview
+                    {user ? "Platform management, analytics, and bookings overview" : "Log in to access admin tools"}
                   </p>
                 </div>
               </div>
@@ -704,7 +749,7 @@ function AppContent() {
 
             {/* Team Dashboard */}
             <button
-              onClick={() => setActiveView("team-dashboard")}
+              onClick={() => user ? setActiveView("team-dashboard") : setActiveView("auth")}
               className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
             >
               <div className="space-y-4">
@@ -714,7 +759,7 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Team Dashboard</h3>
                   <p className="text-sm text-muted-foreground">
-                    Weekly schedule, session management, and analytics
+                    {user ? "Weekly schedule, session management, and analytics" : "Log in to access team tools"}
                   </p>
                 </div>
               </div>
@@ -722,7 +767,7 @@ function AppContent() {
 
             {/* Client Dashboard */}
             <button
-              onClick={() => setActiveView("client-dashboard")}
+              onClick={() => user ? setActiveView("client-dashboard") : setActiveView("auth")}
               className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
             >
               <div className="space-y-4">
@@ -736,7 +781,7 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Client Dashboard</h3>
                   <p className="text-sm text-muted-foreground">
-                    Upcoming sessions, progress tracking, and quick actions
+                    {user ? "Upcoming sessions, progress tracking, and quick actions" : "Log in to access your dashboard"}
                   </p>
                 </div>
               </div>
