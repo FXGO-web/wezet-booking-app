@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrency } from "../context/CurrencyContext";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -18,7 +19,7 @@ export function CurrencySelector({
   selectedCurrency = "EUR",
   onCurrencyChange,
 }: CurrencySelectorProps) {
-  const [currency, setCurrency] = useState(selectedCurrency);
+  const { currency, setCurrency } = useCurrency();
 
   const handleCurrencyChange = (newCurrency: string) => {
     setCurrency(newCurrency);

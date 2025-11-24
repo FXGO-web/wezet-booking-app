@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -115,7 +116,11 @@ const teachers = [
   },
 ];
 
+import { useCurrency } from "../context/CurrencyContext";
+
 export function RetreatDetail() {
+  const { convertAndFormat } = useCurrency();
+  const [activeTab, setActiveTab] = useState("overview");
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Image */}
@@ -334,10 +339,7 @@ export function RetreatDetail() {
                       Price per person
                     </p>
                     <div className="flex items-baseline gap-3">
-                      <h2 className="text-3xl">5,800</h2>
-                      <span className="text-lg text-muted-foreground">
-                        DKK
-                      </span>
+                      <h2 className="text-3xl">{convertAndFormat(5800, 'DKK')}</h2>
                     </div>
                   </div>
                   <CurrencySelector />

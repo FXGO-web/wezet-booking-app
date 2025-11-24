@@ -70,7 +70,10 @@ const curriculum = [
   },
 ];
 
+import { useCurrency } from "../context/CurrencyContext";
+
 export function OnDemandProductDetail() {
+  const { convertAndFormat } = useCurrency();
   return (
     <div className="min-h-screen bg-background">
       {/* Hero Section */}
@@ -124,8 +127,7 @@ export function OnDemandProductDetail() {
 
               <div className="space-y-4">
                 <div className="flex items-baseline gap-3">
-                  <h2 className="text-3xl">3,500</h2>
-                  <span className="text-lg text-muted-foreground">DKK</span>
+                  <h2 className="text-3xl">{convertAndFormat(3500, 'DKK')}</h2>
                 </div>
                 <CurrencySelector />
               </div>

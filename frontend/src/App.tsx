@@ -28,6 +28,7 @@ import { DigitalContentDetail } from "./components/DigitalContentDetail";
 import { SettingsPage } from "./components/SettingsPage";
 import { AuthPage } from "./components/AuthPage";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { CurrencyProvider } from "./context/CurrencyContext";
 import { Toaster } from "./components/ui/sonner";
 import { NotificationCenter } from "./components/NotificationCenter";
 import {
@@ -1357,8 +1358,10 @@ function AppContent() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppContent />
-      <Toaster />
+      <CurrencyProvider>
+        <AppContent />
+        <Toaster />
+      </CurrencyProvider>
     </AuthProvider>
   );
 }

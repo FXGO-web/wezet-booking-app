@@ -1,15 +1,17 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { 
-  Wind, 
-  Heart, 
-  Users, 
-  BookOpen, 
+import {
+  Wind,
+  Heart,
+  Users,
+  BookOpen,
   Palmtree,
   ChevronRight,
   CheckCircle2
 } from "lucide-react";
+import { useCurrency } from "../context/CurrencyContext";
+import { CurrencySelector } from "./CurrencySelector";
 
 const SERVICES = [
   {
@@ -27,10 +29,10 @@ const SERVICES = [
       "Regulate the nervous system"
     ],
     sessionTypes: [
-      { name: "Small Group (6 pax max)", price: "DKK 295", duration: "90 min" },
-      { name: "Private Breathwork Session (1:1)", price: "DKK 1,495", duration: "90 min" },
+      { name: "Small Group (6 pax max)", price: 295, currency: "DKK", duration: "90 min" },
+      { name: "Private Breathwork Session (1:1)", price: 1495, currency: "DKK", duration: "90 min" },
       { name: "Corporate Breathwork", price: "On request", duration: "Custom" },
-      { name: "Cognitive Coaching + Breathwork", price: "DKK 1,495", duration: "1.5h" }
+      { name: "Cognitive Coaching + Breathwork", price: 1495, currency: "DKK", duration: "1.5h" }
     ]
   },
   {
@@ -48,13 +50,13 @@ const SERVICES = [
       "Emotional & physical reset"
     ],
     sessionTypes: [
-      { 
-        name: "Body SDS", 
+      {
+        name: "Body SDS",
         description: "Danish body therapy combining massage, joint release, breathwork and dialogue",
         price: "On request"
       },
-      { 
-        name: "Bio Integrative Osteopathy", 
+      {
+        name: "Bio Integrative Osteopathy",
         description: "Integrates emotional and physical treatment of pain",
         price: "On request"
       }
@@ -89,8 +91,8 @@ const SERVICES = [
     color: "text-[#E8DDD0]",
     bgColor: "bg-[#E8DDD0]/30",
     sessionTypes: [
-      { 
-        name: "200h Breathwork Certification", 
+      {
+        name: "200h Breathwork Certification",
         description: "Comprehensive professional training with online theory and retreat components",
         price: "On request"
       }
@@ -104,8 +106,8 @@ const SERVICES = [
     color: "text-[#0A5F5F]",
     bgColor: "bg-[#0A5F5F]/10",
     sessionTypes: [
-      { 
-        name: "7-Day Transformational Retreat", 
+      {
+        name: "7-Day Transformational Retreat",
         description: "Tarifa, Spain · Breathwork, training, and holistic practices",
         price: "On request"
       }
@@ -118,6 +120,8 @@ interface ServicesOverviewProps {
 }
 
 export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
+  const { convertAndFormat } = useCurrency();
+
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -127,6 +131,9 @@ export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
           <p className="text-muted-foreground text-lg">
             Transformational breathwork, holistic bodywork, personal coaching, professional education, and immersive retreats
           </p>
+          <div className="flex justify-center pt-2">
+            <CurrencySelector />
+          </div>
         </div>
 
         {/* Service Cards Grid */}
@@ -134,7 +141,7 @@ export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
           {SERVICES.slice(0, 3).map((service) => {
             const Icon = service.icon;
             return (
-              <Card 
+              <Card
                 key={service.id}
                 className="group hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
                 onClick={() => onSelectService?.(service.id)}
@@ -161,7 +168,7 @@ export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
           {SERVICES.slice(3).map((service) => {
             const Icon = service.icon;
             return (
-              <Card 
+              <Card
                 key={service.id}
                 className="group hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
                 onClick={() => onSelectService?.(service.id)}
@@ -235,7 +242,9 @@ export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
                                 <h3 className="text-base">{session.name}</h3>
                                 {session.price && (
                                   <Badge variant="secondary" className="flex-shrink-0">
-                                    {session.price}
+                                    {typeof session.price === 'number'
+                                      ? convertAndFormat(session.price, session.currency)
+                                      : session.price}
                                   </Badge>
                                 )}
                               </div>
@@ -250,7 +259,7 @@ export function ServicesOverview({ onSelectService }: ServicesOverviewProps) {
                                 </p>
                               )}
                             </div>
-                            <Button 
+                            <Button
                               size="sm"
                               onClick={() => onSelectService?.(service.id)}
                             >
