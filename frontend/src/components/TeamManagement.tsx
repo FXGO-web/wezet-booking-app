@@ -219,7 +219,12 @@ export function TeamManagement() {
       if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
       const { members: data } = await teamMembersAPI.getAll(filters);
-      setTeamMembers(data || []);
+
+      // Filter for team roles only
+      const teamRoles = ['Admin', 'Teacher', 'Facilitator'];
+      const filteredData = (data || []).filter(m => teamRoles.includes(m.role));
+
+      setTeamMembers(filteredData);
     } catch (error) {
       console.error('Error fetching team members:', error);
       // Fallback to mock data if API fails

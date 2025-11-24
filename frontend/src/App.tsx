@@ -17,6 +17,8 @@ import { RetreatDetail } from "./components/RetreatDetail";
 import { WordPressCalendarWidget } from "./components/WordPressCalendarWidget";
 import { TeamManagement } from "./components/TeamManagement";
 import { TeamMemberDetail } from "./components/TeamMemberDetail";
+import { UserManagement } from "./components/UserManagement";
+import { ServicesOverview } from "./components/ServicesOverview";
 import { ServicesCategories } from "./components/ServicesCategories";
 import { ServiceDetail } from "./components/ServiceDetail";
 import { LocationsDirectory } from "./components/LocationsDirectory";
@@ -29,6 +31,8 @@ import { SettingsPage } from "./components/SettingsPage";
 import { AuthPage } from "./components/AuthPage";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { CurrencyProvider } from "./context/CurrencyContext";
+import { CurrencySelector } from "./components/CurrencySelector";
+import { PublicServiceDetail } from "./components/PublicServiceDetail";
 import { Toaster } from "./components/ui/sonner";
 import { NotificationCenter } from "./components/NotificationCenter";
 import {
@@ -402,21 +406,20 @@ function AppContent() {
     );
   }
 
+
+
+  // ... (inside AppContent)
+
+  if (activeView === "user-management") {
+    return (
+      <UserManagement onBack={() => setActiveView("admin-dashboard")} />
+    );
+  }
+
+  // Legacy route redirect or keep for direct access if needed
   if (activeView === "team-management") {
     return (
-      <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
-        <TeamManagement />
-      </div>
+      <UserManagement onBack={() => setActiveView("admin-dashboard")} />
     );
   }
 
@@ -453,6 +456,15 @@ function AppContent() {
         </div>
         <ServicesCategories />
       </div>
+    );
+  }
+
+  if (activeView === "public-service-detail") {
+    return (
+      <PublicServiceDetail
+        onBack={() => setActiveView("home")}
+        onBook={() => setActiveView("booking")}
+      />
     );
   }
 
@@ -619,6 +631,7 @@ function AppContent() {
             <div className="text-sm text-muted-foreground hidden sm:block">
               {user.user_metadata?.name || user.email}
             </div>
+            <CurrencySelector />
             <NotificationCenter />
             <Button
               variant="outline"
@@ -1106,7 +1119,7 @@ function AppContent() {
 
             {/* Service Detail */}
             <button
-              onClick={() => setActiveView("service-detail")}
+              onClick={() => setActiveView("public-service-detail")}
               className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
             >
               <div className="space-y-4">
@@ -1116,7 +1129,7 @@ function AppContent() {
                 <div className="space-y-2">
                   <h3>Service Detail</h3>
                   <p className="text-sm text-muted-foreground">
-                    View and edit service details
+                    View public service page
                   </p>
                 </div>
               </div>

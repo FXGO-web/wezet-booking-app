@@ -142,10 +142,10 @@ const navigationCards: NavigationCard[] = [
     route: "analytics-dashboard",
   },
   {
-    title: "Team Management",
-    description: "Manage team members, roles & availability",
+    title: "User Management",
+    description: "Manage team members & customers",
     icon: Users,
-    route: "team-management",
+    route: "user-management",
   },
   {
     title: "Services & Categories",
@@ -280,9 +280,9 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
   const handleCurrencyChange = async (newCurrency: string) => {
     setSelectedCurrency(newCurrency);
-    
+
     // Update stats to reflect new currency
-    setStats(prevStats => prevStats.map(stat => 
+    setStats(prevStats => prevStats.map(stat =>
       stat.currency ? { ...stat, currency: newCurrency } : stat
     ));
 
@@ -438,8 +438,8 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                               booking.status === "confirmed"
                                 ? "default"
                                 : booking.status === "pending"
-                                ? "secondary"
-                                : "destructive"
+                                  ? "secondary"
+                                  : "destructive"
                             }
                           >
                             {booking.status}

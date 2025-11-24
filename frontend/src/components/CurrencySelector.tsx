@@ -1,68 +1,30 @@
-import { useState } from "react";
 import { useCurrency } from "../context/CurrencyContext";
-import { Button } from "./ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "./ui/dropdown-menu";
-import { Globe, Check } from "lucide-react";
-import { CURRENCIES } from "../utils/currency";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { Globe } from "lucide-react";
 
-export interface CurrencySelectorProps {
-  selectedCurrency?: string;
-  onCurrencyChange?: (currency: string) => void;
-}
-
-export function CurrencySelector({
-  selectedCurrency = "EUR",
-  onCurrencyChange,
-}: CurrencySelectorProps) {
+export function CurrencySelector() {
   const { currency, setCurrency } = useCurrency();
 
-  const handleCurrencyChange = (newCurrency: string) => {
-    setCurrency(newCurrency);
-    onCurrencyChange?.(newCurrency);
-  };
-
-  const currentCurrency = CURRENCIES.find((c) => c.code === currency);
-
   return (
-    <div className="flex items-center gap-3">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2">
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span>{currentCurrency?.code}</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          {CURRENCIES.map((curr) => (
-            <DropdownMenuItem
-              key={curr.code}
-              onClick={() => handleCurrencyChange(curr.code)}
-              className="flex items-center justify-between cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg">{curr.symbol}</span>
-                <div>
-                  <div>{curr.code}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {curr.name}
-                  </div>
-                </div>
-              </div>
-              {currency === curr.code && (
-                <Check className="h-4 w-4 text-primary" />
-              )}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <p className="text-sm text-muted-foreground">
-        Prices shown in {currentCurrency?.name}
-      </p>
+    <div className="flex items-center gap-2">
+      <Select value={currency} onValueChange={setCurrency}>
+        <SelectTrigger className="w-[100px] h-9 bg-background/50 backdrop-blur border-muted">
+          <div className="flex items-center gap-2">
+            <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+            <SelectValue placeholder="Currency" />
+          </div>
+        </SelectTrigger>
+        <SelectContent align="end">
+          <SelectItem value="EUR">EUR (€)</SelectItem>
+          <SelectItem value="DKK">DKK (kr)</SelectItem>
+        </SelectContent>
+      </Select>
     </div>
   );
 }

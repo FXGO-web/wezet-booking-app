@@ -1,7 +1,25 @@
 import { useState, useEffect } from "react";
 import { settingsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
+import {
+  Loader2,
+  Settings as SettingsIcon,
+  Save,
+  DollarSign,
+  Calendar as CalendarIcon,
+  CreditCard,
+  Mail,
+  Bell,
+  FileText
+} from "lucide-react";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Switch } from "./ui/switch";
+import { Textarea } from "./ui/textarea";
 
 export function SettingsPage() {
   const { getAccessToken } = useAuth();
