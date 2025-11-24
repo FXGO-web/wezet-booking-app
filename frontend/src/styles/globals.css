@@ -1,0 +1,243 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* WEZET Brand Colors - Orange Wellness Palette */
+  --wezet-orange: #EF7C48;
+  --wezet-orange-hover: #D96C3B;
+  --wezet-orange-active: #C45F32;
+  --wezet-orange-light: #F7A679;
+  --wezet-orange-dark: #C45F32;
+  --wezet-orange-muted: #FCE3D4;
+  --wezet-orange-soft: rgba(239, 124, 72, 0.2);
+  --wezet-orange-outline: #F2B699;
+  --wezet-sand: #E8DDD0;
+  --wezet-sand-light: #F5F0E8;
+  --wezet-off-white: #FDF9F5;
+  --wezet-beige-grey: #F3F0EC;
+  --wezet-charcoal: #2A2A2E;
+  --wezet-charcoal-light: #3F3F44;
+  --wezet-gradient: linear-gradient(135deg, #EF7C48 0%, #F5A26D 100%);
+  --wezet-gradient-soft: linear-gradient(135deg, #FCE3D4 0%, #F7A679 100%);
+  --wezet-glow: rgba(239, 124, 72, 0.15);
+  
+  --background: #FDF9F5;
+  --foreground: #2A2A2E;
+  --card: #ffffff;
+  --card-foreground: #2A2A2E;
+  --popover: #ffffff;
+  --popover-foreground: #2A2A2E;
+  --primary: #EF7C48;
+  --primary-foreground: #ffffff;
+  --secondary: #E8DDD0;
+  --secondary-foreground: #2A2A2E;
+  --muted: #F3F0EC;
+  --muted-foreground: #6B6B70;
+  --accent: #F7A679;
+  --accent-foreground: #2A2A2E;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: rgba(42, 42, 46, 0.08);
+  --input: transparent;
+  --input-background: #F3F0EC;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --ring: #EF7C48;
+  --chart-1: #EF7C48;
+  --chart-2: #F7A679;
+  --chart-3: #E8DDD0;
+  --chart-4: #2A2A2E;
+  --chart-5: #F5A26D;
+  --radius: 0.875rem;
+  --sidebar: #FDF9F5;
+  --sidebar-foreground: #2A2A2E;
+  --sidebar-primary: #EF7C48;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F3F0EC;
+  --sidebar-accent-foreground: #2A2A2E;
+  --sidebar-border: rgba(42, 42, 46, 0.08);
+  --sidebar-ring: #EF7C48;
+  
+  /* Typography scale */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.5rem;
+  --text-4xl: 3.5rem;
+}
+
+.dark {
+  --background: #2A2A2E;
+  --foreground: #FDF9F5;
+  --card: #3F3F44;
+  --card-foreground: #FDF9F5;
+  --popover: #3F3F44;
+  --popover-foreground: #FDF9F5;
+  --primary: #F7A679;
+  --primary-foreground: #2A2A2E;
+  --secondary: #3F3F44;
+  --secondary-foreground: #FDF9F5;
+  --muted: #3F3F44;
+  --muted-foreground: #A0A0A5;
+  --accent: #EF7C48;
+  --accent-foreground: #FDF9F5;
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: rgba(253, 249, 245, 0.1);
+  --input: rgba(253, 249, 245, 0.1);
+  --ring: #F7A679;
+  --font-weight-medium: 500;
+  --font-weight-normal: 400;
+  --chart-1: #F7A679;
+  --chart-2: #EF7C48;
+  --chart-3: #E8DDD0;
+  --chart-4: #A0A0A5;
+  --chart-5: #F5A26D;
+  --sidebar: #2A2A2E;
+  --sidebar-foreground: #FDF9F5;
+  --sidebar-primary: #F7A679;
+  --sidebar-primary-foreground: #2A2A2E;
+  --sidebar-accent: #3F3F44;
+  --sidebar-accent-foreground: #FDF9F5;
+  --sidebar-border: rgba(253, 249, 245, 0.1);
+  --sidebar-ring: #F7A679;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+/**
+ * Base typography. This is not applied to elements which have an ancestor with a Tailwind text class.
+ */
+@layer base {
+  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
+    h1 {
+      font-size: var(--text-2xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.3;
+      letter-spacing: -0.015em;
+    }
+
+    h3 {
+      font-size: var(--text-lg);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+    }
+
+    h4 {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.6;
+    }
+
+    label {
+      font-size: var(--text-sm);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: var(--text-base);
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Wellness-specific utilities */
+@layer utilities {
+  .glow-subtle {
+    box-shadow: 0 0 20px var(--wezet-glow);
+  }
+  
+  .glow-hover {
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .glow-hover:hover {
+    box-shadow: 0 0 24px var(--wezet-glow);
+  }
+  
+  .gradient-wezet {
+    background: var(--wezet-gradient);
+  }
+}
