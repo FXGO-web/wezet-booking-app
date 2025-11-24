@@ -1,6 +1,6 @@
-import { projectId, publicAnonKey } from './supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName } from './supabase/info';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e0d9c111`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}`;
 
 interface RequestOptions {
   method?: string;
@@ -76,7 +76,7 @@ export const teamMembersAPI = {
     if (filters?.role) params.append('role', filters.role);
     if (filters?.status) params.append('status', filters.status);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/team-members${query}`);
   },
@@ -121,7 +121,7 @@ export const servicesAPI = {
     const params = new URLSearchParams();
     if (filters?.category) params.append('category', filters.category);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/services${query}`);
   },
@@ -166,7 +166,7 @@ export const locationsAPI = {
     const params = new URLSearchParams();
     if (filters?.type) params.append('type', filters.type);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/locations${query}`);
   },
@@ -195,10 +195,10 @@ export const locationsAPI = {
 // ============================================
 
 export const bookingsAPI = {
-  getAll: async (filters?: { 
-    status?: string; 
-    teamMemberId?: string; 
-    serviceId?: string; 
+  getAll: async (filters?: {
+    status?: string;
+    teamMemberId?: string;
+    serviceId?: string;
     search?: string;
   }) => {
     const params = new URLSearchParams();
@@ -206,7 +206,7 @@ export const bookingsAPI = {
     if (filters?.teamMemberId) params.append('teamMemberId', filters.teamMemberId);
     if (filters?.serviceId) params.append('serviceId', filters.serviceId);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/bookings${query}`);
   },
@@ -243,7 +243,7 @@ export const digitalContentAPI = {
     const params = new URLSearchParams();
     if (filters?.type) params.append('type', filters.type);
     if (filters?.search) params.append('search', filters.search);
-    
+
     const query = params.toString() ? `?${params.toString()}` : '';
     return apiRequest(`/digital-content${query}`);
   },
@@ -291,7 +291,7 @@ export const settingsAPI = {
       accessToken,
     });
   },
-  
+
   updateSettings: async (accessToken: string, settings: any) => {
     return apiRequest('/settings', {
       method: 'PUT',

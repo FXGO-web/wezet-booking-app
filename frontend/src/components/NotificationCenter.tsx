@@ -9,9 +9,9 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Bell, Check, Calendar, XCircle, Clock } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { useAuth } from "../hooks/useAuth";
-import { projectId, publicAnonKey } from "../utils/supabase/info";
+import { projectId, publicAnonKey, edgeFunctionName } from "../utils/supabase/info";
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/make-server-e0d9c111`;
+const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}`;
 
 interface Notification {
   id: string;
@@ -47,7 +47,7 @@ export function NotificationCenter() {
 
   const fetchNotifications = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       const accessToken = getAccessToken();
@@ -149,9 +149,8 @@ export function NotificationCenter() {
                 return (
                   <div
                     key={notification.id}
-                    className={`p-4 hover:bg-muted/50 transition-colors ${
-                      !notification.read ? 'bg-primary/5' : ''
-                    }`}
+                    className={`p-4 hover:bg-muted/50 transition-colors ${!notification.read ? 'bg-primary/5' : ''
+                      }`}
                   >
                     <div className="flex gap-3">
                       <div className={`h-10 w-10 rounded-full ${colorClass} flex items-center justify-center flex-shrink-0`}>
