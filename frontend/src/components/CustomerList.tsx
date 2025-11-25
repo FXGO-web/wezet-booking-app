@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { Plus, Edit, Eye, Loader2, Download } from "lucide-react";
+import { Plus, Edit, Eye, Loader2, Download, Trash2 } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
@@ -175,6 +175,29 @@ export function CustomerList() {
             }}
           >
             <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={async (e: React.MouseEvent) => {
+              e.stopPropagation();
+              if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+                try {
+                  const accessToken = getAccessToken();
+                  if (accessToken) {
+                    await teamMembersAPI.delete(row.id, accessToken);
+                    toast.success('User deleted successfully');
+                    fetchCustomers();
+                  }
+                } catch (error) {
+                  console.error('Error deleting user:', error);
+                  toast.error('Failed to delete user');
+                }
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       ),
