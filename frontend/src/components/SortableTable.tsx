@@ -28,7 +28,8 @@ interface SortableTableProps {
   emptyMessage?: string;
 }
 
-columns,
+export function SortableTable({
+  columns,
   data = [],
   keyExtractor,
   onRowClick,
