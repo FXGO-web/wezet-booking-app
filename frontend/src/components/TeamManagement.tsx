@@ -216,24 +216,13 @@ export function TeamManagement() {
     try {
       const filters: any = {};
       if (filterValues.search) filters.search = filterValues.search;
-      if (filterValues.role && filterValues.role !== 'all') filters.role = filterValues.role;
-      if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
+      // if (filterValues.role && filterValues.role !== 'all') filters.role = filterValues.role;
+      // if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
-      // Try direct Supabase fetch first (Debug Mode)
-      console.log('Fetching team members directly from Supabase...');
-      const { data, error } = await supabase
-        .from('team_members')
-        .select('*');
+      // Fetch from API (Reverted to use API as it works for Public Calendar)
+      const { members: data } = await teamMembersAPI.getAll(filters);
 
-      if (error) {
-        console.error('Supabase fetch error:', error);
-        throw error;
-      }
-
-      console.log('Fetched members:', data);
-
-      console.log('Fetched members:', data);
-      toast.info(`Debug: Fetched ${data?.length || 0} records from DB`);
+      console.log('Fetched members from API:', data);
 
       // DEBUG: Show ALL users, ignore filters for now to find the missing ones
       // const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
