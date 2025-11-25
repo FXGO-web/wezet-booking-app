@@ -648,11 +648,7 @@ function AppContent() {
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img
-              src={wezetLogo}
-              alt="WEZET"
-              className="h-8 w-auto object-contain"
-            />
+            <span className="text-xl font-bold tracking-tight">WEZET</span>
             {user && (
               <Badge variant="secondary" className="text-xs">
                 {user.user_metadata?.role || "Client"}

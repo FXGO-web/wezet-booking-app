@@ -46,6 +46,70 @@ export function CustomerList() {
     },
   ];
 
+  // Fetch customers from API
+  const fetchCustomers = async () => {
+    setLoading(true);
+    try {
+      const filters: any = { role: 'Client' }; // Force filter for Clients
+      if (filterValues.search) filters.search = filterValues.search;
+      if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
+
+      const { members: data } = await teamMembersAPI.getAll(filters);
+      setCustomers(data || []);
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      setCustomers([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomers();
+  }, [filterValues]);
+
+  const handleEditClick = (customer: Customer) => {
+    // Map customer to team member format for the modal
+    const memberData = {
+      ...customer,
+      services: [], // Customers don't have services yet
+      specialties: [], // Customers don't have specialties yet
+    };
+    setSelectedCustomer(memberData as any);
+    setIsModalOpen(true);
+  };
+
+  const handleModalSuccess = () => {
+    fetchCustomers();
+  };
+
+  const handleExport = () => {
+    const headers = ['Name', 'Role', 'Email', 'Status'];
+    const rows = customers.map(m => [
+      m.name,
+      m.role,
+      m.email,
+      m.status,
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${customers.length} customers`);
+  };
+
   // Table columns configuration
   const columns: Column[] = [
     {
@@ -102,64 +166,20 @@ export function CustomerList() {
       sortable: false,
       render: (_: any, row: Customer) => (
         <div className="flex items-center justify-end gap-2">
-          {/* Add actions if needed */}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleEditClick(row);
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },
   ];
-
-  // Fetch customers from API
-  const fetchCustomers = async () => {
-    setLoading(true);
-    try {
-      const filters: any = { role: 'Client' }; // Force filter for Clients
-      if (filterValues.search) filters.search = filterValues.search;
-      if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
-
-      // We might need a dedicated API for customers if teamMembersAPI filters out non-team roles.
-      // Assuming teamMembersAPI returns all users if we filter by role 'Client' or similar.
-      // If not, we might need to use a different endpoint or modify the backend.
-      // For now, let's try using teamMembersAPI with role='Client'.
-      const { members: data } = await teamMembersAPI.getAll(filters);
-      setCustomers(data || []);
-    } catch (error) {
-      console.error('Error fetching customers:', error);
-      setCustomers([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCustomers();
-  }, [filterValues]);
-
-  const handleExport = () => {
-    const headers = ['Name', 'Role', 'Email', 'Status'];
-    const rows = customers.map(m => [
-      m.name,
-      m.role,
-      m.email,
-      m.status,
-    ]);
-
-    const csvContent = [
-      headers.join(','),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-    toast.success(`Exported ${customers.length} customers`);
-  };
 
   return (
     <div className="space-y-8">
@@ -202,7 +222,7 @@ export function CustomerList() {
           columns={columns}
           data={customers}
           keyExtractor={(c) => c.id}
-          onRowClick={() => { }} // Maybe open detail view?
+          onRowClick={handleEditClick}
           emptyMessage="No customers found"
         />
       )}
@@ -213,6 +233,14 @@ export function CustomerList() {
           Showing {customers.length} customers
         </div>
       )}
+
+      {/* Edit Modal - Reusing TeamMemberModal for promotion */}
+      <TeamMemberModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        member={selectedCustomer}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   );
 }
