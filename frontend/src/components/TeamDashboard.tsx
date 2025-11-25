@@ -12,11 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  Users, 
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  Users,
   TrendingUp,
   Video,
   MessageCircle,
@@ -28,25 +28,35 @@ import {
 import { CreateSessionModal } from "./CreateSessionModal";
 
 const WEEKLY_SCHEDULE = [
-  { day: "Mon", date: "Nov 11", slots: [
-    { time: "9:00 AM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-    { time: "2:00 PM", client: "Jamie L.", type: "Energy", status: "confirmed" },
-  ]},
-  { day: "Tue", date: "Nov 12", slots: [
-    { time: "10:00 AM", client: "Sam R.", type: "Movement", status: "confirmed" },
-  ]},
-  { day: "Wed", date: "Nov 13", slots: [
-    { time: "9:00 AM", client: "Available", type: "Open", status: "available" },
-    { time: "4:00 PM", client: "Morgan T.", type: "Breathwork", status: "pending" },
-  ]},
-  { day: "Thu", date: "Nov 14", slots: [
-    { time: "11:00 AM", client: "Casey P.", type: "Energy", status: "confirmed" },
-    { time: "3:00 PM", client: "Available", type: "Open", status: "available" },
-  ]},
-  { day: "Fri", date: "Nov 15", slots: [
-    { time: "2:00 PM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-    { time: "5:00 PM", client: "Jordan M.", type: "Movement", status: "confirmed" },
-  ]},
+  {
+    day: "Mon", date: "Nov 11", slots: [
+      { time: "9:00 AM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
+      { time: "2:00 PM", client: "Jamie L.", type: "Energy", status: "confirmed" },
+    ]
+  },
+  {
+    day: "Tue", date: "Nov 12", slots: [
+      { time: "10:00 AM", client: "Sam R.", type: "Movement", status: "confirmed" },
+    ]
+  },
+  {
+    day: "Wed", date: "Nov 13", slots: [
+      { time: "9:00 AM", client: "Available", type: "Open", status: "available" },
+      { time: "4:00 PM", client: "Morgan T.", type: "Breathwork", status: "pending" },
+    ]
+  },
+  {
+    day: "Thu", date: "Nov 14", slots: [
+      { time: "11:00 AM", client: "Casey P.", type: "Energy", status: "confirmed" },
+      { time: "3:00 PM", client: "Available", type: "Open", status: "available" },
+    ]
+  },
+  {
+    day: "Fri", date: "Nov 15", slots: [
+      { time: "2:00 PM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
+      { time: "5:00 PM", client: "Jordan M.", type: "Movement", status: "confirmed" },
+    ]
+  },
 ];
 
 const UPCOMING_SESSIONS = [
@@ -88,15 +98,24 @@ const UPCOMING_SESSIONS = [
   },
 ];
 
-const STATS = [
-  { label: "This Week", value: "$840", icon: DollarSign, trend: "+12%" },
-  { label: "Total Clients", value: "24", icon: Users, trend: "+3 new" },
-  { label: "Sessions This Week", value: "7", icon: Calendar, trend: "2 pending" },
-  { label: "Avg Rating", value: "4.9", icon: Star, trend: "18 reviews" },
-];
+import { useCurrency } from "../context/CurrencyContext";
 
-export function TeamDashboard() {
+// ... existing imports
+
+interface TeamDashboardProps {
+  onNavigate?: (route: string) => void;
+}
+
+export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
+  const { convertAndFormat } = useCurrency();
+
+  const STATS = [
+    { label: "This Week", value: convertAndFormat(840, "EUR"), icon: DollarSign, trend: "+12%" },
+    { label: "Total Clients", value: "24", icon: Users, trend: "+3 new" },
+    { label: "Sessions This Week", value: "7", icon: Calendar, trend: "2 pending" },
+    { label: "Avg Rating", value: "4.9", icon: Star, trend: "18 reviews" },
+  ];
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
@@ -119,7 +138,7 @@ export function TeamDashboard() {
               <Settings className="mr-2 h-5 w-5" />
               Settings
             </Button>
-            <Button variant="outline" size="lg">
+            <Button variant="outline" size="lg" onClick={() => onNavigate?.('availability-management')}>
               <Calendar className="mr-2 h-5 w-5" />
               Manage Availability
             </Button>
@@ -163,7 +182,7 @@ export function TeamDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2>This Week's Schedule</h2>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" onClick={() => onNavigate?.('calendar')}>
                   View Calendar
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -185,11 +204,11 @@ export function TeamDashboard() {
                                 key={idx}
                                 className={`
                                   p-3 rounded-xl flex items-center justify-between
-                                  ${slot.status === 'available' 
-                                    ? 'bg-muted/30 border border-dashed border-muted-foreground/30' 
+                                  ${slot.status === 'available'
+                                    ? 'bg-muted/30 border border-dashed border-muted-foreground/30'
                                     : slot.status === 'pending'
-                                    ? 'bg-amber-500/10 border border-amber-500/30'
-                                    : 'bg-primary/5 border border-primary/20'
+                                      ? 'bg-amber-500/10 border border-amber-500/30'
+                                      : 'bg-primary/5 border border-primary/20'
                                   }
                                 `}
                               >
@@ -275,7 +294,7 @@ export function TeamDashboard() {
                               </Badge>
                             )}
                           </TableCell>
-                          <TableCell>${session.price}</TableCell>
+                          <TableCell>{convertAndFormat(session.price, "EUR")}</TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button size="icon" variant="ghost">
@@ -407,7 +426,7 @@ export function TeamDashboard() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">Earnings</span>
-                    <span className="text-2xl">$3,240</span>
+                    <span className="text-2xl">{convertAndFormat(3240, "EUR")}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Sessions</span>
@@ -415,7 +434,7 @@ export function TeamDashboard() {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Avg per session</span>
-                    <span>$120</span>
+                    <span>{convertAndFormat(120, "EUR")}</span>
                   </div>
                 </div>
                 <Separator />
@@ -430,7 +449,7 @@ export function TeamDashboard() {
       </div>
 
       {/* Create Session Modal */}
-      <CreateSessionModal 
+      <CreateSessionModal
         open={isCreateSessionOpen}
         onOpenChange={setIsCreateSessionOpen}
       />

@@ -352,6 +352,10 @@ export function ServicesCategories() {
               <Download className="mr-2 h-4 w-4" />
               Export CSV
             </Button>
+            <Button variant="outline" onClick={() => toast.info("Category management coming soon")}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add Category
+            </Button>
             <Button onClick={handleAddClick}>
               <Plus className="mr-2 h-4 w-4" />
               Add Service
@@ -364,7 +368,7 @@ export function ServicesCategories() {
           {categories.map((category) => {
             const Icon = category.icon;
             const count = filteredServices.filter(s => s.category === category.id).length;
-            
+
             return (
               <Card
                 key={category.id}

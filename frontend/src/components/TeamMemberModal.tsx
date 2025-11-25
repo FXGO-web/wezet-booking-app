@@ -160,10 +160,8 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Teacher">Teacher</SelectItem>
-                    <SelectItem value="Facilitator">Facilitator</SelectItem>
-                    <SelectItem value="Therapist">Therapist</SelectItem>
-                    <SelectItem value="Coach">Coach</SelectItem>
+                    <SelectItem value="Admin">Admin</SelectItem>
+                    <SelectItem value="Team Member">Team Member</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

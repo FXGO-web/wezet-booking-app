@@ -3,11 +3,11 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Separator } from "./ui/separator";
-import { 
-  Calendar, 
-  Clock, 
-  Video, 
-  MessageCircle, 
+import {
+  Calendar,
+  Clock,
+  Video,
+  MessageCircle,
   Heart,
   Wind,
   Zap,
@@ -103,13 +103,13 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
               Your wellness journey continues
             </p>
           </div>
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             className="md:w-auto"
-            onClick={onBookSession}
+            onClick={() => onNavigate?.('calendar')}
           >
             <Plus className="mr-2 h-5 w-5" />
-            Book New Session
+            Book a Session
           </Button>
         </div>
 
@@ -133,7 +133,7 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center justify-between">
               <h2>Upcoming Sessions</h2>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" onClick={() => onNavigate?.('calendar')}>
                 View All
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Button>
@@ -194,10 +194,10 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
                           </div>
 
                           <div className="flex gap-2">
-                            <Button size="icon" variant="outline">
+                            <Button size="icon" variant="outline" onClick={() => onNavigate?.('messages')}>
                               <MessageCircle className="h-4 w-4" />
                             </Button>
-                            <Button size="sm">
+                            <Button size="sm" onClick={() => alert("Joining session...")}>
                               <Video className="mr-2 h-4 w-4" />
                               Join Session
                             </Button>
@@ -251,15 +251,15 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
                 <CardTitle className="text-base">Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('calendar')}>
                   <Calendar className="mr-2 h-4 w-4" />
                   View Calendar
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => alert("Favorites feature coming soon")}>
                   <Heart className="mr-2 h-4 w-4" />
                   My Favorites
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('messages')}>
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Messages
                 </Button>

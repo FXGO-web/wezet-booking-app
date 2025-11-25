@@ -20,7 +20,7 @@ import {
   MapPin
 } from "lucide-react";
 import { servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { format, parse } from "date-fns";
 import { useAuth } from "../hooks/useAuth";
 import { AuthPage } from "./AuthPage";
@@ -475,7 +475,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         mode="single"
                         selected={selectedDate}
                         onSelect={setSelectedDate}
-                        disabled={(date) => date < new Date()}
+                        disabled={(date: Date) => date < new Date()}
                         className="rounded-xl border"
                       />
                     </div>

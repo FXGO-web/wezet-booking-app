@@ -48,7 +48,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     description: service?.description || "",
     duration: service?.duration || 60,
     price: service?.price || 0,
-    currency: service?.currency || "USD",
+    currency: service?.currency || "EUR",
     category: service?.category || "Breathwork",
     status: service?.status || "active",
   });
@@ -161,9 +161,8 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="GBP">GBP (£)</SelectItem>
+                    <SelectItem value="DKK">DKK (kr)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

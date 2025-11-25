@@ -43,7 +43,7 @@ import {
   Loader2,
   Database,
 } from "lucide-react";
-import wezetLogo from "figma:asset/cad8962e9e4e19ad0957fc3b983cea5aa5970651.png";
+
 import { Card, CardContent } from "./components/ui/card";
 import {
   Avatar,
@@ -793,21 +793,7 @@ function AppContent() {
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="border-t bg-muted/30">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-20">
-          <div className="flex flex-col items-center justify-center space-y-6">
-            <img
-              src={wezetLogo}
-              alt="WEZET"
-              className="h-12 md:h-16 w-auto object-contain"
-            />
-            <p className="text-muted-foreground text-center">
-              Wezet | Transformational Breathwork & Education
-            </p>
-          </div>
-        </div>
-      </div>
+
     </div>
   );
 }
