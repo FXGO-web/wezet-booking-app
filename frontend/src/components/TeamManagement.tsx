@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
 import { Plus, Edit, Eye, Loader2, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent } from "./ui/card";
 import { teamMembersAPI } from "../utils/api";
 import { supabase } from "../utils/supabase/client";
@@ -10,7 +11,6 @@ import { useAuth } from "../hooks/useAuth";
 import { TeamMemberModal } from "./TeamMemberModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
 import { SortableTable, Column } from "./SortableTable";
-import { toast } from "sonner";
 
 interface TeamMember {
   id: string;
@@ -232,11 +232,14 @@ export function TeamManagement() {
 
       console.log('Fetched members:', data);
 
-      // Filter for team roles only
-      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
-      const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
+      console.log('Fetched members:', data);
+      toast.info(`Debug: Fetched ${data?.length || 0} records from DB`);
 
-      setTeamMembers(filteredData);
+      // DEBUG: Show ALL users, ignore filters for now to find the missing ones
+      // const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
+      // const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
+
+      setTeamMembers(data || []);
     } catch (error) {
       console.error('Error fetching team members:', error);
       // Fallback to mock data if API fails
