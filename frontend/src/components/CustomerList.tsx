@@ -116,22 +116,31 @@ export function CustomerList() {
       key: 'name',
       label: 'Customer',
       sortable: true,
-      render: (value: string, row: Customer) => (
-        <div className="flex items-center gap-3">
-          <Avatar>
-            {row.avatarUrl && (
-              <AvatarImage src={row.avatarUrl} alt={value} />
-            )}
-            <AvatarFallback className="bg-primary/10 text-primary">
-              {value.split(" ").map((n) => n[0]).join("")}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{value}</div>
-            <div className="text-xs text-muted-foreground">{row.email}</div>
+      render: (value: string, row: Customer) => {
+        const name = value || "Unknown Customer";
+        const fallbackInitials = name
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase();
+        return (
+          <div className="flex items-center gap-3">
+            <Avatar>
+              {row.avatarUrl && (
+                <AvatarImage src={row.avatarUrl} alt={name} />
+              )}
+              <AvatarFallback className="bg-primary/10 text-primary">
+                {fallbackInitials || '?'}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <div className="font-medium">{name}</div>
+              <div className="text-xs text-muted-foreground">{row.email}</div>
+            </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'role',
@@ -194,76 +203,67 @@ export function CustomerList() {
                   console.error('Error deleting user:', error);
                   toast.error('Failed to delete user');
                 }
-              }
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
-    },
-  ];
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <h2>Customers & Subscribers</h2>
+                    <p className="text-muted-foreground">
+                      Manage your client base
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleExport}>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </Button>
+                  </div>
+                </div>
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-2">
-          <h2>Customers & Subscribers</h2>
-          <p className="text-muted-foreground">
-            Manage your client base
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            Export CSV
-          </Button>
-        </div>
-      </div>
+                {/* Advanced Filters */ }
+                <AdvancedFilters
+                  filters={filterConfig}
+                  values={filterValues}
+                  onChange={setFilterValues}
+                  onReset={() => setFilterValues({})}
+                  onExport={handleExport}
+                  searchPlaceholder="Search by name or email..."
+                  showExport={false}
+                />
 
-      {/* Advanced Filters */}
-      <AdvancedFilters
-        filters={filterConfig}
-        values={filterValues}
-        onChange={setFilterValues}
-        onReset={() => setFilterValues({})}
-        onExport={handleExport}
-        searchPlaceholder="Search by name or email..."
-        showExport={false}
-      />
+                {/* Customers Table */ }
+                {
+                  loading ? (
+                    <Card>
+                      <CardContent className="flex items-center justify-center h-64">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <SortableTable
+                      columns={columns}
+                      data={customers}
+                      keyExtractor={(c) => c.id}
+                      onRowClick={handleEditClick}
+                      emptyMessage="No customers found"
+                    />
+                  )
+                }
 
-      {/* Customers Table */}
-      {loading ? (
-        <Card>
-          <CardContent className="flex items-center justify-center h-64">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </CardContent>
-        </Card>
-      ) : (
-        <SortableTable
-          columns={columns}
-          data={customers}
-          keyExtractor={(c) => c.id}
-          onRowClick={handleEditClick}
-          emptyMessage="No customers found"
-        />
-      )}
+                {/* Results Summary */ }
+                {
+                  !loading && (
+                    <div className="text-sm text-muted-foreground text-center">
+                      Showing {customers?.length || 0} customers
+                    </div>
+                  )
+                }
 
-      {/* Results Summary */}
-      {!loading && (
-        <div className="text-sm text-muted-foreground text-center">
-          Showing {customers.length} customers
-        </div>
-      )}
-
-      {/* Edit Modal - Reusing TeamMemberModal for promotion */}
-      <TeamMemberModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        member={selectedCustomer}
-        onSuccess={handleModalSuccess}
-      />
-    </div>
-  );
-}
+                {/* Edit Modal - Reusing TeamMemberModal for promotion */ }
+                <TeamMemberModal
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                  member={selectedCustomer}
+                  onSuccess={handleModalSuccess}
+                />
+  </div>
+      );
+    }

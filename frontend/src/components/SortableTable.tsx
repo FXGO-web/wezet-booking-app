@@ -55,7 +55,7 @@ export function SortableTable({
     }
   };
 
-  const safeData = Array.isArray(data) ? data : [];
+  const safeData = (Array.isArray(data) ? data : []).filter(item => item !== null && item !== undefined);
   const sortedData = [...safeData].sort((a, b) => {
     if (!sortKey || sortDirection === null) return 0;
 
