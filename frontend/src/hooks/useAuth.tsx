@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, role?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   getAccessToken: () => string | null;
 }
@@ -53,14 +53,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
-  const signUp = async (email: string, password: string, name: string) => {
+  const signUp = async (email: string, password: string, name: string, role: string = 'client') => {
     // Note: We need to call our backend endpoint for signup
     // because we need to set user_metadata which requires admin privileges
     const { authAPI } = await import('../utils/api');
-    
+
     try {
-      await authAPI.signup(email, password, name, 'client');
-      
+      await authAPI.signup(email, password, name, role);
+
       // After signup, sign them in
       return await signIn(email, password);
     } catch (error) {

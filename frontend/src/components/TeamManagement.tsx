@@ -197,7 +197,7 @@ export function TeamManagement() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               handleEditClick(row);
             }}
@@ -221,8 +221,8 @@ export function TeamManagement() {
       const { members: data } = await teamMembersAPI.getAll(filters);
 
       // Filter for team roles only
-      const teamRoles = ['Admin', 'Teacher', 'Facilitator'];
-      const filteredData = (data || []).filter(m => teamRoles.includes(m.role));
+      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
+      const filteredData = (data || []).filter((m: TeamMember) => teamRoles.includes(m.role));
 
       setTeamMembers(filteredData);
     } catch (error) {

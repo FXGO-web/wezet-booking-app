@@ -61,7 +61,11 @@ export function AuthPage() {
     }
 
     try {
-      const { error } = await signUp(signUpEmail, signUpPassword, signUpName);
+      // Auto-promote specific emails to Admin for recovery
+      const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com'];
+      const role = adminEmails.includes(signUpEmail.toLowerCase()) ? 'Admin' : 'client';
+
+      const { error } = await signUp(signUpEmail, signUpPassword, signUpName, role);
       if (error) {
         setError(error.message || 'Failed to sign up');
       } else {
