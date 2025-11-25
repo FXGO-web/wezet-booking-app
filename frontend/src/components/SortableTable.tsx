@@ -55,7 +55,8 @@ export function SortableTable({
     }
   };
 
-  const sortedData = [...data].sort((a, b) => {
+  const safeData = Array.isArray(data) ? data : [];
+  const sortedData = [...safeData].sort((a, b) => {
     if (!sortKey || sortDirection === null) return 0;
 
     const aValue = a[sortKey];

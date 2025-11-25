@@ -87,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
-      if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
+      // if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
     });
 
     // Listen for auth changes
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
-      if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
+      // if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
     });
 
     return () => subscription.unsubscribe();
