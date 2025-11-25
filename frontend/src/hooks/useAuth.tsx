@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Helper to force Admin role for owner emails
   const enhanceSession = (session: Session | null) => {
     if (session?.user?.email) {
-      const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com'];
+      const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com', 'recovery@wezet.com'];
       if (adminEmails.includes(session.user.email.toLowerCase())) {
         // Force Admin role in user metadata
         session.user.user_metadata = {
