@@ -220,7 +220,7 @@ export function TeamManagement() {
       // if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
       // Fetch from API (Reverted to use API as it works for Public Calendar)
-      const { members: data } = await teamMembersAPI.getAll(filters);
+      const { teamMembers: data } = await teamMembersAPI.getAll(filters);
 
       console.log('Fetched members from API:', data);
 
