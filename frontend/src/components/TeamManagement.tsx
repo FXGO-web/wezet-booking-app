@@ -230,11 +230,11 @@ export function TeamManagement() {
 
       console.log('Fetched members from API:', data);
 
-      // DEBUG: Show ALL users, ignore filters for now to find the missing ones
-      // const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
-      // const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
+      // Filter for Team Roles only
+      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
+      const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
 
-      setTeamMembers(data || []);
+      setTeamMembers(filteredData);
     } catch (error) {
       console.error('Error fetching team members:', error);
       // Fallback to mock data if API fails

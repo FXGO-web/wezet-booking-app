@@ -50,12 +50,16 @@ export function CustomerList() {
   const fetchCustomers = async () => {
     setLoading(true);
     try {
-      const filters: any = { role: 'Client' }; // Force filter for Clients
+      const filters: any = {}; // Fetch all and filter client-side to support multiple roles
       if (filterValues.search) filters.search = filterValues.search;
       if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
       const { teamMembers: data } = await teamMembersAPI.getAll(filters);
-      setCustomers(Array.isArray(data) ? data : []);
+
+      const customerRoles = ['Client', 'Subscriber'];
+      const filteredData = (data || []).filter((m: any) => customerRoles.includes(m.role));
+
+      setCustomers(filteredData);
     } catch (error) {
       console.error('Error fetching customers:', error);
       setCustomers([]);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -45,15 +45,48 @@ const availableSpecialties = [
 export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemberModalProps) {
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    name: member?.name || "",
-    email: member?.email || "",
-    phone: member?.phone || "",
-    role: member?.role || "Teacher",
-    bio: member?.bio || "",
-    specialties: member?.specialties || [],
-    status: member?.status || "active",
+  const [formData, setFormData] = useState<{
+    name: string;
+    email: string;
+    phone: string;
+    role: string;
+    bio: string;
+    specialties: string[];
+    status: string;
+  }>({
+    name: "",
+    email: "",
+    phone: "",
+    role: "Teacher",
+    bio: "",
+    specialties: [],
+    status: "active",
   });
+
+  useEffect(() => {
+    if (member) {
+      setFormData({
+        name: member.name || "",
+        email: member.email || "",
+        phone: member.phone || "",
+        role: member.role || "Teacher",
+        bio: member.bio || "",
+        specialties: member.specialties || [],
+        status: member.status || "active",
+      });
+    } else {
+      // Reset form for new member
+      setFormData({
+        name: "",
+        email: "",
+        phone: "",
+        role: "Teacher",
+        bio: "",
+        specialties: [],
+        status: "active",
+      });
+    }
+  }, [member, isOpen]);
 
   const handleAddSpecialty = (specialty: string) => {
     if (!formData.specialties.includes(specialty)) {
