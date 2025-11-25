@@ -4,7 +4,8 @@ const { parse } = require('csv-parse/sync');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 
 // Configuration
-const CSV_PATH = path.resolve(__dirname, '../../../User Export.csv');
+const CSV_FILE = process.env.CSV_FILE || 'User Export.csv';
+const CSV_PATH = path.resolve(__dirname, '../../../', CSV_FILE);
 const DRY_RUN = process.env.DRY_RUN !== 'false'; // Default to true
 const DEFAULT_PASSWORD = "Welcome2025!";
 
@@ -79,21 +80,50 @@ async function importUsers() {
             process.exit(1);
         }
         const fileContent = fs.readFileSync(CSV_PATH, 'utf8');
-        const records = parse(fileContent, { columns: true, skip_empty_lines: true });
+
+        // Detect delimiter
+        const delimiter = fileContent.includes(';') ? ';' : ',';
+        console.log(`Detected delimiter: '${delimiter}'`);
+
+        // Hack for Stripe export which might have a title line
+        let contentToParse = fileContent;
+        const lines = fileContent.split('\n');
+        if (lines[0].trim() === 'unified_customers-2') {
+            console.log('Detected Stripe export header line. Skipping...');
+            contentToParse = lines.slice(1).join('\n');
+        }
+
+        const records = parse(contentToParse, {
+            columns: true,
+            skip_empty_lines: true,
+            delimiter: delimiter,
+            trim: true
+        });
         console.log(`Found ${records.length} records in CSV.`);
 
         let stats = { processed: 0, skipped_team: 0, created: 0, errors: 0 };
 
         for (const record of records) {
             stats.processed++;
-            const email = record.user_email;
+
+            // Map columns
+            const email = record.user_email || record.Email || record.email;
             if (!email) continue;
 
             const lowerEmail = email.toLowerCase();
-            const firstName = record.first_name;
-            const lastName = record.last_name;
-            const displayName = record.display_name;
-            const csvRole = record.role;
+
+            // Map Name
+            let name = '';
+            if (record.Name) {
+                name = record.Name;
+            } else if (record.first_name || record.last_name) {
+                name = `${record.first_name || ''} ${record.last_name || ''}`.trim();
+            } else if (record.display_name) {
+                name = record.display_name;
+            }
+
+            // Map Role
+            const csvRole = record.role || 'customer'; // Default to customer if not specified
 
             // 3. Check against Team Members
             if (teamEmails.has(lowerEmail)) {
@@ -104,7 +134,7 @@ async function importUsers() {
 
             // 4. Create User
             const newRole = (csvRole === 'subscriber' || csvRole === 'customer') ? 'Client' : 'Client'; // Use 'Client' to match frontend filter
-            const name = `${firstName} ${lastName}`.trim() || displayName;
+            // const name = `${firstName} ${lastName}`.trim() || displayName; // Already defined above
 
             if (DRY_RUN) {
                 console.log(`[DRY RUN] Would create: ${email} (${newRole}) - Name: ${name}`);
