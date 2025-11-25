@@ -17,6 +17,7 @@ import {
   Users
 } from "lucide-react";
 import { MENTORS, getMentorById } from "./mentors-data";
+import { useAuth } from "../hooks/useAuth";
 
 const UPCOMING_SESSIONS = [
   {
@@ -92,14 +93,19 @@ interface ClientDashboardProps {
 }
 
 export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardProps) {
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Guest";
+
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
-            <h1>Welcome back, Alex</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl md:text-4xl font-serif text-foreground tracking-tight">
+              Welcome back, {userName}
+            </h1>
+            <p className="text-muted-foreground text-lg">
               Your wellness journey continues
             </p>
           </div>

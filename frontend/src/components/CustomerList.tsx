@@ -54,7 +54,7 @@ export function CustomerList() {
       if (filterValues.search) filters.search = filterValues.search;
       if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
-      const { members: data } = await teamMembersAPI.getAll(filters);
+      const { teamMembers: data } = await teamMembersAPI.getAll(filters);
       setCustomers(data || []);
     } catch (error) {
       console.error('Error fetching customers:', error);

@@ -26,6 +26,7 @@ import {
   CalendarPlus
 } from "lucide-react";
 import { CreateSessionModal } from "./CreateSessionModal";
+import { useAuth } from "../hooks/useAuth";
 
 const WEEKLY_SCHEDULE = [
   {
@@ -109,6 +110,9 @@ interface TeamDashboardProps {
 export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const { convertAndFormat } = useCurrency();
+  const { user } = useAuth();
+  const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Team Member";
+  const userRole = user?.user_metadata?.role || "Specialist";
 
   const STATS = [
     { label: "This Week", value: convertAndFormat(840, "EUR"), icon: DollarSign, trend: "+12%" },
@@ -123,14 +127,16 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                SC
+            <Avatar className="h-16 w-16 border-2 border-primary/10">
+              <AvatarFallback className="bg-primary/5 text-primary text-xl font-medium">
+                {userName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1>Sarah Chen</h1>
-              <p className="text-muted-foreground">Breathwork Specialist</p>
+              <h1 className="text-3xl font-serif text-foreground tracking-tight">
+                {userName}
+              </h1>
+              <p className="text-muted-foreground">{userRole}</p>
             </div>
           </div>
           <div className="flex gap-3">
