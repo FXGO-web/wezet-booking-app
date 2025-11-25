@@ -5,6 +5,7 @@ import { Badge } from "./ui/badge";
 import { Plus, Edit, Eye, Loader2, Download } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { teamMembersAPI } from "../utils/api";
+import { supabase } from "../utils/supabase/client";
 import { useAuth } from "../hooks/useAuth";
 import { TeamMemberModal } from "./TeamMemberModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
@@ -218,11 +219,22 @@ export function TeamManagement() {
       if (filterValues.role && filterValues.role !== 'all') filters.role = filterValues.role;
       if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
-      const { members: data } = await teamMembersAPI.getAll(filters);
+      // Try direct Supabase fetch first (Debug Mode)
+      console.log('Fetching team members directly from Supabase...');
+      const { data, error } = await supabase
+        .from('team_members')
+        .select('*');
+
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw error;
+      }
+
+      console.log('Fetched members:', data);
 
       // Filter for team roles only
       const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
-      const filteredData = (data || []).filter((m: TeamMember) => teamRoles.includes(m.role));
+      const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
 
       setTeamMembers(filteredData);
     } catch (error) {
