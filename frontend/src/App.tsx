@@ -71,6 +71,15 @@ function AppContent() {
   const [bookingPreselection, setBookingPreselection] =
     useState<any>(null);
 
+  // Handle URL parameters for routing
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get("view");
+    if (viewParam) {
+      setActiveView(viewParam);
+    }
+  }, []);
+
   const handleInitializeDemo = async () => {
     setInitializingData(true);
     const accessToken = getAccessToken();
@@ -107,14 +116,7 @@ function AppContent() {
     );
   }
 
-  // Handle URL parameters for routing
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const viewParam = params.get("view");
-    if (viewParam) {
-      setActiveView(viewParam);
-    }
-  }, []);
+
 
   // Auth Page for explicit login/signup
   if (activeView === "auth") {
