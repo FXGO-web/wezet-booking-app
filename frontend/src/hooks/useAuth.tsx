@@ -34,6 +34,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return session;
   };
 
+  // Helper to ensure team member record exists (Self-Healing)
+  const ensureTeamMemberRecord = async (session: Session | null) => {
+    if (!session?.user?.email) return;
+
+    try {
+      // Check if record exists
+      const { data: existingMember } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('email', session.user.email)
+        .single();
+
+      if (!existingMember) {
+        console.log('🧟 Zombie User detected! Resurrecting team member record...');
+
+        // Determine role based on metadata or whitelist
+        const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com', 'recovery@wezet.com', 'fx.admin@fxcreativestudio.com'];
+        const isWhitelistedAdmin = adminEmails.includes(session.user.email.toLowerCase());
+        const role = isWhitelistedAdmin ? 'Admin' : (session.user.user_metadata?.role || 'Client');
+
+        // Create missing record
+        const newMember = {
+          id: session.user.id, // Sync ID with Auth ID
+          email: session.user.email,
+          name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+          role: role,
+          status: 'active',
+          specialties: [],
+          services: []
+        };
+
+        const { error: insertError } = await supabase
+          .from('team_members')
+          .insert([newMember] as any);
+
+        if (insertError) {
+          console.error('Failed to resurrect user:', insertError);
+        } else {
+          console.log('✨ User resurrected successfully!');
+        }
+      }
+    } catch (error) {
+      console.error('Error in self-healing:', error);
+    }
+  };
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -41,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
+      if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
     });
 
     // Listen for auth changes
@@ -51,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
+      if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
     });
 
     return () => subscription.unsubscribe();
