@@ -143,34 +143,40 @@ export function TeamManagement() {
       key: 'specialties',
       label: 'Specialties',
       sortable: false,
-      render: (value: string[], row: TeamMember) => (
-        <div className="flex flex-wrap gap-1">
-          {value.slice(0, 2).map((specialty) => (
-            <Badge
-              key={specialty}
-              variant="secondary"
-              className="text-xs bg-primary/10 text-primary"
-            >
-              {specialty}
-            </Badge>
-          ))}
-          {value.length > 2 && (
-            <Badge variant="outline" className="text-xs">
-              +{value.length - 2}
-            </Badge>
-          )}
-        </div>
-      ),
+      render: (value: string[], row: TeamMember) => {
+        const specialties = Array.isArray(value) ? value : [];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {specialties.slice(0, 2).map((specialty) => (
+              <Badge
+                key={specialty}
+                variant="secondary"
+                className="text-xs bg-primary/10 text-primary"
+              >
+                {specialty}
+              </Badge>
+            ))}
+            {specialties.length > 2 && (
+              <Badge variant="outline" className="text-xs">
+                +{specialties.length - 2}
+              </Badge>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'services',
       label: 'Services',
       sortable: false,
-      render: (value: string[]) => (
-        <span className="text-sm text-muted-foreground">
-          {value.length} {value.length === 1 ? 'service' : 'services'}
-        </span>
-      ),
+      render: (value: string[]) => {
+        const services = Array.isArray(value) ? value : [];
+        return (
+          <span className="text-sm text-muted-foreground">
+            {services.length} {services.length === 1 ? 'service' : 'services'}
+          </span>
+        );
+      },
     },
     {
       key: 'status',
