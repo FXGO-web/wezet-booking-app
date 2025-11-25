@@ -19,11 +19,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Helper to force Admin role for owner emails
+  const enhanceSession = (session: Session | null) => {
+    if (session?.user?.email) {
+      const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com'];
+      if (adminEmails.includes(session.user.email.toLowerCase())) {
+        // Force Admin role in user metadata
+        session.user.user_metadata = {
+          ...session.user.user_metadata,
+          role: 'Admin'
+        };
+      }
+    }
+    return session;
+  };
+
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      const enhancedSession = enhanceSession(session);
+      setSession(enhancedSession);
+      setUser(enhancedSession?.user ?? null);
       setLoading(false);
     });
 
@@ -31,8 +47,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      const enhancedSession = enhanceSession(session);
+      setSession(enhancedSession);
+      setUser(enhancedSession?.user ?? null);
       setLoading(false);
     });
 
