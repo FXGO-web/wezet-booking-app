@@ -10,63 +10,62 @@ interface RequestOptions {
 }
 
 async function apiRequest(endpoint: string, options: RequestOptions = {}) {
-  const {
-    method = 'GET',
-    body,
-    requiresAuth = false,
-    accessToken,
-  } = options;
+    const {
+        method = 'GET',
+        body,
+        requiresAuth = false,
+        accessToken,
+    } = options;
 
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
 
-  // Use access token if provided, otherwise use public anon key
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  } else if (!requiresAuth) {
-    headers['Authorization'] = `Bearer ${publicAnonKey}`;
-  }
+    // Use access token if provided, otherwise use public anon key
+    if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
+    } else if (!requiresAuth) {
+        headers['Authorization'] = `Bearer ${publicAnonKey}`;
+    }
 
-  const config: RequestInit = {
-    method,
-    headers,
-  };
+    const config: RequestInit = {
+        method,
+        headers,
+    };
 
-  if (body) {
-    config.body = JSON.stringify(body);
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    let data;
+    if (body) {
+        config.body = JSON.stringify(body);
+    }
+
     try {
-      data = await response.json();
-    } catch (jsonError) {
-      const text = await response.text();
-      console.error(`API Error (${endpoint}) - Invalid JSON:`, text);
-      throw new Error(`Invalid JSON response from server: ${text.substring(0, 100)}...`);
-    }
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            const text = await response.text();
+            console.error(`API Error (${endpoint}) - Invalid JSON:`, text);
+            throw new Error(`Invalid JSON response from server: ${text.substring(0, 100)}...`);
+        }
 
-    if (!response.ok) {
-      console.error(`API Error (${endpoint}):`, data.error || "Unknown error");
-      throw new Error(data.error || "API request failed");
-    }
+        if (!response.ok) {
+            console.error(`API Error (${endpoint}):`, data.error || 'Unknown error');
+            throw new Error(data.error || 'API request failed');
+        }
 
-    return data;
-  } catch (error) {
-    console.error(`API Request Failed (${endpoint}):`, error);
-    throw error;
-  }
-}    throw error;
-  }
+        return data;
+    } catch (error) {
+        console.error(`API Request Failed (${endpoint}):`, error);
+        throw error;
+    }
 }
-
 // ============================================
 // AUTH API
 // ============================================
 
 export const authAPI = {
-  signup: async (email: string, password: string, name: string, role: string = 'client') => {
-    return apiRequest('/auth/signup', {
+  signup: async (email: string, password: string, name: string, role: string = "client") => {
+    return apiRequest("/auth/signup", {
       method: 'POST',
       body: { email, password, name, role },
     });

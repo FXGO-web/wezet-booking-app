@@ -116,9 +116,6 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             {/* Service Name */}
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-4">
-            {/* Service Name */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="name">Service Name *</Label>

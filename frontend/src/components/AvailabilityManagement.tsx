@@ -63,20 +63,6 @@ interface WeeklySchedule {
 
 interface SpecificDateSlot {
 
-  // Handle URL params
-  useEffect(() => {
-    const serviceIdParam = searchParams.get("serviceId");
-    const tabParam = searchParams.get("tab");
-
-    if (serviceIdParam) {
-      setSelectedService(serviceIdParam);
-    }
-
-    if (tabParam && ["weekly", "specific", "blocked"].includes(tabParam)) {
-      setActiveTab(tabParam);
-    }
-  }, [searchParams]);
-  id: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -145,7 +131,20 @@ export function AvailabilityManagement() {
   // Fetch team members
   useEffect(() => {
     const fetchTeamMembers = async () => {
-      setLoading(true);
+
+  // Handle URL params
+  useEffect(() => {
+    const serviceIdParam = searchParams.get("serviceId");
+    const tabParam = searchParams.get("tab");
+
+    if (serviceIdParam) {
+      setSelectedService(serviceIdParam);
+    }
+
+    if (tabParam && ["weekly", "specific", "blocked"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);      setLoading(true);
       try {
         const { members } = await availabilityAPI.getTeamMembers();
         setTeamMembers(members || []);
