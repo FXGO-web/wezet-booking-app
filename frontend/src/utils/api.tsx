@@ -38,29 +38,27 @@ async function apiRequest(endpoint: string, options: RequestOptions = {}) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-        let data;
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            const text = await response.text();
-            console.error(`API Error (${endpoint}) - Invalid JSON:`, text);
-            throw new Error(`Invalid JSON response from server: ${text.substring(0, 100)}...`);
-        }
-
-        if (!response.ok) {
-            console.error(`API Error (${endpoint}):`, data.error || 'Unknown error');
-            throw new Error(data.error || 'API request failed');
-        }
-
-        return data;
-    } catch (error) {
-        console.error(`API Request Failed (${endpoint}):`, error);
-        throw error;
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (jsonError) {
+      console.error(`API Error (${endpoint}) - Invalid JSON:`, text);
     }
-}
-// ============================================
-// AUTH API
+
+    if (!response.ok) {
+      const errorMessage = data?.error || text || "Unknown error";
+      console.error(`API Error (${endpoint}):`, errorMessage);
+      throw new Error(errorMessage);
+    }
+
+    return data;
+  } catch (error) {        throw error;
+    console.error(`API Request Failed (${endpoint}):`, error);
+    throw error;
+  }
+}// AUTH API
 // ============================================
 
 export const authAPI = {
