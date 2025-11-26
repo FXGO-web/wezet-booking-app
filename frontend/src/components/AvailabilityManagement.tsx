@@ -175,7 +175,12 @@ export function AvailabilityManagement() {
         const { schedule, blockedDates: blocked, specificDates } = await availabilityAPI.get(selectedMember, serviceId);
         if (schedule) setWeeklySchedule(schedule);
         if (blocked) setBlockedDates(blocked.map((b: any) => ({ ...b, date: new Date(b.date) })));
-        if (specificDates) setSpecificDateSlots(specificDates.map((s: any) => ({ ...s, date: new Date(s.date) })));
+        if (specificDates) {
+          const validSpecificDates = specificDates
+            .map((s: any) => ({ ...s, date: new Date(s.date) }))
+            .filter((s: any) => !isNaN(s.date.getTime()));
+          setSpecificDateSlots(validSpecificDates);
+        }
       } catch (error) {
         console.error('Error fetching availability:', error);
         // Use defaults
@@ -603,35 +608,38 @@ export function AvailabilityManagement() {
                     <div className="space-y-4">
                       {specificDateSlots
                         .sort((a, b) => a.date.getTime() - b.date.getTime())
-                        .map(slot => (
-                          <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="space-y-1">
-                              <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
-                              <div className="flex items-center gap-2">
-                                <Input
-                                  type="time"
-                                  value={slot.startTime}
-                                  onChange={(e) => handleSpecificDateSlotChange(slot.id, 'startTime', e.target.value)}
-                                  className="w-24 h-8"
-                                />
-                                <span>-</span>
-                                <Input
-                                  type="time"
-                                  value={slot.endTime}
-                                  onChange={(e) => handleSpecificDateSlotChange(slot.id, 'endTime', e.target.value)}
-                                  className="w-24 h-8"
-                                />
+                        .map(slot => {
+                          if (isNaN(slot.date.getTime())) return null;
+                          return (
+                            <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
+                              <div className="space-y-1">
+                                <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    type="time"
+                                    value={slot.startTime}
+                                    onChange={(e) => handleSpecificDateSlotChange(slot.id, 'startTime', e.target.value)}
+                                    className="w-24 h-8"
+                                  />
+                                  <span>-</span>
+                                  <Input
+                                    type="time"
+                                    value={slot.endTime}
+                                    onChange={(e) => handleSpecificDateSlotChange(slot.id, 'endTime', e.target.value)}
+                                    className="w-24 h-8"
+                                  />
+                                </div>
                               </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemoveSpecificDateSlot(slot.id)}
+                              >
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemoveSpecificDateSlot(slot.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        ))}
+                          );
+                        })}
                     </div>
                   )}
                 </CardContent>
