@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ChevronLeft, ChevronRight, Clock, Sparkles, Loader2, ArrowRight, MapPin, Calendar, Video, Package, PlayCircle } from "lucide-react";
-import { availabilityAPI, programsAPI, productsAPI } from "../utils/api";
+import { availabilityAPI, programsAPI, productsAPI, servicesAPI } from "../utils/api";
 
 interface TeamMember {
   id: string;
@@ -47,6 +47,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
+  const [allServices, setAllServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -73,11 +74,90 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
       try {
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
-        const response = await availabilityAPI.getAvailability(year, month);
 
-        // Handle the response safely
-        setAvailability(response?.availability || {});
-        setTeamMembers(response?.teamMembers || []);
+        // 1. Fetch base calendar availability
+        const response = await availabilityAPI.getAvailability(year, month);
+        let currentAvailability = response?.availability || {};
+        const members = response?.teamMembers || [];
+        setTeamMembers(members);
+
+        // 2. Fetch specific dates for each team member
+        if (members.length > 0 && allServices.length > 0) {
+          const specificDatesPromises = members.map((member: TeamMember) =>
+            availabilityAPI.get(member.id).then((res: any) => ({
+              memberId: member.id,
+              specificDates: res.specificDates || []
+            }))
+          );
+
+          const membersSpecificDates = await Promise.all(specificDatesPromises);
+
+          // 3. Merge specific dates into availability
+          membersSpecificDates.forEach(({ memberId, specificDates }) => {
+            const member = members.find((m: TeamMember) => m.id === memberId);
+            if (!member) return;
+
+            specificDates.forEach((dateSlot: any) => {
+              const slotDate = new Date(dateSlot.date);
+
+              // Check if date is in current month view
+              if (slotDate.getMonth() + 1 === month && slotDate.getFullYear() === year) {
+                const day = slotDate.getDate();
+                const time = dateSlot.startTime; // Assuming startTime is "HH:MM"
+
+                // Initialize day if not exists
+                if (!currentAvailability[day]) {
+                  currentAvailability[day] = {
+                    hasAvailability: true,
+                    slots: []
+                  };
+                }
+
+                // Find or create time slot
+                let slot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
+                if (!slot) {
+                  slot = {
+                    time: time,
+                    dateTime: dateSlot.date, // Or construct full ISO string
+                    available: true,
+                    services: []
+                  };
+                  currentAvailability[day].slots.push(slot);
+                  // Sort slots by time
+                  currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
+                    a.time.localeCompare(b.time)
+                  );
+                }
+
+                // Find service details
+                // If dateSlot has serviceId, use it. Otherwise, maybe it applies to all? 
+                // For now, let's assume if it has serviceId we add that service.
+                if (dateSlot.serviceId) {
+                  const serviceDetails = allServices.find(s => s.id === dateSlot.serviceId);
+                  if (serviceDetails) {
+                    // Check if service already in slot
+                    let serviceInSlot = slot.services.find((s: Service) => s.id === serviceDetails.id);
+                    if (!serviceInSlot) {
+                      serviceInSlot = {
+                        ...serviceDetails,
+                        basePrice: serviceDetails.price, // Map price to basePrice
+                        availableWith: []
+                      };
+                      slot.services.push(serviceInSlot);
+                    }
+
+                    // Add member to service
+                    if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
+                      serviceInSlot.availableWith.push(member);
+                    }
+                  }
+                }
+              }
+            });
+          });
+        }
+
+        setAvailability(currentAvailability);
       } catch (error) {
         console.error('Error fetching calendar availability:', error);
         // Set empty data instead of showing error
@@ -89,7 +169,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
     };
 
     fetchAvailability();
-  }, [currentDate]);
+  }, [currentDate, allServices]); // Add allServices dependency
 
   // Fetch Programs
   useEffect(() => {
@@ -127,6 +207,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
     };
 
     fetchProducts();
+  }, []);
+
+  // Fetch Services
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const { services } = await servicesAPI.getAll();
+        setAllServices(services || []);
+      } catch (error) {
+        console.error("Failed to fetch services:", error);
+      }
+    };
+    fetchServices();
   }, []);
 
   const goToPreviousMonth = () => {
