@@ -337,18 +337,28 @@ export const availabilityAPI = {
     return apiRequest('/availability/team-members');
   },
 
-  get: async (teamMemberId: string) => {
-    return apiRequest(`/availability/${teamMemberId}`);
+  get: async (teamMemberId: string, serviceId?: string) => {
+    const query = serviceId ? `?serviceId=${serviceId}` : '';
+    return apiRequest(`/availability/${teamMemberId}${query}`);
   },
 
   getAvailability: async (year: number, month: number) => {
     return apiRequest(`/availability/calendar?year=${year}&month=${month}`);
   },
 
-  updateSchedule: async (teamMemberId: string, schedule: any, accessToken: string) => {
+  updateSchedule: async (teamMemberId: string, schedule: any, accessToken: string, serviceId?: string) => {
     return apiRequest(`/availability/${teamMemberId}/schedule`, {
       method: 'PUT',
-      body: { schedule },
+      body: { schedule, serviceId },
+      requiresAuth: true,
+      accessToken,
+    });
+  },
+
+  updateSpecificDates: async (teamMemberId: string, dates: any[], accessToken: string, serviceId?: string) => {
+    return apiRequest(`/availability/${teamMemberId}/specific-dates`, {
+      method: 'POST',
+      body: { dates, serviceId },
       requiresAuth: true,
       accessToken,
     });

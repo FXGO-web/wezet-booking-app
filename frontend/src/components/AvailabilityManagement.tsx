@@ -32,8 +32,9 @@ import {
   Check,
   X,
   Loader2,
+  CalendarDays,
 } from "lucide-react";
-import { availabilityAPI } from "../utils/api";
+import { availabilityAPI, servicesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -57,6 +58,13 @@ interface WeeklySchedule {
   friday: DaySchedule;
   saturday: DaySchedule;
   sunday: DaySchedule;
+}
+
+interface SpecificDateSlot {
+  id: string;
+  date: Date;
+  startTime: string;
+  endTime: string;
 }
 
 interface BlockedDate {
@@ -106,9 +114,12 @@ const DEFAULT_SCHEDULE: WeeklySchedule = {
 export function AvailabilityManagement() {
   const { getAccessToken } = useAuth();
   const [selectedMember, setSelectedMember] = useState<string>('');
+  const [selectedService, setSelectedService] = useState<string>('all');
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [services, setServices] = useState<any[]>([]);
   const [weeklySchedule, setWeeklySchedule] = useState<WeeklySchedule>(DEFAULT_SCHEDULE);
   const [blockedDates, setBlockedDates] = useState<BlockedDate[]>([]);
+  const [specificDateSlots, setSpecificDateSlots] = useState<SpecificDateSlot[]>([]);
   const [selectedDates, setSelectedDates] = useState<Date[]>([]);
   const [isBlockDateModalOpen, setIsBlockDateModalOpen] = useState(false);
   const [blockReason, setBlockReason] = useState('');
@@ -141,6 +152,16 @@ export function AvailabilityManagement() {
     };
 
     fetchTeamMembers();
+
+    const fetchServices = async () => {
+      try {
+        const { services } = await servicesAPI.getAll();
+        setServices(services || []);
+      } catch (error) {
+        console.error('Error fetching services:', error);
+      }
+    };
+    fetchServices();
   }, []);
 
   // Fetch availability for selected member
@@ -150,9 +171,11 @@ export function AvailabilityManagement() {
     const fetchAvailability = async () => {
       setLoading(true);
       try {
-        const { schedule, blockedDates: blocked } = await availabilityAPI.get(selectedMember);
+        const serviceId = selectedService === 'all' ? undefined : selectedService;
+        const { schedule, blockedDates: blocked, specificDates } = await availabilityAPI.get(selectedMember, serviceId);
         if (schedule) setWeeklySchedule(schedule);
         if (blocked) setBlockedDates(blocked.map((b: any) => ({ ...b, date: new Date(b.date) })));
+        if (specificDates) setSpecificDateSlots(specificDates.map((s: any) => ({ ...s, date: new Date(s.date) })));
       } catch (error) {
         console.error('Error fetching availability:', error);
         // Use defaults
@@ -164,7 +187,7 @@ export function AvailabilityManagement() {
     };
 
     fetchAvailability();
-  }, [selectedMember]);
+  }, [selectedMember, selectedService]);
 
   const handleDayToggle = (day: keyof WeeklySchedule) => {
     setWeeklySchedule(prev => ({
@@ -221,7 +244,7 @@ export function AvailabilityManagement() {
 
   const handleCopyDay = (sourceDay: keyof WeeklySchedule) => {
     const sourceDaySchedule = weeklySchedule[sourceDay];
-    
+
     const updatedSchedule: WeeklySchedule = { ...weeklySchedule };
     DAYS_OF_WEEK.forEach(day => {
       if (day !== sourceDay) {
@@ -253,8 +276,20 @@ export function AvailabilityManagement() {
         return;
       }
 
-      await availabilityAPI.updateSchedule(selectedMember, weeklySchedule, accessToken);
-      toast.success('Weekly schedule saved successfully!');
+      const serviceId = selectedService === 'all' ? undefined : selectedService;
+      await availabilityAPI.updateSchedule(selectedMember, weeklySchedule, accessToken, serviceId);
+
+      // Also save specific dates if any
+      if (specificDateSlots.length > 0) {
+        await availabilityAPI.updateSpecificDates(
+          selectedMember,
+          specificDateSlots.map(s => ({ ...s, date: s.date.toISOString() })),
+          accessToken,
+          serviceId
+        );
+      }
+
+      toast.success('Availability saved successfully!');
     } catch (error: any) {
       console.error('Error saving schedule:', error);
       toast.error('Failed to save schedule');
@@ -341,6 +376,25 @@ export function AvailabilityManagement() {
     }
   };
 
+  const handleAddSpecificDateSlot = (date: Date) => {
+    const newSlot: SpecificDateSlot = {
+      id: Date.now().toString(),
+      date,
+      startTime: '09:00',
+      endTime: '10:00',
+    };
+    setSpecificDateSlots(prev => [...prev, newSlot]);
+    toast.success(`Added slot for ${format(date, 'MMM d')}`);
+  };
+
+  const handleRemoveSpecificDateSlot = (id: string) => {
+    setSpecificDateSlots(prev => prev.filter(s => s.id !== id));
+  };
+
+  const handleSpecificDateSlotChange = (id: string, field: 'startTime' | 'endTime', value: string) => {
+    setSpecificDateSlots(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
+  };
+
   if (loading && !selectedMember) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -396,12 +450,41 @@ export function AvailabilityManagement() {
           </CardContent>
         </Card>
 
+        {/* Service Selector */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="space-y-2">
+              <Label>Select Service (Optional)</Label>
+              <Select value={selectedService} onValueChange={setSelectedService}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All Services (Global Availability)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Services (Global Availability)</SelectItem>
+                  {services.map(service => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-sm text-muted-foreground">
+                Set availability specific to a service, or leave as "All Services" for general availability.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Tabs */}
         <Tabs defaultValue="weekly" className="space-y-6">
           <TabsList>
             <TabsTrigger value="weekly">
               <Clock className="h-4 w-4 mr-2" />
               Weekly Schedule
+            </TabsTrigger>
+            <TabsTrigger value="specific">
+              <CalendarDays className="h-4 w-4 mr-2" />
+              Specific Dates
             </TabsTrigger>
             <TabsTrigger value="blocked">
               <CalendarIcon className="h-4 w-4 mr-2" />
@@ -489,6 +572,73 @@ export function AvailabilityManagement() {
             </Card>
           </TabsContent>
 
+          {/* Specific Dates Tab */}
+          <TabsContent value="specific" className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Select Dates</CardTitle>
+                  <DialogDescription>Click a date to add a specific time slot</DialogDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <Calendar
+                    mode="single"
+                    onSelect={(date: Date | undefined) => date && handleAddSpecificDateSlot(date)}
+                    className="rounded-md border"
+                    disabled={(date: Date) => date < new Date()}
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Specific Date Slots</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {specificDateSlots.length === 0 ? (
+                    <p className="text-muted-foreground text-center py-8">
+                      No specific slots added. Select a date from the calendar.
+                    </p>
+                  ) : (
+                    <div className="space-y-4">
+                      {specificDateSlots
+                        .sort((a, b) => a.date.getTime() - b.date.getTime())
+                        .map(slot => (
+                          <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="space-y-1">
+                              <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="time"
+                                  value={slot.startTime}
+                                  onChange={(e) => handleSpecificDateSlotChange(slot.id, 'startTime', e.target.value)}
+                                  className="w-24 h-8"
+                                />
+                                <span>-</span>
+                                <Input
+                                  type="time"
+                                  value={slot.endTime}
+                                  onChange={(e) => handleSpecificDateSlotChange(slot.id, 'endTime', e.target.value)}
+                                  className="w-24 h-8"
+                                />
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveSpecificDateSlot(slot.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
           {/* Blocked Dates Tab */}
           <TabsContent value="blocked" className="space-y-4">
             <Card>
@@ -567,9 +717,9 @@ export function AvailabilityManagement() {
               <Calendar
                 mode="multiple"
                 selected={selectedDates}
-                onSelect={(dates) => setSelectedDates(dates || [])}
+                onSelect={(dates: Date[] | undefined) => setSelectedDates(dates || [])}
                 className="rounded-md border"
-                disabled={(date) => date < new Date()}
+                disabled={(date: Date) => date < new Date()}
               />
             </div>
 
