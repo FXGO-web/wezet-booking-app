@@ -285,14 +285,14 @@ export const statsAPI = {
 // ============================================
 
 export const settingsAPI = {
-  getSettings: async (accessToken: string) => {
+  get: async (accessToken: string) => {
     return apiRequest('/settings', {
       requiresAuth: true,
       accessToken,
     });
   },
 
-  updateSettings: async (accessToken: string, settings: any) => {
+  update: async (settings: any, accessToken: string) => {
     return apiRequest('/settings', {
       method: 'PUT',
       body: settings,
