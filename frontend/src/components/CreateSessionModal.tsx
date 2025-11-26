@@ -52,9 +52,13 @@ const SERVICE_PRICES: Record<string, number> = {
 };
 
 export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalProps) {
+  const [title, setTitle] = useState("");
+  const [duration, setDuration] = useState("");
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [serviceType, setServiceType] = useState("");
   const [location, setLocation] = useState("");
+  const [newLocation, setNewLocation] = useState("");
+  const [isCreatingLocation, setIsCreatingLocation] = useState(false);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [capacity, setCapacity] = useState("1");
@@ -72,6 +76,16 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
     setBasePrice(SERVICE_PRICES[value]?.toString() || "");
   };
 
+  const handleLocationChange = (value: string) => {
+    if (value === "create_new") {
+      setIsCreatingLocation(true);
+      setLocation("");
+    } else {
+      setIsCreatingLocation(false);
+      setLocation(value);
+    }
+  };
+
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
@@ -81,8 +95,10 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
   const handleCreateSession = () => {
     // Handle session creation logic here
     console.log({
+      title,
+      duration,
       serviceType,
-      location,
+      location: isCreatingLocation ? newLocation : location,
       date,
       startTime,
       endTime,
@@ -94,7 +110,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
       isRecurring,
       isPrivate,
     });
-    
+
     // Reset form and close modal
     onOpenChange(false);
   };
@@ -113,7 +129,17 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
           {/* Session Details */}
           <div className="space-y-4">
             <h3 className="text-lg">Session Details</h3>
-            
+
+            <div className="space-y-2">
+              <Label htmlFor="title">Title *</Label>
+              <Input
+                id="title"
+                placeholder="e.g. Morning Breathwork Flow"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+              />
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="service-type">Service Type *</Label>
               <Select value={serviceType} onValueChange={handleServiceTypeChange}>
@@ -128,6 +154,18 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="duration">Duration (minutes) *</Label>
+              <Input
+                id="duration"
+                type="number"
+                placeholder="e.g. 60"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                min="1"
+              />
             </div>
 
             <div className="space-y-2">
@@ -165,10 +203,13 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
 
           {/* Schedule */}
           <div className="space-y-4">
-            <h3 className="text-lg">Schedule</h3>
-            
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg">Schedule</h3>
+              <span className="text-xs text-muted-foreground">Optional - can be set later</span>
+            </div>
+
             <div className="space-y-2">
-              <Label>Date *</Label>
+              <Label>Date</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -192,7 +233,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="start-time">Start Time *</Label>
+                <Label htmlFor="start-time">Start Time</Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -205,7 +246,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="end-time">End Time *</Label>
+                <Label htmlFor="end-time">End Time</Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -225,10 +266,10 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
           {/* Location */}
           <div className="space-y-4">
             <h3 className="text-lg">Location</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="location">Location *</Label>
-              <Select value={location} onValueChange={setLocation}>
+              <Select value={isCreatingLocation ? "create_new" : location} onValueChange={handleLocationChange}>
                 <SelectTrigger id="location">
                   <SelectValue placeholder="Select location" />
                 </SelectTrigger>
@@ -238,9 +279,26 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
                       {loc.label}
                     </SelectItem>
                   ))}
+                  <Separator className="my-2" />
+                  <SelectItem value="create_new" className="font-medium text-primary">
+                    + Create new location
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {isCreatingLocation && (
+              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                <Label htmlFor="new-location">New Location Name</Label>
+                <Input
+                  id="new-location"
+                  placeholder="e.g. Main Hall, Room 303"
+                  value={newLocation}
+                  onChange={(e) => setNewLocation(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            )}
 
             {location === "online" && (
               <div className="space-y-2">
@@ -261,7 +319,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
           {/* Capacity */}
           <div className="space-y-4">
             <h3 className="text-lg">Capacity</h3>
-            
+
             <div className="space-y-2">
               <Label htmlFor="capacity">Maximum Participants</Label>
               <Input
@@ -278,7 +336,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
               <Checkbox
                 id="unlimited"
                 checked={unlimitedCapacity}
-                onCheckedChange={(checked) => setUnlimitedCapacity(checked as boolean)}
+                onCheckedChange={(checked: boolean) => setUnlimitedCapacity(checked)}
               />
               <Label
                 htmlFor="unlimited"
@@ -294,7 +352,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
           {/* Pricing */}
           <div className="space-y-4">
             <h3 className="text-lg">Pricing</h3>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="base-price">Base Price (DKK)</Label>
@@ -327,13 +385,13 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
           {/* Additional Options */}
           <div className="space-y-4">
             <h3 className="text-lg">Additional Options</h3>
-            
+
             <div className="space-y-3">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="recurring"
                   checked={isRecurring}
-                  onCheckedChange={(checked) => setIsRecurring(checked as boolean)}
+                  onCheckedChange={(checked: boolean) => setIsRecurring(checked)}
                 />
                 <Label htmlFor="recurring" className="text-sm cursor-pointer">
                   Recurring session (repeat weekly)
@@ -344,7 +402,7 @@ export function CreateSessionModal({ open, onOpenChange }: CreateSessionModalPro
                 <Checkbox
                   id="private"
                   checked={isPrivate}
-                  onCheckedChange={(checked) => setIsPrivate(checked as boolean)}
+                  onCheckedChange={(checked: boolean) => setIsPrivate(checked)}
                 />
                 <Label htmlFor="private" className="text-sm cursor-pointer">
                   Private/Hidden (not visible in public calendar)
