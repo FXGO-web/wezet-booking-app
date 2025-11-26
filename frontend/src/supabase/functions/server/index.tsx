@@ -107,7 +107,7 @@ app.get("/make-server-e0d9c111/team-members", async (c) => {
     }
     if (search) {
       const searchLower = search.toLowerCase();
-      teamMembers = teamMembers.filter((m: any) => 
+      teamMembers = teamMembers.filter((m: any) =>
         m && (
           m.name?.toLowerCase().includes(searchLower) ||
           m.email?.toLowerCase().includes(searchLower) ||
@@ -176,7 +176,7 @@ app.put("/make-server-e0d9c111/team-members/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    
+
     const existing = await kv.get(`team-member:${id}`);
     if (!existing) {
       return c.json({ error: 'Team member not found' }, 404);
@@ -227,7 +227,7 @@ app.get("/make-server-e0d9c111/services", async (c) => {
 
     if (search) {
       const searchLower = search.toLowerCase();
-      services = services.filter((s: any) => 
+      services = services.filter((s: any) =>
         s && (
           s.name?.toLowerCase().includes(searchLower) ||
           s.description?.toLowerCase().includes(searchLower)
@@ -284,7 +284,7 @@ app.put("/make-server-e0d9c111/services/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    
+
     const existing = await kv.get(`service:${id}`);
     if (!existing) {
       return c.json({ error: 'Service not found' }, 404);
@@ -335,7 +335,7 @@ app.get("/make-server-e0d9c111/locations", async (c) => {
 
     if (search) {
       const searchLower = search.toLowerCase();
-      locations = locations.filter((l: any) => 
+      locations = locations.filter((l: any) =>
         l && (
           l.name?.toLowerCase().includes(searchLower) ||
           l.address?.toLowerCase().includes(searchLower)
@@ -375,7 +375,7 @@ app.put("/make-server-e0d9c111/locations/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    
+
     const existing = await kv.get(`location:${id}`);
     if (!existing) {
       return c.json({ error: 'Location not found' }, 404);
@@ -424,7 +424,7 @@ app.get("/make-server-e0d9c111/bookings", async (c) => {
 
     if (search) {
       const searchLower = search.toLowerCase();
-      bookings = bookings.filter((b: any) => 
+      bookings = bookings.filter((b: any) =>
         b && (
           b.clientName?.toLowerCase().includes(searchLower) ||
           b.clientEmail?.toLowerCase().includes(searchLower)
@@ -470,7 +470,7 @@ app.post("/make-server-e0d9c111/bookings", verifyAuth, async (c) => {
     };
 
     await kv.set(`booking:${id}`, booking);
-    
+
     // Send email notification
     try {
       await sendBookingEmail('BOOKING_CONFIRMATION', {
@@ -488,7 +488,7 @@ app.post("/make-server-e0d9c111/bookings", verifyAuth, async (c) => {
     } catch (emailError) {
       console.log('Email notification failed (non-critical):', emailError);
     }
-    
+
     return c.json({ booking }, 201);
   } catch (error) {
     console.log('Error creating booking:', error);
@@ -501,7 +501,7 @@ app.put("/make-server-e0d9c111/bookings/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    
+
     const existing = await kv.get(`booking:${id}`);
     if (!existing) {
       return c.json({ error: 'Booking not found' }, 404);
@@ -515,7 +515,7 @@ app.put("/make-server-e0d9c111/bookings/:id", verifyAuth, async (c) => {
     };
 
     await kv.set(`booking:${id}`, booking);
-    
+
     // Send email if status changed to cancelled
     if (existing.status !== 'canceled' && booking.status === 'canceled') {
       try {
@@ -535,7 +535,7 @@ app.put("/make-server-e0d9c111/bookings/:id", verifyAuth, async (c) => {
         console.log('Email notification failed (non-critical):', emailError);
       }
     }
-    
+
     return c.json({ booking });
   } catch (error) {
     console.log('Error updating booking:', error);
@@ -561,7 +561,7 @@ app.get("/make-server-e0d9c111/digital-content", async (c) => {
 
     if (search) {
       const searchLower = search.toLowerCase();
-      content = content.filter((ct: any) => 
+      content = content.filter((ct: any) =>
         ct && (
           ct.title?.toLowerCase().includes(searchLower) ||
           ct.description?.toLowerCase().includes(searchLower)
@@ -601,7 +601,7 @@ app.put("/make-server-e0d9c111/digital-content/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const body = await c.req.json();
-    
+
     const existing = await kv.get(`content:${id}`);
     if (!existing) {
       return c.json({ error: 'Content not found' }, 404);
@@ -647,7 +647,7 @@ app.get("/make-server-e0d9c111/settings", verifyAuth, async (c) => {
 app.put("/make-server-e0d9c111/settings", verifyAuth, async (c) => {
   try {
     const body = await c.req.json();
-    
+
     // Get existing settings
     const existingSettings = await kv.get('platform_settings') || {
       defaultCurrency: 'EUR',
@@ -655,7 +655,7 @@ app.put("/make-server-e0d9c111/settings", verifyAuth, async (c) => {
       taxRate: 8.5,
       platformName: 'WEZET',
     };
-    
+
     // Merge with new settings
     const settings = {
       ...existingSettings,
@@ -699,6 +699,115 @@ app.get("/make-server-e0d9c111/stats", verifyAuth, async (c) => {
 });
 
 // ============================================
+// PROGRAMS & RETREATS ROUTES
+// ============================================
+
+// Get all programs
+app.get("/make-server-e0d9c111/programs", async (c) => {
+  try {
+    const status = c.req.query('status');
+    const search = c.req.query('search');
+
+    let programs = await kv.getByPrefix('program:');
+
+    if (status) {
+      programs = programs.filter((p: any) => p && p.status === status);
+    }
+
+    if (search) {
+      const searchLower = search.toLowerCase();
+      programs = programs.filter((p: any) =>
+        p && (
+          p.title?.toLowerCase().includes(searchLower) ||
+          p.description?.toLowerCase().includes(searchLower) ||
+          p.location?.toLowerCase().includes(searchLower)
+        )
+      );
+    }
+
+    return c.json({ programs });
+  } catch (error) {
+    console.log('Error fetching programs:', error);
+    return c.json({ error: 'Failed to fetch programs' }, 500);
+  }
+});
+
+// Get single program
+app.get("/make-server-e0d9c111/programs/:id", async (c) => {
+  try {
+    const id = c.req.param('id');
+    const program = await kv.get(`program:${id}`);
+
+    if (!program) {
+      return c.json({ error: 'Program not found' }, 404);
+    }
+
+    return c.json({ program });
+  } catch (error) {
+    console.log('Error fetching program:', error);
+    return c.json({ error: 'Failed to fetch program' }, 500);
+  }
+});
+
+// Create program
+app.post("/make-server-e0d9c111/programs", verifyAuth, async (c) => {
+  try {
+    const body = await c.req.json();
+    const id = crypto.randomUUID();
+    const program = {
+      id,
+      ...body,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(`program:${id}`, program);
+    return c.json({ program }, 201);
+  } catch (error) {
+    console.log('Error creating program:', error);
+    return c.json({ error: 'Failed to create program' }, 500);
+  }
+});
+
+// Update program
+app.put("/make-server-e0d9c111/programs/:id", verifyAuth, async (c) => {
+  try {
+    const id = c.req.param('id');
+    const body = await c.req.json();
+
+    const existing = await kv.get(`program:${id}`);
+    if (!existing) {
+      return c.json({ error: 'Program not found' }, 404);
+    }
+
+    const program = {
+      ...existing,
+      ...body,
+      id,
+      updatedAt: new Date().toISOString(),
+    };
+
+    await kv.set(`program:${id}`, program);
+    return c.json({ program });
+  } catch (error) {
+    console.log('Error updating program:', error);
+    return c.json({ error: 'Failed to update program' }, 500);
+  }
+});
+
+// Delete program
+app.delete("/make-server-e0d9c111/programs/:id", verifyAuth, async (c) => {
+  try {
+    const id = c.req.param('id');
+    await kv.del(`program:${id}`);
+    return c.json({ success: true });
+  } catch (error) {
+    console.log('Error deleting program:', error);
+    return c.json({ error: 'Failed to delete program' }, 500);
+  }
+});
+
+// ============================================
 // CALENDAR AVAILABILITY ROUTES
 // ============================================
 
@@ -722,8 +831,8 @@ app.get("/make-server-e0d9c111/calendar/availability", async (c) => {
       if (!booking.date) return false;
       try {
         const bookingDate = new Date(booking.date);
-        return bookingDate.getFullYear() === year && 
-               bookingDate.getMonth() + 1 === month;
+        return bookingDate.getFullYear() === year &&
+          bookingDate.getMonth() + 1 === month;
       } catch (e) {
         console.log('Invalid booking date:', booking.date);
         return false;
@@ -753,16 +862,16 @@ app.get("/make-server-e0d9c111/calendar/availability", async (c) => {
         if (!b.date || typeof b.date !== 'string') return false;
         return b.date.startsWith(dateKey);
       });
-      
+
       // Define standard time slots (9 AM to 6 PM)
       const timeSlots = [
-        '09:00', '10:00', '11:00', '12:00', 
+        '09:00', '10:00', '11:00', '12:00',
         '13:00', '14:00', '15:00', '16:00', '17:00', '18:00'
       ];
 
       const availableSlots = timeSlots.map(time => {
         const slotDateTime = `${dateKey}T${time}:00`;
-        const isBooked = dayBookings.some((b: any) => 
+        const isBooked = dayBookings.some((b: any) =>
           b.date && typeof b.date === 'string' && b.date.includes(time)
         );
 
@@ -783,7 +892,7 @@ app.get("/make-server-e0d9c111/calendar/availability", async (c) => {
 
     console.log('Calendar availability generated successfully');
 
-    return c.json({ 
+    return c.json({
       availability,
       teamMembers: teamMembers.map((tm: any) => ({
         id: tm.id,
@@ -807,7 +916,7 @@ app.get("/make-server-e0d9c111/notifications", verifyAuth, async (c) => {
   try {
     const userId = c.get('userId');
     const userEmail = c.get('userEmail');
-    
+
     const notifications = await getNotifications(userEmail);
     return c.json({ notifications });
   } catch (error) {
@@ -821,11 +930,11 @@ app.put("/make-server-e0d9c111/notifications/:id", verifyAuth, async (c) => {
   try {
     const id = c.req.param('id');
     const success = await markNotificationAsRead(id);
-    
+
     if (!success) {
       return c.json({ error: 'Notification not found' }, 404);
     }
-    
+
     return c.json({ success: true });
   } catch (error) {
     console.log('Error marking notification as read:', error);
@@ -840,7 +949,7 @@ app.put("/make-server-e0d9c111/notifications/:id", verifyAuth, async (c) => {
 app.get("/make-server-e0d9c111/analytics/overview", async (c) => {
   try {
     const timeRange = c.req.query('timeRange') || '30d';
-    
+
     // Calculate date range
     const now = new Date();
     const daysBack = timeRange === '7d' ? 7 : timeRange === '90d' ? 90 : timeRange === '1y' ? 365 : 30;
@@ -1049,7 +1158,7 @@ app.get("/make-server-e0d9c111/availability/team-members", async (c) => {
   try {
     const allMembers = await kv.getByPrefix('team-member:');
     const activeMembers = allMembers.filter((m: any) => m.status === 'active');
-    
+
     return c.json({
       success: true,
       members: activeMembers.map((m: any) => ({
@@ -1089,8 +1198,8 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
     const monthBookings = allBookings.filter((b: any) => {
       if (!b || !b.date) return false;
       const bookingDate = new Date(b.date);
-      return bookingDate.getMonth() + 1 === month && 
-             bookingDate.getFullYear() === year;
+      return bookingDate.getMonth() + 1 === month &&
+        bookingDate.getFullYear() === year;
     });
 
     console.log(`Found ${monthBookings.length} bookings for this month`);
@@ -1104,7 +1213,7 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      
+
       // Skip past days (before day 5 for demo purposes)
       if (day < 5) {
         availability[day] = {
@@ -1113,28 +1222,28 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
         };
         continue;
       }
-      
+
       // Build slots with available services and team members
       const slots = timeSlots.map(time => {
         const dateTime = `${dateStr}T${time}:00`;
-        
+
         // Check which team members are available at this time
         const bookedAtThisTime = monthBookings.filter((b: any) => {
           if (!b || !b.date || !b.time) return false;
           return b.date === dateStr && b.time === time;
         });
-        
+
         const bookedMemberIds = bookedAtThisTime.map((b: any) => b.teamMemberId).filter(Boolean);
-        const availableMembers = activeMembers.filter((m: any) => 
+        const availableMembers = activeMembers.filter((m: any) =>
           m && m.id && !bookedMemberIds.includes(m.id)
         );
-        
+
         // For each service, show which members can provide it
         const availableServicesForSlot: any[] = [];
-        
+
         for (const service of activeServices) {
           if (!service || !service.id) continue;
-          
+
           // For demo: show each service with up to 2 available members
           const membersForService = availableMembers
             .slice(0, 2)
@@ -1143,7 +1252,7 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
               name: m.name || 'Unknown',
               avatarUrl: m.avatarUrl || null,
             }));
-          
+
           if (membersForService.length > 0) {
             availableServicesForSlot.push({
               id: service.id,
@@ -1164,9 +1273,9 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
           services: availableServicesForSlot,
         };
       });
-      
+
       const hasAvailability = slots.some(slot => slot.available);
-      
+
       availability[day] = {
         hasAvailability,
         slots,
@@ -1198,11 +1307,11 @@ app.get("/make-server-e0d9c111/availability/calendar", async (c) => {
 app.get("/make-server-e0d9c111/availability/:teamMemberId", async (c) => {
   try {
     const teamMemberId = c.req.param('teamMemberId');
-    
+
     // Get weekly schedule
     const scheduleKey = `availability:schedule:${teamMemberId}`;
     const schedule = await kv.get(scheduleKey);
-    
+
     // Get blocked dates
     const blockedDatesKey = `availability:blocked:${teamMemberId}`;
     const blockedDates = await kv.get(blockedDatesKey) || [];
@@ -1253,7 +1362,7 @@ app.post("/make-server-e0d9c111/availability/:teamMemberId/block", verifyAuth, a
 
     const blockedDatesKey = `availability:blocked:${teamMemberId}`;
     const existingBlocked = await kv.get(blockedDatesKey) || [];
-    
+
     // Add new blocked dates
     const updatedBlocked = [...existingBlocked, ...dates.map((d: any) => ({
       id: `${Date.now()}-${Math.random()}`,
@@ -1283,7 +1392,7 @@ app.delete("/make-server-e0d9c111/availability/:teamMemberId/unblock/:dateId", v
 
     const blockedDatesKey = `availability:blocked:${teamMemberId}`;
     const existingBlocked = await kv.get(blockedDatesKey) || [];
-    
+
     // Remove the specified blocked date
     const updatedBlocked = existingBlocked.filter((d: any) => d.id !== dateId);
 
@@ -1328,7 +1437,7 @@ app.get("/make-server-e0d9c111/availability/:teamMemberId/slots", async (c) => {
     // Get blocked dates
     const blockedDatesKey = `availability:blocked:${teamMemberId}`;
     const blockedDates = await kv.get(blockedDatesKey) || [];
-    
+
     const isBlocked = blockedDates.some((b: any) => {
       const blockedDate = new Date(b.date);
       return blockedDate.toDateString() === requestDate.toDateString();
@@ -1344,8 +1453,8 @@ app.get("/make-server-e0d9c111/availability/:teamMemberId/slots", async (c) => {
 
     // Get existing bookings for this date
     const allBookings = await kv.getByPrefix('booking:');
-    const dateBookings = allBookings.filter((b: any) => 
-      b.teamMemberId === teamMemberId && 
+    const dateBookings = allBookings.filter((b: any) =>
+      b.teamMemberId === teamMemberId &&
       b.date === date &&
       b.status !== 'cancelled'
     );
@@ -1358,7 +1467,7 @@ app.get("/make-server-e0d9c111/availability/:teamMemberId/slots", async (c) => {
       .flatMap((slot: any) => {
         const slots = [];
         let currentTime = slot.startTime;
-        
+
         // Generate 30-minute slots
         while (currentTime < slot.endTime) {
           if (!bookedTimes.includes(currentTime)) {
@@ -1371,7 +1480,7 @@ app.get("/make-server-e0d9c111/availability/:teamMemberId/slots", async (c) => {
           const newMinutes = totalMinutes % 60;
           currentTime = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}`;
         }
-        
+
         return slots;
       });
 

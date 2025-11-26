@@ -375,3 +375,80 @@ export const availabilityAPI = {
     return apiRequest(`/availability/${teamMemberId}/slots?date=${date}`);
   },
 };
+
+// ============================================
+// PROGRAMS API
+// ============================================
+
+export const programsAPI = {
+  getAll: async (filters?: { status?: string; search?: string }) => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.search) params.append('search', filters.search);
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    return apiRequest(`/programs${query}`);
+  },
+
+  getById: async (id: string) => {
+    return apiRequest(`/programs/${id}`);
+  },
+
+  create: async (program: any, accessToken: string) => {
+    return apiRequest('/programs', {
+      method: 'POST',
+      body: program,
+      requiresAuth: true,
+      accessToken,
+    });
+  },
+
+  update: async (id: string, updates: any, accessToken: string) => {
+    return apiRequest(`/programs/${id}`, {
+      method: 'PUT',
+      body: updates,
+      requiresAuth: true,
+      accessToken,
+    });
+  },
+
+  delete: async (id: string, accessToken: string) => {
+    return apiRequest(`/programs/${id}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+      accessToken,
+    });
+  },
+};
+
+// ============================================
+// PRODUCTS API (Alias for Digital Content)
+// ============================================
+
+export const productsAPI = {
+  getAll: async (filters?: { type?: string; search?: string }) => {
+    return digitalContentAPI.getAll(filters);
+  },
+
+  getById: async (id: string) => {
+    // Assuming digitalContentAPI doesn't have getById yet, let's add it or use generic request
+    return apiRequest(`/digital-content/${id}`);
+  },
+
+  create: async (product: any, accessToken: string) => {
+    return digitalContentAPI.create(product, accessToken);
+  },
+
+  update: async (id: string, updates: any, accessToken: string) => {
+    return digitalContentAPI.update(id, updates, accessToken);
+  },
+
+  delete: async (id: string, accessToken: string) => {
+    // Assuming digitalContentAPI doesn't have delete yet
+    return apiRequest(`/digital-content/${id}`, {
+      method: 'DELETE',
+      requiresAuth: true,
+      accessToken,
+    });
+  },
+};
