@@ -1,9 +1,10 @@
 import { projectId, publicAnonKey, edgeFunctionName, supabaseUrl } from './supabase/info';
 
 // Supabase edge functions mount at /functions/v1/<function-name>.
-// Our Hono app also namespaces routes under /<function-name>/..., so we need both segments.
+// Our Hono app also namespaces routes under /<function-name>/..., so we keep the function prefix for availability routes below.
 const baseHost = supabaseUrl || `https://${projectId}.supabase.co`;
 const API_BASE_URL = `${baseHost}/functions/v1/${edgeFunctionName}`;
+const FUNCTION_PREFIX = `/${edgeFunctionName}`;
 
 interface RequestOptions {
   method?: string;
@@ -346,7 +347,7 @@ export const availabilityAPI = {
 
   get: async (teamMemberId: string, serviceId?: string) => {
     const query = serviceId ? `?serviceId=${serviceId}` : '';
-    return apiRequest(`/availability/${teamMemberId}${query}`);
+    return apiRequest(`${FUNCTION_PREFIX}/availability/${teamMemberId}${query}`);
   },
 
   getAvailability: async (year: number, month: number) => {
@@ -354,7 +355,7 @@ export const availabilityAPI = {
   },
 
   updateSchedule: async (teamMemberId: string, schedule: any, accessToken: string, serviceId?: string) => {
-    return apiRequest(`/availability/${teamMemberId}/schedule`, {
+    return apiRequest(`${FUNCTION_PREFIX}/availability/${teamMemberId}/schedule`, {
       method: 'PUT',
       body: { schedule, serviceId },
       requiresAuth: true,
@@ -363,7 +364,7 @@ export const availabilityAPI = {
   },
 
   updateSpecificDates: async (teamMemberId: string, dates: any[], accessToken: string, serviceId?: string) => {
-    return apiRequest(`/availability/${teamMemberId}/specific-dates`, {
+    return apiRequest(`${FUNCTION_PREFIX}/availability/${teamMemberId}/specific-dates`, {
       method: 'POST',
       body: { dates, serviceId },
       requiresAuth: true,
@@ -372,7 +373,7 @@ export const availabilityAPI = {
   },
 
   blockDates: async (teamMemberId: string, dates: any[], accessToken: string) => {
-    return apiRequest(`/availability/${teamMemberId}/block`, {
+    return apiRequest(`${FUNCTION_PREFIX}/availability/${teamMemberId}/block`, {
       method: 'POST',
       body: { dates },
       requiresAuth: true,
