@@ -195,6 +195,10 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
                   <SelectContent>
                     <SelectItem value="Admin">Admin</SelectItem>
                     <SelectItem value="Team Member">Team Member</SelectItem>
+                    <SelectItem value="Teacher">Teacher</SelectItem>
+                    <SelectItem value="Facilitator">Facilitator</SelectItem>
+                    <SelectItem value="Client">Client</SelectItem>
+                    <SelectItem value="Subscriber">Subscriber</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
