@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -583,7 +583,7 @@ export function AvailabilityManagement() {
               <Card>
                 <CardHeader>
                   <CardTitle>Select Dates</CardTitle>
-                  <DialogDescription>Click a date to add a specific time slot</DialogDescription>
+                  <CardDescription>Click a date to add a specific time slot</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center">
                   <Calendar
