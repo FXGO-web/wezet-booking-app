@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { Plus, Edit, Eye, Loader2, Download } from "lucide-react";
+import { Plus, Edit, Eye, Loader2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "./ui/card";
 import { teamMembersAPI } from "../utils/api";
@@ -163,6 +163,16 @@ export function TeamManagement() {
           >
             <Edit className="h-4 w-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleDeleteClick(row);
+            }}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </div>
       ),
     },
@@ -207,6 +217,25 @@ export function TeamManagement() {
   const handleEditClick = (member: TeamMember) => {
     setSelectedMember(member);
     setIsModalOpen(true);
+  };
+
+  const handleDeleteClick = async (member: TeamMember) => {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      toast.error("You must be signed in to delete a team member.");
+      return;
+    }
+    const confirmDelete = window.confirm(`Delete ${member.name}?`);
+    if (!confirmDelete) return;
+
+    try {
+      await teamMembersAPI.delete(member.id, accessToken);
+      toast.success("Team member deleted");
+      fetchTeamMembers();
+    } catch (error) {
+      console.error("Failed to delete team member:", error);
+      toast.error("Failed to delete team member");
+    }
   };
 
   const handleModalSuccess = () => {
