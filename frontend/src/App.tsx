@@ -185,6 +185,10 @@ function AppContent() {
             setBookingPreselection(bookingData);
             setActiveView("booking");
           }}
+          onNavigateToProgram={(programId) => {
+            console.log("Navigating to program:", programId);
+            setActiveView("retreat-detail");
+          }}
         />
       </div>
     );

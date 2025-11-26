@@ -37,9 +37,10 @@ interface PublicCalendarProps {
     preselectedTeamMember?: string;
     preselectedService?: string;
   }) => void;
+  onNavigateToProgram?: (programId: string) => void;
 }
 
-export function PublicCalendar({ onNavigateToBooking }: PublicCalendarProps) {
+export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: PublicCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1)); // November 2025
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
@@ -187,115 +188,7 @@ export function PublicCalendar({ onNavigateToBooking }: PublicCalendarProps) {
           </p>
         </div>
 
-        {/* 1. Programs Section */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2>Programs & Retreats</h2>
-            <p className="text-muted-foreground">
-              Join our transformative multi-day experiences
-            </p>
-          </div>
-
-          {loadingPrograms ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : programs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programs.map((program) => (
-                <Card key={program.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="pb-4">
-                    <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                      <MapPin className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <CardTitle className="flex items-start justify-between text-lg">
-                      <span>{program.title}</span>
-                      <Badge variant="secondary" className="font-normal">
-                        {program.status || 'Open'}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'}
-                          {program.endDate ? ` - ${new Date(program.endDate).toLocaleDateString()}` : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{program.location || 'Location TBD'}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-              No programs available at the moment.
-            </div>
-          )}
-        </div>
-
-        {/* 2. Products Section */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2>Products & On Demand</h2>
-            <p className="text-muted-foreground">
-              Access digital content and video courses anytime
-            </p>
-          </div>
-
-          {loadingProducts ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <Card key={product.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
-                  <CardHeader className="pb-4">
-                    <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
-                      {product.type === 'video_course' ? (
-                        <Video className="h-10 w-10 text-muted-foreground" />
-                      ) : (
-                        <Package className="h-10 w-10 text-muted-foreground" />
-                      )}
-                      <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
-                        {product.type === 'video_course' ? (
-                          <PlayCircle className="h-3 w-3" />
-                        ) : (
-                          <Package className="h-3 w-3" />
-                        )}
-                        <span>{product.type === 'video_course' ? 'Video Course' : 'Digital Product'}</span>
-                      </div>
-                    </div>
-                    <CardTitle className="text-lg">{product.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <p className="line-clamp-2">{product.description || 'No description'}</p>
-                      <div className="flex items-center gap-2 pt-2">
-                        <span className="font-medium text-foreground">€{product.price || 0}</span>
-                        <span>•</span>
-                        <span>{product.itemCount || 0} Items</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-              No products available at the moment.
-            </div>
-          )}
-        </div>
-
-        {/* 3. Available Sessions (Calendar) */}
+        {/* 1. Available Sessions (Calendar) */}
         <div className="space-y-6">
           <div className="space-y-2">
             <h2>Available Sessions</h2>
@@ -532,6 +425,118 @@ export function PublicCalendar({ onNavigateToBooking }: PublicCalendarProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* 2. Programs Section */}
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2>Programs & Retreats</h2>
+            <p className="text-muted-foreground">
+              Join our transformative multi-day experiences
+            </p>
+          </div>
+
+          {loadingPrograms ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : programs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {programs.map((program) => (
+                <Card
+                  key={program.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => onNavigateToProgram && onNavigateToProgram(program.id)}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
+                      <MapPin className="h-10 w-10 text-muted-foreground" />
+                    </div>
+                    <CardTitle className="flex items-start justify-between text-lg">
+                      <span>{program.title}</span>
+                      <Badge variant="secondary" className="font-normal">
+                        {program.status || 'Open'}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'}
+                          {program.endDate ? ` - ${new Date(program.endDate).toLocaleDateString()}` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{program.location || 'Location TBD'}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+              No programs available at the moment.
+            </div>
+          )}
+        </div>
+
+        {/* 3. Products Section */}
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2>Products & On Demand</h2>
+            <p className="text-muted-foreground">
+              Access digital content and video courses anytime
+            </p>
+          </div>
+
+          {loadingProducts ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : products.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {products.map((product) => (
+                <Card key={product.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                  <CardHeader className="pb-4">
+                    <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
+                      {product.type === 'video_course' ? (
+                        <Video className="h-10 w-10 text-muted-foreground" />
+                      ) : (
+                        <Package className="h-10 w-10 text-muted-foreground" />
+                      )}
+                      <div className="absolute top-2 right-2 bg-black/50 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1">
+                        {product.type === 'video_course' ? (
+                          <PlayCircle className="h-3 w-3" />
+                        ) : (
+                          <Package className="h-3 w-3" />
+                        )}
+                        <span>{product.type === 'video_course' ? 'Video Course' : 'Digital Product'}</span>
+                      </div>
+                    </div>
+                    <CardTitle className="text-lg">{product.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <p className="line-clamp-2">{product.description || 'No description'}</p>
+                      <div className="flex items-center gap-2 pt-2">
+                        <span className="font-medium text-foreground">€{product.price || 0}</span>
+                        <span>•</span>
+                        <span>{product.itemCount || 0} Items</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+              No products available at the moment.
+            </div>
+          )}
         </div>
       </div>
     </div>
