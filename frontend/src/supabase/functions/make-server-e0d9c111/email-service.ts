@@ -1,4 +1,4 @@
-import * as kv from "./kv_store.tsx";
+import * as kv from "./kv_store.ts";
 
 interface EmailTemplate {
   subject: string;
@@ -283,7 +283,7 @@ export async function getNotifications(email: string): Promise<any[]> {
     const notifications = results
       .map(r => r.value)
       .filter((n: any) => n.recipientEmail === email)
-      .sort((a: any, b: any) => 
+      .sort((a: any, b: any) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
 

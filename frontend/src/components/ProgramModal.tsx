@@ -62,9 +62,10 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
 
             onSuccess();
             onClose();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving program:", error);
-            alert("Failed to save program. Please try again.");
+            console.log("FormData being sent:", formData);
+            alert(`Failed to save program: ${error.message || "Unknown error"}`);
         } finally {
             setLoading(false);
         }
