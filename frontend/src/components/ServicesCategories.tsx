@@ -29,77 +29,11 @@ interface Category {
 }
 
 const categories: Category[] = [
-  { id: "breathwork", name: "Breathwork", icon: Wind, count: 8 },
-  { id: "bodywork", name: "Bodywork", icon: Heart, count: 6 },
-  { id: "coaching", name: "Coaching", icon: MessageCircle, count: 5 },
-  { id: "education", name: "Education", icon: BookOpen, count: 4 },
-  { id: "retreats", name: "Retreats", icon: Mountain, count: 3 },
-];
-
-const mockServices: Service[] = [
-  {
-    id: "1",
-    name: "Transformational Breathwork",
-    duration: 90,
-    price: 150,
-    currency: "USD",
-    category: "breathwork",
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Connected Breathing Session",
-    duration: 60,
-    price: 120,
-    currency: "USD",
-    category: "breathwork",
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Group Breathwork Circle",
-    duration: 120,
-    price: 45,
-    currency: "USD",
-    category: "breathwork",
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "Somatic Bodywork",
-    duration: 75,
-    price: 180,
-    currency: "USD",
-    category: "bodywork",
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Energy Healing Session",
-    duration: 60,
-    price: 160,
-    currency: "USD",
-    category: "bodywork",
-    status: "active",
-  },
-  {
-    id: "6",
-    name: "Life Coaching Package",
-    duration: 60,
-    price: 200,
-    currency: "USD",
-    category: "coaching",
-    status: "active",
-  },
-  {
-    id: "7",
-    name: "Weekend Retreat",
-    duration: 1440,
-    price: 899,
-    currency: "USD",
-    category: "retreats",
-    status: "active",
-  },
+  { id: "breathwork", name: "Breathwork", icon: Wind, count: 0 },
+  { id: "bodywork", name: "Bodywork", icon: Heart, count: 0 },
+  { id: "coaching", name: "Coaching", icon: MessageCircle, count: 0 },
+  { id: "education", name: "Education", icon: BookOpen, count: 0 },
+  { id: "retreats", name: "Retreats", icon: Mountain, count: 0 },
 ];
 
 export function ServicesCategories() {
@@ -291,8 +225,7 @@ export function ServicesCategories() {
       setServices(data || []);
     } catch (error) {
       console.error('Error fetching services:', error);
-      // Fallback to mock data
-      setServices(mockServices);
+      setServices([]);
     } finally {
       setLoading(false);
     }

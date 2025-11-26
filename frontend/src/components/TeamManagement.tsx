@@ -25,54 +25,6 @@ interface TeamMember {
   bio?: string;
 }
 
-const mockTeamMembers: TeamMember[] = [
-  {
-    id: "1",
-    name: "Sarah Chen",
-    role: "Teacher",
-    email: "sarah@wezet.com",
-    services: ["Breathwork", "Meditation"],
-    specialties: ["Mindfulness", "Stress Reduction"],
-    status: "active",
-  },
-  {
-    id: "2",
-    name: "Marcus Rodriguez",
-    role: "Facilitator",
-    email: "marcus@wezet.com",
-    services: ["Bodywork", "Coaching"],
-    specialties: ["Physical Health", "Personal Development"],
-    status: "active",
-  },
-  {
-    id: "3",
-    name: "Emma Wilson",
-    role: "Teacher",
-    email: "emma@wezet.com",
-    services: ["Breathwork", "Education"],
-    specialties: ["Holistic Healing", "Teaching"],
-    status: "active",
-  },
-  {
-    id: "4",
-    name: "David Kim",
-    role: "Admin",
-    email: "david@wezet.com",
-    services: ["Platform Management"],
-    specialties: ["Administration", "Management"],
-    status: "active",
-  },
-  {
-    id: "5",
-    name: "Lisa Thompson",
-    role: "Facilitator",
-    email: "lisa@wezet.com",
-    services: ["Retreats", "Coaching"],
-    specialties: ["Retreat Facilitation", "Coaching"],
-    status: "inactive",
-  },
-];
-
 export function TeamManagement() {
   const [filterValues, setFilterValues] = useState<FilterValues>({});
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -237,8 +189,7 @@ export function TeamManagement() {
       setTeamMembers(filteredData);
     } catch (error) {
       console.error('Error fetching team members:', error);
-      // Fallback to mock data if API fails
-      setTeamMembers(mockTeamMembers);
+      setTeamMembers([]);
     } finally {
       setLoading(false);
     }

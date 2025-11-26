@@ -156,13 +156,8 @@ export function AvailabilityManagement() {
         }
       } catch (error) {
         console.error("Error fetching team members:", error);
-        // Mock data
-        const mockMembers = [
-          { id: "1", name: "Sarah Chen", email: "sarah@wezet.com", role: "Teacher" },
-          { id: "2", name: "Marcus Rodriguez", email: "marcus@wezet.com", role: "Facilitator" },
-        ];
-        setTeamMembers(mockMembers);
-        setSelectedMember(mockMembers[0].id);
+        setTeamMembers([]);
+        setSelectedMember('');
       } finally {
         setLoading(false);
       }

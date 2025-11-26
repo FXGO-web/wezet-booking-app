@@ -92,84 +92,20 @@ export function AnalyticsDashboard() {
         setCategoryData(data.categoryData);
         setTeamPerformance(data.teamPerformance);
       } else {
-        // Mock data for demo
-        loadMockData();
+        setMetrics([]);
+        setRevenueData([]);
+        setCategoryData([]);
+        setTeamPerformance([]);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
-      loadMockData();
+      setMetrics([]);
+      setRevenueData([]);
+      setCategoryData([]);
+      setTeamPerformance([]);
     } finally {
       setLoading(false);
     }
-  };
-
-  const loadMockData = () => {
-    // Mock metrics
-    setMetrics([
-      {
-        title: 'Total Revenue',
-        value: '$12,486',
-        change: 12.5,
-        changeLabel: 'vs last period',
-        icon: DollarSign,
-        trend: 'up',
-      },
-      {
-        title: 'Total Bookings',
-        value: '156',
-        change: 8.2,
-        changeLabel: 'vs last period',
-        icon: Calendar,
-        trend: 'up',
-      },
-      {
-        title: 'Active Clients',
-        value: '89',
-        change: -3.1,
-        changeLabel: 'vs last period',
-        icon: Users,
-        trend: 'down',
-      },
-      {
-        title: 'Avg. Booking Value',
-        value: '$80',
-        change: 5.4,
-        changeLabel: 'vs last period',
-        icon: Activity,
-        trend: 'up',
-      },
-    ]);
-
-    // Mock revenue data (last 30 days)
-    const revenue: RevenueData[] = [];
-    const today = new Date();
-    for (let i = 29; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      revenue.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        revenue: Math.floor(Math.random() * 800) + 200,
-        bookings: Math.floor(Math.random() * 10) + 2,
-      });
-    }
-    setRevenueData(revenue);
-
-    // Mock category data
-    setCategoryData([
-      { name: 'Breathwork', value: 35, color: COLORS[0] },
-      { name: 'Bodywork', value: 25, color: COLORS[1] },
-      { name: 'Coaching', value: 20, color: COLORS[2] },
-      { name: 'Education', value: 12, color: COLORS[3] },
-      { name: 'Retreats', value: 8, color: COLORS[4] },
-    ]);
-
-    // Mock team performance
-    setTeamPerformance([
-      { name: 'Sarah Chen', bookings: 45, revenue: 5400, rating: 4.9 },
-      { name: 'Marcus Rodriguez', bookings: 38, revenue: 4560, rating: 4.8 },
-      { name: 'Emma Wilson', bookings: 42, revenue: 4200, rating: 4.7 },
-      { name: 'David Kim', bookings: 31, revenue: 3720, rating: 4.6 },
-    ]);
   };
 
   useEffect(() => {

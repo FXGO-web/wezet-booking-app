@@ -62,7 +62,7 @@ export function AuthPage() {
 
     try {
       // Auto-promote specific emails to Admin for recovery
-      const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com', 'recovery@wezet.com', 'fx.admin@fxcreativestudio.com'];
+      const adminEmails = ['fx@fxcreativestudio.com', 'fx_dev@wezet.xyz', 'hanna@wezet.xyz', 'saszeline@theassana.com'];
       const role = adminEmails.includes(signUpEmail.toLowerCase()) ? 'Admin' : 'client';
 
       const { error } = await signUp(signUpEmail, signUpPassword, signUpName, role);
@@ -254,19 +254,6 @@ export function AuthPage() {
           </CardContent>
         </Card>
 
-        {/* Demo Credentials */}
-        <Card className="border-dashed">
-          <CardContent className="pt-6">
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p className="font-medium">Demo Credentials:</p>
-              <p>Email: demo@wezet.com</p>
-              <p>Password: demo123</p>
-              <p className="text-xs pt-2">
-                Note: Create your own account to test the full functionality
-              </p>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );

@@ -42,92 +42,6 @@ interface RecentBooking {
   status: "confirmed" | "pending" | "cancelled";
 }
 
-const recentBookings: RecentBooking[] = [
-  {
-    id: "1",
-    client: "Sarah Anderson",
-    service: "Breathwork Session",
-    teamMember: "Marcus Rodriguez",
-    date: "Nov 23, 2025",
-    time: "10:00",
-    price: 750,
-    currency: "EUR",
-    status: "confirmed",
-  },
-  {
-    id: "2",
-    client: "John Smith",
-    service: "Coaching Call",
-    teamMember: "Emma Wilson",
-    date: "Nov 24, 2025",
-    time: "14:00",
-    price: 900,
-    currency: "EUR",
-    status: "confirmed",
-  },
-  {
-    id: "3",
-    client: "Lisa Chen",
-    service: "Somatic Bodywork",
-    teamMember: "Sarah Chen",
-    date: "Nov 25, 2025",
-    time: "09:00",
-    price: 1200,
-    currency: "EUR",
-    status: "pending",
-  },
-  {
-    id: "4",
-    client: "Michael Brown",
-    service: "Group Breathwork",
-    teamMember: "Marcus Rodriguez",
-    date: "Nov 26, 2025",
-    time: "16:00",
-    price: 400,
-    currency: "EUR",
-    status: "confirmed",
-  },
-  {
-    id: "5",
-    client: "Emma Williams",
-    service: "Transformation Program",
-    teamMember: "Emma Wilson",
-    date: "Nov 27, 2025",
-    time: "3500",
-    price: 3500,
-    currency: "EUR",
-    status: "confirmed",
-  },
-];
-
-const overviewStats = [
-  {
-    title: "Total Sessions This Week",
-    value: "47",
-    icon: Calendar,
-    change: "+12%",
-  },
-  {
-    title: "Total Bookings",
-    value: "124",
-    icon: BarChart3,
-    change: "+8%",
-  },
-  {
-    title: "Revenue",
-    value: "45,200",
-    currency: "DKK",
-    icon: DollarSign,
-    change: "+15%",
-  },
-  {
-    title: "Active Team Members",
-    value: "4",
-    icon: Users,
-    change: "+1",
-  },
-];
-
 interface NavigationCard {
   title: string;
   description: string;
@@ -202,8 +116,8 @@ interface AdminDashboardProps {
 export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const { getAccessToken } = useAuth();
   const { currency: selectedCurrency } = useCurrency();
-  const [stats, setStats] = useState(overviewStats);
-  const [bookings, setBookings] = useState(recentBookings);
+  const [stats, setStats] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<RecentBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -231,32 +145,35 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                 title: "Total Bookings",
                 value: String(statsData.totalBookings || 0),
                 icon: BarChart3,
-                change: "+8%",
+                change: "",
               },
               {
                 title: "Confirmed Bookings",
                 value: String(statsData.confirmedBookings || 0),
                 icon: Calendar,
-                change: "+12%",
+                change: "",
               },
               {
                 title: "Revenue",
                 value: String(Math.round(statsData.totalRevenue || 0)),
                 currency: selectedCurrency,
                 icon: DollarSign,
-                change: "+15%",
+                change: "",
               },
               {
                 title: "Active Team Members",
                 value: String(statsData.activeTeamMembers || 0),
                 icon: Users,
-                change: "+1",
+                change: "",
               },
             ];
             setStats(newStats);
+          } else {
+            setStats([]);
           }
         } catch (error) {
-          console.warn('Stats endpoint not available, using defaults');
+          console.warn('Stats endpoint not available, showing empty state');
+          setStats([]);
         }
 
         // Fetch recent bookings
@@ -275,9 +192,12 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               status: b.status,
             }));
             setBookings(formattedBookings);
+          } else {
+            setBookings([]);
           }
         } catch (error) {
-          console.warn('Bookings endpoint not available, using defaults');
+          console.warn('Bookings endpoint not available, showing empty list');
+          setBookings([]);
         }
       } catch (error) {
         console.warn('Error fetching dashboard data:', error);
@@ -394,6 +314,12 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
                     <TableRow>
                       <TableCell colSpan={6} className="text-center">
                         <Loader2 className="h-5 w-5 animate-spin" />
+                      </TableCell>
+                    </TableRow>
+                  ) : bookings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
+                        No bookings yet.
                       </TableCell>
                     </TableRow>
                   ) : (
