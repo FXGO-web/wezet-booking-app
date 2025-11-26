@@ -98,7 +98,14 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
             if (!member) return;
 
             specificDates.forEach((dateSlot: any) => {
-              const slotDate = new Date(dateSlot.date);
+              // Safely parse YYYY-MM-DD to avoid timezone issues
+              let slotDate: Date;
+              if (typeof dateSlot.date === 'string' && dateSlot.date.includes('-')) {
+                const [y, m, d] = dateSlot.date.split('T')[0].split('-').map(Number);
+                slotDate = new Date(y, m - 1, d);
+              } else {
+                slotDate = new Date(dateSlot.date);
+              }
 
               // Check if date is in current month view
               if (slotDate.getMonth() + 1 === month && slotDate.getFullYear() === year) {

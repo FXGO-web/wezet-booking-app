@@ -286,12 +286,18 @@ export function AvailabilityManagement() {
 
       // Also save specific dates if any
       if (specificDateSlots.length > 0) {
-        await availabilityAPI.updateSpecificDates(
-          selectedMember,
-          specificDateSlots.map(s => ({ ...s, date: s.date.toISOString() })),
-          accessToken,
-          serviceId
-        );
+        const validSlots = specificDateSlots
+          .filter(s => !isNaN(s.date.getTime()))
+          .map(s => ({ ...s, date: format(s.date, 'yyyy-MM-dd') }));
+
+        if (validSlots.length > 0) {
+          await availabilityAPI.updateSpecificDates(
+            selectedMember,
+            validSlots,
+            accessToken,
+            serviceId
+          );
+        }
       }
 
       toast.success('Availability saved successfully!');
