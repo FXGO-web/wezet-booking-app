@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -61,6 +62,20 @@ interface WeeklySchedule {
 }
 
 interface SpecificDateSlot {
+
+  // Handle URL params
+  useEffect(() => {
+    const serviceIdParam = searchParams.get("serviceId");
+    const tabParam = searchParams.get("tab");
+
+    if (serviceIdParam) {
+      setSelectedService(serviceIdParam);
+    }
+
+    if (tabParam && ["weekly", "specific", "blocked"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   id: string;
   date: Date;
   startTime: string;
@@ -487,7 +502,7 @@ export function AvailabilityManagement() {
         </Card>
 
         {/* Tabs */}
-        <Tabs defaultValue="weekly" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="weekly">
               <Clock className="h-4 w-4 mr-2" />

@@ -35,21 +35,28 @@ async function apiRequest(endpoint: string, options: RequestOptions = {}) {
 
   if (body) {
     config.body = JSON.stringify(body);
-  }
-
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    const data = await response.json();
+    let data;
+    try {
+      data = await response.json();
+    } catch (jsonError) {
+      const text = await response.text();
+      console.error(`API Error (${endpoint}) - Invalid JSON:`, text);
+      throw new Error(`Invalid JSON response from server: ${text.substring(0, 100)}...`);
+    }
 
     if (!response.ok) {
-      console.error(`API Error (${endpoint}):`, data.error || 'Unknown error');
-      throw new Error(data.error || 'API request failed');
+      console.error(`API Error (${endpoint}):`, data.error || "Unknown error");
+      throw new Error(data.error || "API request failed");
     }
 
     return data;
   } catch (error) {
     console.error(`API Request Failed (${endpoint}):`, error);
     throw error;
+  }
+}    throw error;
   }
 }
 

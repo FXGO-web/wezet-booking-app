@@ -116,8 +116,27 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             {/* Service Name */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-4">
+            {/* Service Name */}
             <div className="space-y-2">
-              <Label htmlFor="name">Service Name *</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="name">Service Name *</Label>
+                {service && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-muted-foreground hover:text-primary"
+                    onClick={() => {
+                      window.location.href = `/?view=availability&serviceId=${service.id}&tab=specific`;
+                    }}
+                  >
+                    <CalendarDays className="mr-1 h-3 w-3" />
+                    Manage Availability
+                  </Button>
+                )}
+              </div>
               <Input
                 id="name"
                 value={formData.name}
@@ -125,9 +144,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 placeholder="Transformational Breathwork"
                 required
               />
-            </div>
-
-            {/* Description */}
+            </div>            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
