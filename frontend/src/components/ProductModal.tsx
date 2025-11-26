@@ -63,7 +63,6 @@ export function ProductModal({ isOpen, onClose, onSuccess, product }: ProductMod
             onClose();
         } catch (error: any) {
             console.error("Error saving product:", error);
-            console.log("FormData being sent:", formData);
             alert(`Failed to save product: ${error.message || "Unknown error"}`);
         } finally {
             setLoading(false);
