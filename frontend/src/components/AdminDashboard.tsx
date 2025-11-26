@@ -133,56 +133,97 @@ interface NavigationCard {
   description: string;
   icon: any;
   route: string;
+  status?: "OK" | "SHOULD IMPLEMENT";
+  statusColor?: string;
+  extraText?: string;
+  extraTextColor?: string;
 }
 
 const navigationCards: NavigationCard[] = [
   {
-    title: "Analytics & Reports",
-    description: "View metrics, revenue trends & team performance",
-    icon: TrendingUp,
-    route: "analytics-dashboard",
+    title: "Platform Settings",
+    description: "Configure platform preferences",
+    icon: Settings,
+    route: "settings-page",
+    status: "OK",
+    statusColor: "text-red-500",
   },
   {
     title: "User Management",
     description: "Manage team members & customers",
     icon: Users,
     route: "user-management",
-  },
-  {
-    title: "Services & Categories",
-    description: "Configure services, pricing & categories",
-    icon: Layers,
-    route: "services-categories",
+    status: "OK",
+    statusColor: "text-red-500",
   },
   {
     title: "Bookings",
     description: "View and manage all bookings",
     icon: Calendar,
     route: "bookings-directory",
+    status: "OK",
+    statusColor: "text-red-500",
   },
   {
-    title: "Locations",
-    description: "Manage studios and session venues",
+    title: "Services & Categories",
+    description: "Configure services, pricing & categories",
+    icon: Layers,
+    route: "services-categories",
+    status: "OK",
+    statusColor: "text-red-500",
+    extraText: "Any time-slot based session like it is currently",
+    extraTextColor: "text-red-400",
+  },
+  {
+    title: "Programs & Retreats",
+    description: "Any multi-day-dates Retreats or educational sequence",
     icon: MapPin,
-    route: "locations-directory",
+    route: "programs-retreats", // Placeholder route
+    status: "SHOULD IMPLEMENT",
+    statusColor: "text-red-500",
+    extraText: "Programs & Retreats", // Title is already this, but the red text in image says "Programs & Retreats" again? No, it says "Programs & Retreats" in red below description? Actually looking at image: Title "Programs & Retreats" (Red), Description "Any multi-day...". Wait.
+    // Re-reading image:
+    // Card 5:
+    // Icon: Pin
+    // Status: SHOULD IMPLEMENT (Red)
+    // Title: Programs & Retreats (Red)
+    // Description: Any multi-day-dates Retreats or educational sequence (Red/Orange?)
+    // Actually, let's look at the structure.
+    // The "Services & Categories" card has: Title Black, Description Gray, Extra Text Red.
+    // The "Programs & Retreats" card has: Title Red, Description Red? Or maybe the Title IS "Programs & Retreats" and it's red.
+    // Let's assume standard Title/Description structure but allow coloring.
   },
   {
-    title: "Digital Content",
-    description: "Upload videos, audios & programs",
+    title: "Products & On Demand",
+    description: "Any product of several categories & on demand streaming content",
     icon: Video,
-    route: "digital-content-management",
+    route: "products-on-demand", // Placeholder
+    status: "SHOULD IMPLEMENT",
+    statusColor: "text-red-500",
   },
   {
     title: "Availability",
     description: "Manage schedule & blackout dates",
     icon: Calendar,
     route: "availability-management",
+    status: "OK",
+    statusColor: "text-red-500",
   },
   {
-    title: "Platform Settings",
-    description: "Configure platform preferences",
-    icon: Settings,
-    route: "settings-page",
+    title: "Locations",
+    description: "Manage studios and session venues",
+    icon: MapPin,
+    route: "locations-directory",
+    status: "OK",
+    statusColor: "text-red-500",
+  },
+  {
+    title: "Analytics & Reports",
+    description: "View metrics, revenue trends & team performance",
+    icon: TrendingUp,
+    route: "analytics-dashboard",
+    status: "OK",
+    statusColor: "text-red-500",
   },
 ];
 
@@ -343,22 +384,35 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
             {navigationCards.map((card) => (
               <button
                 key={card.title}
-                className="group text-left p-6 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
+                className="group text-left p-6 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] flex flex-col justify-between h-full"
                 onClick={() => handleNavigate(card.route)}
               >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <card.icon className="h-5 w-5 text-primary" />
+                <div className="w-full">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`h-10 w-10 rounded-lg ${card.status === 'SHOULD IMPLEMENT' ? 'bg-red-50' : 'bg-primary/10'} flex items-center justify-center group-hover:bg-primary/20 transition-colors`}>
+                      <card.icon className={`h-5 w-5 ${card.status === 'SHOULD IMPLEMENT' ? 'text-red-500' : 'text-primary'}`} />
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="text-base">{card.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {card.description}
-                      </p>
-                    </div>
+                    {card.status && (
+                      <span className={`text-xl font-bold italic ${card.statusColor}`}>
+                        {card.status}
+                      </span>
+                    )}
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
+
+                  <div className="space-y-1">
+                    <h3 className={`text-base font-medium ${card.status === 'SHOULD IMPLEMENT' ? 'text-red-500 italic' : ''}`}>
+                      {card.title}
+                    </h3>
+                    <p className={`text-sm ${card.status === 'SHOULD IMPLEMENT' ? 'text-red-400 italic' : 'text-muted-foreground'}`}>
+                      {card.description}
+                    </p>
+                    {card.extraText && (
+                      <p className={`text-xs mt-2 ${card.extraTextColor}`}>
+                        {card.extraText}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
