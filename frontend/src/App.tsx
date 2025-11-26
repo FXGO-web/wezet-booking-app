@@ -35,6 +35,8 @@ import { CurrencySelector } from "./components/CurrencySelector";
 import { PublicServiceDetail } from "./components/PublicServiceDetail";
 import { Toaster } from "./components/ui/sonner";
 import { NotificationCenter } from "./components/NotificationCenter";
+import { ProgramsRetreats } from "./components/ProgramsRetreats";
+import { ProductsOnDemand } from "./components/ProductsOnDemand";
 import {
   Wind,
   Sparkles,
@@ -620,6 +622,42 @@ function AppContent() {
           </div>
         </div>
         <DigitalContentDetail />
+      </div>
+    );
+  }
+
+  if (activeView === "programs-retreats") {
+    return (
+      <div>
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => setActiveView("admin-dashboard")}
+            >
+              ← Back to Dashboard
+            </Button>
+          </div>
+        </div>
+        <ProgramsRetreats onBack={() => setActiveView("admin-dashboard")} />
+      </div>
+    );
+  }
+
+  if (activeView === "products-on-demand") {
+    return (
+      <div>
+        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+            <Button
+              variant="ghost"
+              onClick={() => setActiveView("admin-dashboard")}
+            >
+              ← Back to Dashboard
+            </Button>
+          </div>
+        </div>
+        <ProductsOnDemand onBack={() => setActiveView("admin-dashboard")} />
       </div>
     );
   }
