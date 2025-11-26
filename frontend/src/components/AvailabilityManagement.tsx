@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -128,14 +127,13 @@ export function AvailabilityManagement() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Fetch team members
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
+  const [activeTab, setActiveTab] = useState("weekly");
 
   // Handle URL params
   useEffect(() => {
-    const serviceIdParam = searchParams.get("serviceId");
-    const tabParam = searchParams.get("tab");
+    const params = new URLSearchParams(window.location.search);
+    const serviceIdParam = params.get("serviceId");
+    const tabParam = params.get("tab");
 
     if (serviceIdParam) {
       setSelectedService(serviceIdParam);
@@ -144,7 +142,11 @@ export function AvailabilityManagement() {
     if (tabParam && ["weekly", "specific", "blocked"].includes(tabParam)) {
       setActiveTab(tabParam);
     }
-  }, [searchParams]);      setLoading(true);
+  }, []);
+  // Fetch team members
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      setLoading(true);
       try {
         const { members } = await availabilityAPI.getTeamMembers();
         setTeamMembers(members || []);
@@ -152,11 +154,11 @@ export function AvailabilityManagement() {
           setSelectedMember(members[0].id);
         }
       } catch (error) {
-        console.error('Error fetching team members:', error);
+        console.error("Error fetching team members:", error);
         // Mock data
         const mockMembers = [
-          { id: '1', name: 'Sarah Chen', email: 'sarah@wezet.com', role: 'Teacher' },
-          { id: '2', name: 'Marcus Rodriguez', email: 'marcus@wezet.com', role: 'Facilitator' },
+          { id: "1", name: "Sarah Chen", email: "sarah@wezet.com", role: "Teacher" },
+          { id: "2", name: "Marcus Rodriguez", email: "marcus@wezet.com", role: "Facilitator" },
         ];
         setTeamMembers(mockMembers);
         setSelectedMember(mockMembers[0].id);
@@ -166,18 +168,19 @@ export function AvailabilityManagement() {
     };
 
     fetchTeamMembers();
-
+  }, []);
+  // Fetch services
+  useEffect(() => {
     const fetchServices = async () => {
       try {
         const { services } = await servicesAPI.getAll();
         setServices(services || []);
       } catch (error) {
-        console.error('Error fetching services:', error);
+        console.error("Error fetching services:", error);
       }
     };
     fetchServices();
   }, []);
-
   // Fetch availability for selected member
   useEffect(() => {
     if (!selectedMember) return;
