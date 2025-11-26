@@ -3,6 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
+import { CalendarDays, Loader2, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Loader2, Trash2 } from "lucide-react";
 import { servicesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 

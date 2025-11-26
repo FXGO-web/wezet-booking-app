@@ -1,6 +1,10 @@
-import { projectId, publicAnonKey, edgeFunctionName } from './supabase/info';
+import { projectId, publicAnonKey, edgeFunctionName, supabaseUrl } from './supabase/info';
 
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}`;
+// Supabase edge functions mount at /functions/v1/<function-name>.
+// Our Hono app also namespaces routes under /<function-name>/..., so we need both segments.
+const baseHost = supabaseUrl || `https://${projectId}.supabase.co`;
+const functionPrefix = `/${edgeFunctionName}`;
+const API_BASE_URL = `${baseHost}/functions/v1/${edgeFunctionName}${functionPrefix}`;
 
 interface RequestOptions {
   method?: string;
