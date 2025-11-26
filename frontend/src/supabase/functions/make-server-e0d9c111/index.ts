@@ -1316,14 +1316,46 @@ app.get("/make-server-e0d9c111/availability/:teamMemberId", async (c) => {
     const blockedDatesKey = `availability:blocked:${teamMemberId}`;
     const blockedDates = await kv.get(blockedDatesKey) || [];
 
+    // Get specific dates
+    const specificDatesKey = `availability:specific-dates:${teamMemberId}`;
+    const specificDates = await kv.get(specificDatesKey) || [];
+
     return c.json({
       success: true,
       schedule: schedule || null,
       blockedDates: blockedDates,
+      specificDates: specificDates,
     });
   } catch (error: any) {
     console.error('Error fetching availability:', error);
     return c.json({ error: 'Failed to fetch availability', details: error.message }, 500);
+  }
+});
+
+app.post("/make-server-e0d9c111/availability/:teamMemberId/specific-dates", verifyAuth, async (c) => {
+  try {
+    const teamMemberId = c.req.param('teamMemberId');
+    const { dates, serviceId } = await c.req.json();
+
+    if (!dates || !Array.isArray(dates)) {
+      return c.json({ error: 'Dates array is required' }, 400);
+    }
+
+    const specificDatesKey = `availability:specific-dates:${teamMemberId}`;
+
+    // For now, we'll replace the existing specific dates with the new ones
+    // In a real app, you might want to merge or handle conflicts
+    await kv.set(specificDatesKey, dates);
+
+    console.log(`Updated ${dates.length} specific dates for team member ${teamMemberId}`);
+
+    return c.json({
+      success: true,
+      message: `Updated ${dates.length} specific date(s) successfully`,
+    });
+  } catch (error: any) {
+    console.error('Error updating specific dates:', error);
+    return c.json({ error: 'Failed to update specific dates', details: error.message }, 500);
   }
 });
 
