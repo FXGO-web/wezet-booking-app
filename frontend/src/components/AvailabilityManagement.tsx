@@ -300,13 +300,42 @@ export function AvailabilityManagement() {
       }
 
       const serviceId = selectedService === 'all' ? undefined : selectedService;
-      await availabilityAPI.updateSchedule(selectedMember, weeklySchedule, accessToken, serviceId);
+
+      // Sanitize weekly schedule: remove temporary IDs
+      const sanitizedSchedule: any = { ...weeklySchedule };
+      Object.keys(sanitizedSchedule).forEach((day) => {
+        const d = day as keyof WeeklySchedule;
+        sanitizedSchedule[d] = {
+          ...sanitizedSchedule[d],
+          slots: sanitizedSchedule[d].slots.map((slot: any) => {
+             const isTempId = !slot.id.includes('-');
+             if (isTempId) {
+               const { id, ...rest } = slot;
+               return rest;
+             }
+             return slot;
+          })
+        };
+      });
+
+      await availabilityAPI.updateSchedule(selectedMember, sanitizedSchedule, accessToken, serviceId);
 
       // Also save specific dates if any
       if (specificDateSlots.length > 0) {
         const validSlots = specificDateSlots
           .filter(s => !isNaN(s.date.getTime()))
-          .map(s => ({ ...s, date: format(s.date, 'yyyy-MM-dd') }));
+          .map(s => {
+             const isTempId = !s.id.includes('-');
+             const slotData = {
+               ...s,
+               date: format(s.date, 'yyyy-MM-dd')
+             };
+             if (isTempId) {
+               const { id, ...rest } = slotData;
+               return rest;
+             }
+             return slotData;
+          });
 
         if (validSlots.length > 0) {
           await availabilityAPI.updateSpecificDates(
@@ -321,7 +350,7 @@ export function AvailabilityManagement() {
       toast.success('Availability saved successfully!');
     } catch (error: any) {
       console.error('Error saving schedule:', error);
-      toast.error('Failed to save schedule');
+      toast.error(`Failed to save schedule: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
