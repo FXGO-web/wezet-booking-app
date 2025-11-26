@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 import { servicesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
@@ -75,6 +75,27 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     } catch (error) {
       console.error("Error saving service:", error);
       alert("Failed to save service. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!service || !window.confirm("Are you sure you want to delete this service? This action cannot be undone.")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const accessToken = getAccessToken();
+      if (!accessToken) return;
+
+      await servicesAPI.delete(service.id, accessToken);
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      alert("Failed to delete service");
     } finally {
       setLoading(false);
     }
@@ -155,7 +176,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 <Label htmlFor="currency">Currency</Label>
                 <Select
                   value={formData.currency}
-                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -174,7 +195,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 <Label htmlFor="category">Category *</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -193,7 +214,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -211,6 +232,18 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
+            {service && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={loading}
+                className="mr-auto"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            )}
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>

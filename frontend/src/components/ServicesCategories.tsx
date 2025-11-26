@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
-import { Plus, Edit, Wind, Heart, MessageCircle, BookOpen, Mountain, Loader2, Download } from "lucide-react";
+import { Plus, Edit, Wind, Heart, MessageCircle, BookOpen, Mountain, Loader2, Download, Trash2 } from "lucide-react";
 import { servicesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { ServiceModal } from "./ServiceModal";
@@ -239,17 +239,44 @@ export function ServicesCategories() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               handleEditClick(row);
             }}
           >
             <Edit className="h-4 w-4" />
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              if (window.confirm("Are you sure you want to delete this service?")) {
+                handleDelete(row.id);
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
       ),
     },
   ];
+
+  const handleDelete = async (id: string) => {
+    try {
+      const accessToken = getAccessToken();
+      if (!accessToken) return;
+
+      await servicesAPI.delete(id, accessToken);
+      toast.success("Service deleted successfully");
+      fetchServices();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      toast.error("Failed to delete service");
+    }
+  };
 
   // Fetch services from API
   const fetchServices = async () => {
