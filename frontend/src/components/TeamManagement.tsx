@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { Plus, Edit, Eye, Loader2, Download, Trash2 } from "lucide-react";
+import { Plus, Edit, Loader2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "./ui/card";
-import { teamMembersAPI } from "../utils/api";
-import { supabase } from "../utils/supabase/client";
+import { servicesAPI, teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { TeamMemberModal } from "./TeamMemberModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
@@ -187,16 +186,54 @@ export function TeamManagement() {
       // if (filterValues.role && filterValues.role !== 'all') filters.role = filterValues.role;
       // if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
-      // Fetch from API (Reverted to use API as it works for Public Calendar)
-      const { teamMembers: data } = await teamMembersAPI.getAll(filters);
+      // Fetch members + services so we can reflect active offerings
+      const [membersRes, servicesRes] = await Promise.all([
+        teamMembersAPI.getAll(filters),
+        servicesAPI.getAll({}),
+      ]);
 
-      console.log('Fetched members from API:', data);
+      const data = membersRes?.teamMembers || [];
+      const allServices = (servicesRes?.services || []).filter((s: any) => s && s.id);
+
+      const servicesByOwner: Record<string, string[]> = allServices.reduce(
+        (acc: Record<string, string[]>, service: any) => {
+          const ownerId =
+            service?.owner_id ||
+            service?.ownerId ||
+            service?.created_by ||
+            service?.createdBy ||
+            service?.teamMemberId ||
+            service?.team_member_id;
+          if (ownerId) {
+            acc[ownerId] = [...(acc[ownerId] || []), service.name].filter(Boolean);
+          }
+          return acc;
+        },
+        {}
+      );
 
       // Filter for Team Roles only
-      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator'];
+      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator', 'Founder & CEO WEZET'];
       const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
 
-      setTeamMembers(filteredData);
+      const enrichedData = filteredData.map((member: any) => {
+        const memberServices =
+          (Array.isArray(member.services) && member.services.length > 0
+            ? member.services
+            : servicesByOwner[member.id]) || [];
+
+        const status =
+          member.status ||
+          (memberServices && memberServices.length > 0 ? "active" : "inactive");
+
+        return {
+          ...member,
+          services: memberServices,
+          status,
+        };
+      });
+
+      setTeamMembers(enrichedData);
     } catch (error) {
       console.error('Error fetching team members:', error);
       setTeamMembers([]);

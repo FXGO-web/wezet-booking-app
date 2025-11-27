@@ -1,107 +1,58 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
-import { Avatar, AvatarFallback } from "./ui/avatar";
-import { Separator } from "./ui/separator";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "./ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Textarea } from "./ui/textarea";
 import {
   Calendar,
-  Clock,
-  DollarSign,
-  Users,
-  TrendingUp,
-  Video,
-  MessageCircle,
   Settings,
-  ChevronRight,
-  Star,
-  CalendarPlus
+  CalendarPlus,
+  Upload,
+  CalendarClock,
+  CheckCircle2,
+  Loader2,
+  Link2,
 } from "lucide-react";
 import { CreateSessionModal } from "./CreateSessionModal";
 import { useAuth } from "../hooks/useAuth";
-
-const WEEKLY_SCHEDULE = [
-  {
-    day: "Mon", date: "Nov 11", slots: [
-      { time: "9:00 AM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-      { time: "2:00 PM", client: "Jamie L.", type: "Energy", status: "confirmed" },
-    ]
-  },
-  {
-    day: "Tue", date: "Nov 12", slots: [
-      { time: "10:00 AM", client: "Sam R.", type: "Movement", status: "confirmed" },
-    ]
-  },
-  {
-    day: "Wed", date: "Nov 13", slots: [
-      { time: "9:00 AM", client: "Available", type: "Open", status: "available" },
-      { time: "4:00 PM", client: "Morgan T.", type: "Breathwork", status: "pending" },
-    ]
-  },
-  {
-    day: "Thu", date: "Nov 14", slots: [
-      { time: "11:00 AM", client: "Casey P.", type: "Energy", status: "confirmed" },
-      { time: "3:00 PM", client: "Available", type: "Open", status: "available" },
-    ]
-  },
-  {
-    day: "Fri", date: "Nov 15", slots: [
-      { time: "2:00 PM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-      { time: "5:00 PM", client: "Jordan M.", type: "Movement", status: "confirmed" },
-    ]
-  },
-];
-
-const UPCOMING_SESSIONS = [
-  {
-    id: 1,
-    client: "Alex K.",
-    initials: "AK",
-    type: "Breathwork Foundations",
-    date: "Nov 15, 2025",
-    time: "2:00 PM",
-    duration: "60 min",
-    status: "confirmed",
-    price: 120,
-    notes: "First session, new client",
-  },
-  {
-    id: 2,
-    client: "Jordan M.",
-    initials: "JM",
-    type: "Movement & Flow",
-    date: "Nov 15, 2025",
-    time: "5:00 PM",
-    duration: "45 min",
-    status: "confirmed",
-    price: 100,
-    notes: "",
-  },
-  {
-    id: 3,
-    client: "Morgan T.",
-    initials: "MT",
-    type: "Breathwork Foundations",
-    date: "Nov 13, 2025",
-    time: "4:00 PM",
-    duration: "60 min",
-    status: "pending",
-    price: 120,
-    notes: "Requested focus on stress relief",
-  },
-];
-
 import { useCurrency } from "../context/CurrencyContext";
+import { supabase } from "../utils/supabase/client";
+import { servicesAPI, teamMembersAPI } from "../utils/api";
+import { toast } from "sonner";
 
-// ... existing imports
+const QuickAction = ({
+  label,
+  description,
+  icon: Icon,
+  onClick,
+}: {
+  label: string;
+  description: string;
+  icon: any;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className="w-full flex items-center gap-4 rounded-xl border bg-card px-4 py-3 text-left transition hover:border-primary/30 hover:bg-primary/5"
+  >
+    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+      <Icon className="h-5 w-5 text-primary" />
+    </div>
+    <div className="flex-1">
+      <div className="font-medium">{label}</div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+    <Calendar className="h-4 w-4 text-muted-foreground" />
+  </button>
+);
+
+const emptyServiceState = {
+  title: "Sin servicios asignados aún",
+  description: "Crea o vincula un servicio para que los clientes puedan reservar contigo.",
+};
 
 interface TeamDashboardProps {
   onNavigate?: (route: string) => void;
@@ -110,16 +61,99 @@ interface TeamDashboardProps {
 export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   const [isCreateSessionOpen, setIsCreateSessionOpen] = useState(false);
   const { convertAndFormat } = useCurrency();
-  const { user } = useAuth();
+  const { user, getAccessToken } = useAuth();
+  const [avatarUrl, setAvatarUrl] = useState(
+    user?.user_metadata?.avatar_url || ""
+  );
+  const [headline, setHeadline] = useState(
+    user?.user_metadata?.headline || ""
+  );
+  const [bio, setBio] = useState(user?.user_metadata?.bio || "");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [services, setServices] = useState<any[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Team Member";
   const userRole = user?.user_metadata?.role || "Specialist";
 
-  const STATS = [
-    { label: "This Week", value: convertAndFormat(840, "EUR"), icon: DollarSign, trend: "+12%" },
-    { label: "Total Clients", value: "24", icon: Users, trend: "+3 new" },
-    { label: "Sessions This Week", value: "7", icon: Calendar, trend: "2 pending" },
-    { label: "Avg Rating", value: "4.9", icon: Star, trend: "18 reviews" },
-  ];
+  useEffect(() => {
+    setAvatarUrl(user?.user_metadata?.avatar_url || "");
+    setHeadline(user?.user_metadata?.headline || "");
+    setBio(user?.user_metadata?.bio || "");
+  }, [user?.user_metadata]);
+
+  useEffect(() => {
+    const loadServices = async () => {
+      setLoadingServices(true);
+      try {
+        const { services: serviceList } = await servicesAPI.getAll();
+        setServices(serviceList || []);
+      } catch (error) {
+        console.error("Error loading services:", error);
+        setServices([]);
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+
+    loadServices();
+  }, []);
+
+  const ownedServices = useMemo(() => {
+    if (!user?.id) return [];
+    return services.filter((service) => {
+      const ownerId =
+        service?.owner_id ||
+        service?.ownerId ||
+        service?.created_by ||
+        service?.createdBy ||
+        service?.teamMemberId ||
+        service?.team_member_id;
+      return ownerId === user.id;
+    });
+  }, [services, user?.id]);
+
+  const handleNavigate = (route: string) => {
+    if (onNavigate) {
+      onNavigate(route);
+      return;
+    }
+    const origin = window.location.origin;
+    window.location.href = `${origin}/?view=${route}`;
+  };
+
+  const handleProfileSave = async () => {
+    setSavingProfile(true);
+    try {
+      await supabase.auth.updateUser({
+        data: {
+          avatar_url: avatarUrl,
+          headline,
+          bio,
+        },
+      });
+
+      const accessToken = getAccessToken();
+      if (accessToken && user?.id) {
+        await teamMembersAPI.update(
+          user.id,
+          {
+            avatarUrl,
+            bio,
+            description: bio,
+            role: userRole,
+          },
+          accessToken
+        );
+      }
+
+      toast.success("Perfil actualizado");
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("No se pudo guardar el perfil");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
@@ -128,6 +162,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16 border-2 border-primary/10">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} />}
               <AvatarFallback className="bg-primary/5 text-primary text-xl font-medium">
                 {userName.substring(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -140,11 +175,19 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
             </div>
           </div>
           <div className="flex gap-3">
-            <Button variant="outline" size="lg">
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleNavigate("settings-page")}
+            >
               <Settings className="mr-2 h-5 w-5" />
               Settings
             </Button>
-            <Button variant="outline" size="lg" onClick={() => onNavigate?.('availability-management')}>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => handleNavigate("availability-management")}
+            >
               <Calendar className="mr-2 h-5 w-5" />
               Manage Availability
             </Button>
@@ -155,299 +198,224 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           </div>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {STATS.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card key={index}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-2">
-                      <p className="text-sm text-muted-foreground">{stat.label}</p>
-                      <p className="text-3xl tracking-tight">{stat.value}</p>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <TrendingUp className="h-3 w-3" />
-                        {stat.trend}
-                      </div>
-                    </div>
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <Icon className="h-5 w-5 text-primary" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="border-primary/20">
+              <CardHeader className="pb-2">
+                <CardTitle>Perfil público</CardTitle>
+                <CardDescription>
+                  Mantén tu ficha actualizada: imagen, headline y bio corta.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-6 md:items-center">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-16 w-16 border-2 border-primary/10">
+                      {avatarUrl && (
+                        <AvatarImage src={avatarUrl} alt={userName} />
+                      )}
+                      <AvatarFallback className="bg-primary/5 text-primary text-xl font-medium">
+                        {userName.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{userName}</div>
+                      <p className="text-sm text-muted-foreground">
+                        {headline || userRole}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  <div className="flex-1 space-y-2">
+                    <Label htmlFor="avatarUrl">Imagen de perfil (URL)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="avatarUrl"
+                        placeholder="https://..."
+                        value={avatarUrl}
+                        onChange={(e) => setAvatarUrl(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setAvatarUrl("")}
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        Reset
+                      </Button>
+                    </div>
+                  </div>
+                </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="xl:col-span-2 space-y-8">
-            {/* Weekly Schedule */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h2>This Week's Schedule</h2>
-                <Button variant="ghost" size="sm" onClick={() => onNavigate?.('calendar')}>
-                  View Calendar
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="headline">Headline</Label>
+                    <Input
+                      id="headline"
+                      placeholder="Breathwork & Education specialist"
+                      value={headline}
+                      onChange={(e) => setHeadline(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bio">Bio corta</Label>
+                    <Textarea
+                      id="bio"
+                      rows={4}
+                      placeholder="Cuenta en 2-3 frases qué ofreces y qué te diferencia."
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-              <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-6">
-                    {WEEKLY_SCHEDULE.map((day) => (
-                      <div key={day.day} className="space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="text-sm w-16">
-                            <p className="font-medium">{day.day}</p>
-                            <p className="text-muted-foreground">{day.date}</p>
-                          </div>
-                          <div className="flex-1 space-y-2">
-                            {day.slots.map((slot, idx) => (
-                              <div
-                                key={idx}
-                                className={`
-                                  p-3 rounded-xl flex items-center justify-between
-                                  ${slot.status === 'available'
-                                    ? 'bg-muted/30 border border-dashed border-muted-foreground/30'
-                                    : slot.status === 'pending'
-                                      ? 'bg-amber-500/10 border border-amber-500/30'
-                                      : 'bg-primary/5 border border-primary/20'
-                                  }
-                                `}
-                              >
-                                <div className="flex items-center gap-4">
-                                  <div className="flex items-center gap-2 text-sm min-w-[80px]">
-                                    <Clock className="h-4 w-4" />
-                                    {slot.time}
-                                  </div>
-                                  <div className="text-sm">
-                                    <p className="font-medium">{slot.client}</p>
-                                    <p className="text-xs text-muted-foreground">{slot.type}</p>
-                                  </div>
-                                </div>
-                                {slot.status === 'confirmed' && (
-                                  <Badge className="bg-[#0D7A7A] text-white">Confirmed</Badge>
-                                )}
-                                {slot.status === 'pending' && (
-                                  <Badge variant="outline" className="border-amber-500 text-amber-700">
-                                    Pending
-                                  </Badge>
-                                )}
-                                {slot.status === 'available' && (
-                                  <Badge variant="secondary">Open Slot</Badge>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleProfileSave} disabled={savingProfile}>
+                    {savingProfile ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Guardando...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Guardar cambios
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Sesiones y disponibilidad</CardTitle>
+                <CardDescription>
+                  Gestiona todo desde tu espacio: crea sesiones, abre huecos y configura tu agenda.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <QuickAction
+                  label="Crear nueva sesión"
+                  description="Define precio, duración y formato"
+                  icon={CalendarPlus}
+                  onClick={() => setIsCreateSessionOpen(true)}
+                />
+                <QuickAction
+                  label="Gestionar disponibilidad"
+                  description="Bloqueos, excepciones y horarios"
+                  icon={CalendarClock}
+                  onClick={() => handleNavigate("availability-management")}
+                />
+                <QuickAction
+                  label="Ir al calendario"
+                  description="Revisa tu agenda en vista semanal"
+                  icon={Calendar}
+                  onClick={() => handleNavigate("calendar")}
+                />
+                <QuickAction
+                  label="Ajustes de la cuenta"
+                  description="Moneda, notificaciones y más"
+                  icon={Settings}
+                  onClick={() => handleNavigate("settings-page")}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Mis servicios</CardTitle>
+                <CardDescription>
+                  Solo mostramos datos reales — sin eventos demo.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingServices ? (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando servicios...
+                  </div>
+                ) : ownedServices.length > 0 ? (
+                  <div className="space-y-3">
+                    {ownedServices.map((service) => (
+                      <div
+                        key={service.id}
+                        className="flex items-center justify-between rounded-xl border p-3"
+                      >
+                        <div>
+                          <div className="font-medium">{service.name}</div>
+                          <p className="text-xs text-muted-foreground">
+                            {service.category || "Servicio activo"}
+                          </p>
                         </div>
-                        {day.day !== WEEKLY_SCHEDULE[WEEKLY_SCHEDULE.length - 1].day && (
-                          <Separator />
-                        )}
+                        <Badge variant="secondary" className="text-xs">
+                          {convertAndFormat(service.price || 0, service.currency || "EUR")}
+                        </Badge>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Upcoming Sessions Table */}
-            <div className="space-y-4">
-              <h2>Upcoming Sessions</h2>
-              <Card>
-                <CardContent className="p-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Client</TableHead>
-                        <TableHead>Session Type</TableHead>
-                        <TableHead>Date & Time</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {UPCOMING_SESSIONS.map((session) => (
-                        <TableRow key={session.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="bg-muted text-xs">
-                                  {session.initials}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{session.client}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>{session.type}</TableCell>
-                          <TableCell>
-                            <div className="space-y-1">
-                              <p className="text-sm">{session.date}</p>
-                              <p className="text-xs text-muted-foreground">{session.time}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>{session.duration}</TableCell>
-                          <TableCell>
-                            {session.status === 'confirmed' ? (
-                              <Badge className="bg-[#0D7A7A] text-white">Confirmed</Badge>
-                            ) : (
-                              <Badge variant="outline" className="border-amber-500 text-amber-700">
-                                Pending
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{convertAndFormat(session.price, "EUR")}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button size="icon" variant="ghost">
-                                <MessageCircle className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost">
-                                <Video className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Today's Schedule */}
-            <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-background">
-              <CardHeader>
-                <CardTitle className="text-base">Today's Sessions</CardTitle>
-                <CardDescription>Friday, Nov 15</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  {[
-                    { time: "2:00 PM", client: "Alex K.", type: "Breathwork" },
-                    { time: "5:00 PM", client: "Jordan M.", type: "Movement" },
-                  ].map((session, idx) => (
-                    <div key={idx} className="p-4 bg-card rounded-xl border">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">{session.time}</span>
-                          <Badge variant="secondary" className="text-xs">
-                            {session.type}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs bg-muted">
-                              {session.client.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm text-muted-foreground">{session.client}</span>
-                        </div>
-                      </div>
+                ) : (
+                  <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                    <div className="font-medium text-foreground">{emptyServiceState.title}</div>
+                    <p className="mt-1">{emptyServiceState.description}</p>
+                    <div className="mt-3 flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleNavigate("services-categories")}
+                      >
+                        Crear servicio
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleNavigate("availability-management")}
+                      >
+                        Conectar disponibilidad
+                      </Button>
                     </div>
-                  ))}
-                </div>
-                <Button variant="outline" className="w-full">
-                  View Full Day
-                </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            {/* Recent Activity */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Recent Activity</CardTitle>
+                <CardTitle>Recursos del equipo</CardTitle>
+                <CardDescription>
+                  Todo lo necesario para lanzar tu ficha en producción.
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  {[
-                    { action: "New booking", client: "Morgan T.", time: "2h ago" },
-                    { action: "Session completed", client: "Sam R.", time: "5h ago" },
-                    { action: "Payment received", client: "Casey P.", time: "1d ago" },
-                    { action: "New review", client: "Alex K.", time: "2d ago" },
-                  ].map((activity, idx) => (
-                    <div key={idx}>
-                      <div className="flex items-start gap-3 py-2">
-                        <div className="h-2 w-2 rounded-full bg-primary mt-2"></div>
-                        <div className="flex-1">
-                          <p className="text-sm">{activity.action}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {activity.client} · {activity.time}
-                          </p>
-                        </div>
-                      </div>
-                      {idx < 3 && <Separator />}
+              <CardContent className="space-y-3">
+                <button
+                  className="w-full rounded-xl border px-4 py-3 text-left hover:border-primary/40"
+                  onClick={() => handleNavigate("settings-page")}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Configura tu perfil</div>
+                      <p className="text-xs text-muted-foreground">
+                        Ajusta nombre público, rol y contacto
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Profile Completion */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Profile Strength</CardTitle>
-                <CardDescription>Complete your profile to attract more clients</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Profile Complete</span>
-                    <span>85%</span>
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: '85%' }}></div>
+                </button>
+                <button
+                  className="w-full rounded-xl border px-4 py-3 text-left hover:border-primary/40"
+                  onClick={() => handleNavigate("availability-management")}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="font-medium">Sincroniza disponibilidad</div>
+                      <p className="text-xs text-muted-foreground">
+                        Alinea horarios y bloqueos con tu equipo
+                      </p>
+                    </div>
+                    <Link2 className="h-4 w-4 text-muted-foreground" />
                   </div>
-                </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <div className="h-1 w-1 rounded-full bg-muted-foreground"></div>
-                    <span>Add certifications</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <div className="h-1 w-1 rounded-full bg-muted-foreground"></div>
-                    <span>Upload introduction video</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full">
-                  Complete Profile
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Earnings Overview */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">This Month</CardTitle>
-                <CardDescription>Revenue overview</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">Earnings</span>
-                    <span className="text-2xl">{convertAndFormat(3240, "EUR")}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Sessions</span>
-                    <span>27</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Avg per session</span>
-                    <span>{convertAndFormat(120, "EUR")}</span>
-                  </div>
-                </div>
-                <Separator />
-                <Button variant="outline" className="w-full">
-                  <DollarSign className="mr-2 h-4 w-4" />
-                  View Financial Details
-                </Button>
+                </button>
               </CardContent>
             </Card>
           </div>

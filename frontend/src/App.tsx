@@ -249,7 +249,7 @@ function AppContent() {
             </Button>
           </div>
         </div>
-        <TeamDashboard />
+        <TeamDashboard onNavigate={(route) => setActiveView(route)} />
       </div>
     );
   }
