@@ -20,10 +20,15 @@ async function apiRequest(endpoint: string, options: RequestOptions = {}) {
         accessToken,
     } = options;
 
-    // Ensure endpoint starts with the function prefix (edgeFunctionName)
-    const normalizedEndpoint = endpoint.startsWith(`/${edgeFunctionName}`)
-      ? endpoint
-      : `/${edgeFunctionName}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+    // Normalize endpoint: remove any leading function prefix to avoid doubling,
+    // then re-apply exactly once.
+    const cleanedEndpoint = endpoint.replace(
+      new RegExp(`^/${edgeFunctionName}`),
+      ''
+    );
+    const normalizedEndpoint = `/${edgeFunctionName}${
+      cleanedEndpoint.startsWith('/') ? cleanedEndpoint : `/${cleanedEndpoint}`
+    }`;
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
