@@ -136,29 +136,38 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                   );
                 }
 
-                // Find service details
-                // If dateSlot has serviceId, use it. Otherwise, maybe it applies to all? 
-                // For now, let's assume if it has serviceId we add that service.
-                if (dateSlot.serviceId) {
-                  const serviceDetails = allServices.find(s => s.id === dateSlot.serviceId);
-                  if (serviceDetails) {
-                    // Check if service already in slot
-                    let serviceInSlot = slot.services.find((s: Service) => s.id === serviceDetails.id);
-                    if (!serviceInSlot) {
-                      serviceInSlot = {
-                        ...serviceDetails,
-                        basePrice: serviceDetails.price, // Map price to basePrice
-                        availableWith: []
-                      };
-                      slot.services.push(serviceInSlot);
-                    }
+        // Find service details (fallback if missing)
+        const serviceDetails = dateSlot.serviceId
+          ? allServices.find((s) => s.id === dateSlot.serviceId)
+          : null;
 
-                    // Add member to service
-                    if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
-                      serviceInSlot.availableWith.push(member);
-                    }
-                  }
-                }
+        const serviceObj: Service = serviceDetails
+          ? {
+              ...serviceDetails,
+              basePrice: serviceDetails.price,
+              availableWith: [],
+            }
+          : {
+              id: dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
+              name: dateSlot.serviceName || "Available Session",
+              duration: dateSlot.duration || 60,
+              basePrice: dateSlot.price || 0,
+              currency: dateSlot.currency || "EUR",
+              category: dateSlot.category || "Breathwork",
+              availableWith: [],
+            };
+
+        // Check if service already in slot
+        let serviceInSlot = slot.services.find((s: Service) => s.id === serviceObj.id);
+        if (!serviceInSlot) {
+          serviceInSlot = { ...serviceObj, availableWith: [] };
+          slot.services.push(serviceInSlot);
+        }
+
+        // Add member to service
+        if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
+          serviceInSlot.availableWith.push(member);
+        }
               }
             });
           });
@@ -250,6 +259,25 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
 
     const dayData = availability[day];
     return dayData.slots || [];
+  };
+
+  // Build upcoming sessions when no date selected
+  const getUpcomingSlots = () => {
+    if (!availability) return [];
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+    const slots: { day: number; slot: TimeSlot }[] = [];
+
+    Object.keys(availability)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .forEach((day) => {
+        (availability[day]?.slots || []).forEach((slot: TimeSlot) => {
+          slots.push({ day, slot });
+        });
+      });
+
+    return slots;
   };
 
   const hasAvailableSlots = (day: number) => {
@@ -418,86 +446,132 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                ) : selectedDay ? (
+                ) : (
                   <div className="space-y-4">
-                    {getDaySlots(selectedDay).map((slot, slotIndex) => (
-                      <div key={slotIndex} className="space-y-2">
-                        {/* Time header */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Clock className="h-4 w-4" />
-                          <span>{slot.time}</span>
-                        </div>
+                    {selectedDay ? (
+                      getDaySlots(selectedDay).length > 0 ? (
+                        getDaySlots(selectedDay).map((slot, slotIndex) => (
+                          <div key={slotIndex} className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>{slot.time}</span>
+                            </div>
 
-                        {/* Available services at this time */}
-                        {slot.available && slot.services && slot.services.length > 0 ? (
-                          <div className="space-y-2 pl-6">
-                            {slot.services.map((service: Service) => (
-                              <div key={service.id} className="space-y-2">
-                                {service.availableWith.map((member: TeamMember) => (
-                                  <button
-                                    key={`${service.id}-${member.id}`}
-                                    onClick={() => handleServiceSlotClick(slot, service, member)}
-                                    className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
-                                  >
-                                    <div className="space-y-2">
-                                      <div className="flex items-start justify-between gap-2">
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <p className="text-sm truncate">{service.name}</p>
-                                            <Badge variant="secondary" className="text-xs shrink-0">
-                                              {service.category}
-                                            </Badge>
-                                          </div>
-                                          <div className="flex items-center gap-2 mt-1">
-                                            <Avatar className="h-5 w-5">
-                                              {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
-                                              <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                                {member.name.split(' ').map(n => n[0]).join('')}
-                                              </AvatarFallback>
-                                            </Avatar>
-                                            <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                            {slot.available && slot.services && slot.services.length > 0 ? (
+                              <div className="space-y-2 pl-6">
+                                {slot.services.map((service: Service) => (
+                                  <div key={service.id} className="space-y-2">
+                                    {service.availableWith.map((member: TeamMember) => (
+                                      <button
+                                        key={`${service.id}-${member.id}`}
+                                        onClick={() => handleServiceSlotClick(slot, service, member)}
+                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
+                                      >
+                                        <div className="space-y-2">
+                                          <div className="flex items-start justify-between gap-2">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-2">
+                                                <p className="text-sm truncate">{service.name}</p>
+                                                <Badge variant="secondary" className="text-xs shrink-0">
+                                                  {service.category}
+                                                </Badge>
+                                              </div>
+                                              <div className="flex items-center gap-2 mt-1">
+                                                <Avatar className="h-5 w-5">
+                                                  {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+                                                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                    {member.name.split(' ').map(n => n[0]).join('')}
+                                                  </AvatarFallback>
+                                                </Avatar>
+                                                <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                              </div>
+                                            </div>
+                                            <div className="flex flex-col items-end gap-1 shrink-0">
+                                              <span className="text-sm">
+                                                {service.currency} {service.basePrice}
+                                              </span>
+                                              <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            </div>
                                           </div>
                                         </div>
-                                        <div className="flex flex-col items-end gap-1 shrink-0">
-                                          <span className="text-sm">
-                                            {service.currency} {service.basePrice}
-                                          </span>
-                                          <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </button>
+                                      </button>
+                                    ))}
+                                  </div>
                                 ))}
                               </div>
-                            ))}
+                            ) : (
+                              <div className="pl-6 py-2 text-xs text-muted-foreground">
+                                No sessions available
+                              </div>
+                            )}
                           </div>
-                        ) : (
-                          <div className="pl-6 py-2 text-xs text-muted-foreground">
-                            No sessions available
+                        ))
+                      ) : (
+                        <div className="text-center py-12">
+                          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
+                            <Clock className="h-8 w-8 text-muted-foreground" />
                           </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {getDaySlots(selectedDay).length === 0 && (
-                      <div className="text-center py-12">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                          <Clock className="h-8 w-8 text-muted-foreground" />
+                          <p className="text-sm text-muted-foreground">No availability for this day</p>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          No availability for this day
-                        </p>
+                      )
+                    ) : (
+                      <div className="space-y-4">
+                        {getUpcomingSlots().length === 0 && (
+                          <div className="text-sm text-muted-foreground">No upcoming sessions</div>
+                        )}
+                        {getUpcomingSlots().map(({ day, slot }, idx) => (
+                          <div key={`${day}-${idx}`} className="space-y-2">
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Clock className="h-4 w-4" />
+                              <span>
+                                {monthName} {day}, {year} — {slot.time}
+                              </span>
+                            </div>
+                            {slot.services && slot.services.length > 0 ? (
+                              <div className="space-y-2 pl-6">
+                                {slot.services.map((service: Service) => (
+                                  <div key={service.id} className="space-y-2">
+                                    {service.availableWith.map((member: TeamMember) => (
+                                      <div
+                                        key={`${service.id}-${member.id}-${day}-${slot.time}`}
+                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20"
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                              <p className="text-sm truncate">{service.name}</p>
+                                              <Badge variant="secondary" className="text-xs shrink-0">
+                                                {service.category}
+                                              </Badge>
+                                            </div>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <Avatar className="h-5 w-5">
+                                                {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+                                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                  {member.name.split(' ').map(n => n[0]).join('')}
+                                                </AvatarFallback>
+                                              </Avatar>
+                                              <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                            </div>
+                                          </div>
+                                          <div className="flex flex-col items-end gap-1 shrink-0">
+                                            <span className="text-sm">
+                                              {service.currency} {service.basePrice}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="pl-6 py-2 text-xs text-muted-foreground">No sessions available</div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     )}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-4">
-                      <Clock className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Select a date to view available times
-                    </p>
                   </div>
                 )}
               </CardContent>
