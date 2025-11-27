@@ -111,7 +111,10 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
         service?.created_by ||
         service?.createdBy ||
         service?.teamMemberId ||
-        service?.team_member_id;
+        service?.team_member_id ||
+        service?.team_member?.id ||
+        service?.user_id ||
+        service?.userId;
       return ownerId === user.id;
     });
   }, [services, user?.id]);
