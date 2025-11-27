@@ -103,8 +103,9 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   }, []);
 
   const ownedServices = useMemo(() => {
-    if (!user?.id) return [];
-    return services.filter((service) => {
+    if (!user?.id && !user?.email) return [];
+
+    const matchesUser = (service: any) => {
       const ownerId =
         service?.owner_id ||
         service?.ownerId ||
@@ -115,9 +116,24 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
         service?.team_member?.id ||
         service?.user_id ||
         service?.userId;
-      return ownerId === user.id;
-    });
-  }, [services, user?.id]);
+
+      const ownerEmail =
+        service?.owner_email ||
+        service?.ownerEmail ||
+        service?.team_member?.email ||
+        service?.email;
+
+      const userMatchesId = ownerId && user?.id && ownerId === user.id;
+      const userMatchesEmail =
+        ownerEmail &&
+        user?.email &&
+        ownerEmail.toLowerCase() === user.email.toLowerCase();
+
+      return userMatchesId || userMatchesEmail;
+    };
+
+    return services.filter((service) => matchesUser(service));
+  }, [services, user?.id, user?.email]);
 
   const handleNavigate = (route: string) => {
     if (onNavigate) {
