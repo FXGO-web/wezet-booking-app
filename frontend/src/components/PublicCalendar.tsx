@@ -75,9 +75,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
 
-        // 1. Fetch base calendar availability
+        // 1. Fetch calendar availability (currently contains demo slots; we override to avoid fake availability)
         const response = await availabilityAPI.getAvailability(year, month);
-        let currentAvailability = response?.availability || {};
+        let currentAvailability: Record<number, any> = {}; // ignore demo slots, we'll build from specific dates
         const members = response?.teamMembers || [];
         setTeamMembers(members);
 
