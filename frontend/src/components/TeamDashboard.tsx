@@ -75,6 +75,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
+  const profileCardRef = useRef<HTMLDivElement | null>(null);
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Team Member";
   const userRole = user?.user_metadata?.role || "Specialist";
 
@@ -122,6 +123,12 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
     }
     const origin = window.location.origin;
     window.location.href = `${origin}/?view=${route}`;
+  };
+
+  const scrollToProfileCard = () => {
+    if (profileCardRef.current) {
+      profileCardRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   };
 
   const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -253,7 +260,8 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <Card className="border-primary/20">
+            <div ref={profileCardRef}>
+              <Card className="border-primary/20">
               <CardHeader className="pb-2">
                 <CardTitle>Public profile</CardTitle>
                 <CardDescription>
@@ -356,7 +364,8 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+              </Card>
+            </div>
 
             <Card>
               <CardHeader>
@@ -371,6 +380,18 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                   description="Set price, duration, and format"
                   icon={CalendarPlus}
                   onClick={() => setIsCreateSessionOpen(true)}
+                />
+                <QuickAction
+                  label="Create retreat / education project"
+                  description="Plan a retreat, residency, or learning track"
+                  icon={Mountain}
+                  onClick={() => handleNavigate("programs-retreats")}
+                />
+                <QuickAction
+                  label="Create on-demand product"
+                  description="Video / media content for clients to stream"
+                  icon={Play}
+                  onClick={() => handleNavigate("products-on-demand")}
                 />
                 <QuickAction
                   label="Manage availability"
@@ -389,18 +410,6 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                   description="Currency, notifications, and more"
                   icon={Settings}
                   onClick={() => handleNavigate("settings-page")}
-                />
-                <QuickAction
-                  label="Create retreat / education project"
-                  description="Plan a retreat, residency, or learning track"
-                  icon={Mountain}
-                  onClick={() => handleNavigate("programs-retreats")}
-                />
-                <QuickAction
-                  label="Create on-demand product"
-                  description="Video / media content for clients to stream"
-                  icon={Play}
-                  onClick={() => handleNavigate("products-on-demand")}
                 />
               </CardContent>
             </Card>
@@ -474,7 +483,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
               <CardContent className="space-y-3">
                 <button
                   className="w-full rounded-xl border px-4 py-3 text-left hover:border-primary/40"
-                  onClick={() => handleNavigate("settings-page")}
+                  onClick={scrollToProfileCard}
                 >
                   <div className="flex items-center justify-between">
                     <div>

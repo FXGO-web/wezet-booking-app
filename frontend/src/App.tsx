@@ -82,6 +82,12 @@ function AppContent() {
     }
   }, []);
 
+  useEffect(() => {
+    if (user && activeView === "auth") {
+      setActiveView("home");
+    }
+  }, [user, activeView]);
+
   const handleInitializeDemo = async () => {
     setInitializingData(true);
     const accessToken = getAccessToken();
