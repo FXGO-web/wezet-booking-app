@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -52,6 +52,19 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     category: service?.category || "Breathwork",
     status: service?.status || "active",
   });
+
+  // Sync form when a different service is opened
+  useEffect(() => {
+    setFormData({
+      name: service?.name || "",
+      description: service?.description || "",
+      duration: service?.duration || 60,
+      price: service?.price || 0,
+      currency: service?.currency || "EUR",
+      category: service?.category || "Breathwork",
+      status: service?.status || "active",
+    });
+  }, [service]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +139,8 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                     size="sm"
                     className="h-6 text-xs text-muted-foreground hover:text-primary"
                     onClick={() => {
-                      window.location.href = `/?view=availability&serviceId=${service.id}&tab=specific`;
+                      const origin = window.location.origin;
+                      window.location.href = `${origin}/?view=availability-management&serviceId=${service.id}&tab=specific`;
                     }}
                   >
                     <CalendarDays className="mr-1 h-3 w-3" />
