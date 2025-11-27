@@ -2,7 +2,8 @@ import { projectId, publicAnonKey, edgeFunctionName, supabaseUrl } from './supab
 
 // Supabase edge functions mount at /functions/v1/<function-name>.
 const baseHost = supabaseUrl || `https://${projectId}.supabase.co`;
-const API_BASE_URL = `${baseHost}/functions/v1/${edgeFunctionName}`;
+// API base without the function name; we will prefix each endpoint automatically.
+const API_BASE_URL = `${baseHost}/functions/v1`;
 
 interface RequestOptions {
   method?: string;
@@ -18,6 +19,11 @@ async function apiRequest(endpoint: string, options: RequestOptions = {}) {
         requiresAuth = false,
         accessToken,
     } = options;
+
+    // Ensure endpoint starts with the function prefix (edgeFunctionName)
+    const normalizedEndpoint = endpoint.startsWith(`/${edgeFunctionName}`)
+      ? endpoint
+      : `/${edgeFunctionName}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
 
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -40,7 +46,7 @@ async function apiRequest(endpoint: string, options: RequestOptions = {}) {
     }
 
     try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    const response = await fetch(`${API_BASE_URL}${normalizedEndpoint}`, config);
     const text = await response.text();
     let data;
     try {
