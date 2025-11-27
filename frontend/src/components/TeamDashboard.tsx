@@ -50,8 +50,8 @@ const QuickAction = ({
 );
 
 const emptyServiceState = {
-  title: "Sin servicios asignados aún",
-  description: "Crea o vincula un servicio para que los clientes puedan reservar contigo.",
+  title: "No services linked yet",
+  description: "Create or link a service so clients can book with you.",
 };
 
 interface TeamDashboardProps {
@@ -146,10 +146,10 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
         );
       }
 
-      toast.success("Perfil actualizado");
+      toast.success("Profile updated");
     } catch (error) {
       console.error("Error updating profile:", error);
-      toast.error("No se pudo guardar el perfil");
+      toast.error("Unable to save profile");
     } finally {
       setSavingProfile(false);
     }
@@ -202,9 +202,9 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           <div className="lg:col-span-2 space-y-6">
             <Card className="border-primary/20">
               <CardHeader className="pb-2">
-                <CardTitle>Perfil público</CardTitle>
+                <CardTitle>Public profile</CardTitle>
                 <CardDescription>
-                  Mantén tu ficha actualizada: imagen, headline y bio corta.
+                  Keep your profile fresh: image, headline, and short bio.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -226,7 +226,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                     </div>
                   </div>
                   <div className="flex-1 space-y-2">
-                    <Label htmlFor="avatarUrl">Imagen de perfil (URL)</Label>
+                    <Label htmlFor="avatarUrl">Profile image (URL)</Label>
                     <div className="flex gap-2">
                       <Input
                         id="avatarUrl"
@@ -257,11 +257,11 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="bio">Bio corta</Label>
+                    <Label htmlFor="bio">Short bio</Label>
                     <Textarea
                       id="bio"
                       rows={4}
-                      placeholder="Cuenta en 2-3 frases qué ofreces y qué te diferencia."
+                      placeholder="In 2-3 sentences, share what you offer and what sets you apart."
                       value={bio}
                       onChange={(e) => setBio(e.target.value)}
                     />
@@ -273,12 +273,12 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                     {savingProfile ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Guardando...
+                        Saving...
                       </>
                     ) : (
                       <>
                         <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Guardar cambios
+                        Save changes
                       </>
                     )}
                   </Button>
@@ -288,33 +288,33 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
 
             <Card>
               <CardHeader>
-                <CardTitle>Sesiones y disponibilidad</CardTitle>
+                <CardTitle>Sessions & availability</CardTitle>
                 <CardDescription>
-                  Gestiona todo desde tu espacio: crea sesiones, abre huecos y configura tu agenda.
+                  Manage everything from your space: create sessions, open slots, and tune your schedule.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <QuickAction
-                  label="Crear nueva sesión"
-                  description="Define precio, duración y formato"
+                  label="Create new session"
+                  description="Set price, duration, and format"
                   icon={CalendarPlus}
                   onClick={() => setIsCreateSessionOpen(true)}
                 />
                 <QuickAction
-                  label="Gestionar disponibilidad"
-                  description="Bloqueos, excepciones y horarios"
+                  label="Manage availability"
+                  description="Blocks, exceptions, and weekly hours"
                   icon={CalendarClock}
                   onClick={() => handleNavigate("availability-management")}
                 />
                 <QuickAction
-                  label="Ir al calendario"
-                  description="Revisa tu agenda en vista semanal"
+                  label="Go to calendar"
+                  description="Review your schedule in weekly view"
                   icon={Calendar}
                   onClick={() => handleNavigate("calendar")}
                 />
                 <QuickAction
-                  label="Ajustes de la cuenta"
-                  description="Moneda, notificaciones y más"
+                  label="Account settings"
+                  description="Currency, notifications, and more"
                   icon={Settings}
                   onClick={() => handleNavigate("settings-page")}
                 />
@@ -325,16 +325,16 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Mis servicios</CardTitle>
+                <CardTitle>My services</CardTitle>
                 <CardDescription>
-                  Solo mostramos datos reales — sin eventos demo.
+                  Only real data — no demo events.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {loadingServices ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Cargando servicios...
+                    Loading services...
                   </div>
                 ) : ownedServices.length > 0 ? (
                   <div className="space-y-3">
@@ -365,14 +365,14 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                         size="sm"
                         onClick={() => handleNavigate("services-categories")}
                       >
-                        Crear servicio
+                        Create service
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleNavigate("availability-management")}
                       >
-                        Conectar disponibilidad
+                        Link availability
                       </Button>
                     </div>
                   </div>
@@ -382,9 +382,9 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
 
             <Card>
               <CardHeader>
-                <CardTitle>Recursos del equipo</CardTitle>
+                <CardTitle>Team resources</CardTitle>
                 <CardDescription>
-                  Todo lo necesario para lanzar tu ficha en producción.
+                  Everything you need to ship your profile.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -394,9 +394,9 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium">Configura tu perfil</div>
+                      <div className="font-medium">Configure your profile</div>
                       <p className="text-xs text-muted-foreground">
-                        Ajusta nombre público, rol y contacto
+                        Adjust public name, role, and contact
                       </p>
                     </div>
                     <Link2 className="h-4 w-4 text-muted-foreground" />
@@ -408,9 +408,9 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-medium">Sincroniza disponibilidad</div>
+                      <div className="font-medium">Sync availability</div>
                       <p className="text-xs text-muted-foreground">
-                        Alinea horarios y bloqueos con tu equipo
+                        Align hours and blocks with your team
                       </p>
                     </div>
                     <Link2 className="h-4 w-4 text-muted-foreground" />
