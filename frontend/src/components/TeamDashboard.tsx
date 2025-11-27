@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   Loader2,
   Link2,
+  Mountain,
+  Play,
 } from "lucide-react";
 import { CreateSessionModal } from "./CreateSessionModal";
 import { useAuth } from "../hooks/useAuth";
@@ -72,6 +74,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
   const [savingProfile, setSavingProfile] = useState(false);
   const [services, setServices] = useState<any[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null);
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Team Member";
   const userRole = user?.user_metadata?.role || "Specialist";
 
@@ -119,6 +122,56 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
     }
     const origin = window.location.origin;
     window.location.href = `${origin}/?view=${route}`;
+  };
+
+  const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const input = event.target;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Usa PNG, JPG o WEBP.");
+      input.value = "";
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      const isSquare = Math.abs(img.width - img.height) <= 5;
+      if (!isSquare) {
+        toast.error("Usa una imagen cuadrada 1:1.");
+        URL.revokeObjectURL(objectUrl);
+        input.value = "";
+        return;
+      }
+
+      if (img.width < 600 || img.height < 600) {
+        toast.warning("Recomendado mínimo 600x600px para un buen preview.");
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (typeof reader.result === "string") {
+          setAvatarUrl(reader.result);
+          toast.success("Imagen lista. Guarda los cambios para publicarla.");
+        }
+      };
+      reader.readAsDataURL(file);
+
+      URL.revokeObjectURL(objectUrl);
+      input.value = "";
+    };
+
+    img.onerror = () => {
+      toast.error("No pudimos leer la imagen seleccionada.");
+      URL.revokeObjectURL(objectUrl);
+      input.value = "";
+    };
+
+    img.src = objectUrl;
   };
 
   const handleProfileSave = async () => {
@@ -224,24 +277,43 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                         {headline || userRole}
                       </p>
                     </div>
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <Label htmlFor="avatarUrl">Profile image (URL)</Label>
-                    <div className="flex gap-2">
+                </div>
+                <div className="flex-1 space-y-2">
+                    <Label htmlFor="avatarUrl">Profile image (URL o upload)</Label>
+                    <div className="flex flex-col gap-2">
                       <Input
                         id="avatarUrl"
                         placeholder="https://..."
                         value={avatarUrl}
                         onChange={(e) => setAvatarUrl(e.target.value)}
                       />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setAvatarUrl("")}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Reset
-                      </Button>
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          ref={avatarFileInputRef}
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                          className="hidden"
+                          onChange={handleAvatarFileChange}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => avatarFileInputRef.current?.click()}
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload / replace
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          onClick={() => setAvatarUrl("")}
+                        >
+                          Reset
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Usa PNG, JPG o WEBP. Ratio 1:1 (cuadrado) y recomendado 600x600px para que se vea nítido.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -317,6 +389,18 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                   description="Currency, notifications, and more"
                   icon={Settings}
                   onClick={() => handleNavigate("settings-page")}
+                />
+                <QuickAction
+                  label="Create retreat / education project"
+                  description="Plan a retreat, residency, or learning track"
+                  icon={Mountain}
+                  onClick={() => handleNavigate("programs-retreats")}
+                />
+                <QuickAction
+                  label="Create on-demand product"
+                  description="Video / media content for clients to stream"
+                  icon={Play}
+                  onClick={() => handleNavigate("products-on-demand")}
                 />
               </CardContent>
             </Card>
