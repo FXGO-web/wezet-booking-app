@@ -34,7 +34,7 @@ import {
   XCircle,
   Clock4
 } from "lucide-react";
-import { bookingsAPI, servicesAPI, teamMembersAPI } from "../utils/api";
+import { bookingsAPI, sessionsAPI as servicesAPI, teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface BookingModalProps {

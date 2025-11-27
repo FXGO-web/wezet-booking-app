@@ -4,7 +4,8 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ChevronLeft, ChevronRight, Clock, Sparkles, Loader2, ArrowRight, MapPin, Calendar, Video, Package, PlayCircle } from "lucide-react";
-import { availabilityAPI, programsAPI, productsAPI, servicesAPI } from "../utils/api";
+import { availabilityAPI, programsAPI, productsAPI, sessionsAPI } from "../utils/api";
+import { useCurrency } from "../context/CurrencyContext";
 
 interface TeamMember {
   id: string;
@@ -25,6 +26,8 @@ interface Service {
 interface TimeSlot {
   time: string;
   dateTime: string;
+  endTime?: string;
+  duration?: number;
   available: boolean;
   services: Service[];
 }
@@ -36,11 +39,18 @@ interface PublicCalendarProps {
     preselectedDateTime?: string;
     preselectedTeamMember?: string;
     preselectedService?: string;
+    preselectedServiceDescription?: string;
+    preselectedServiceName?: string;
+    preselectedServicePrice?: number;
+    preselectedCurrency?: string;
+    preselectedDuration?: number;
   }) => void;
   onNavigateToProgram?: (programId: string) => void;
+  onNavigateToProduct?: (productId: string) => void;
 }
 
-export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: PublicCalendarProps) {
+export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct }: PublicCalendarProps) {
+  const { convertAndFormat } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1)); // November 2025
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
@@ -120,12 +130,40 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                   };
                 }
 
+                // Price/duration normalization
+                const serviceDetails = dateSlot.serviceId
+                  ? allServices.find((s) => s.id === dateSlot.serviceId)
+                  : null;
+
+        const normalizedPrice =
+          normalizePrice(serviceDetails) ??
+          normalizePrice(dateSlot);
+
+                const normalizedCurrency =
+                  serviceDetails?.currency ||
+                  serviceDetails?.pricing?.currency ||
+                  dateSlot.currency ||
+                  "EUR";
+
+                const normalizedDuration =
+                  serviceDetails?.duration ||
+                  dateSlot.duration ||
+                  60;
+
+                const normalizedEndTime = computeEndTime(
+                  dateSlot.startTime || dateSlot.time || time,
+                  normalizedDuration,
+                  dateSlot.endTime,
+                );
+
                 // Find or create time slot
                 let slot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
                 if (!slot) {
                   slot = {
                     time: time,
                     dateTime: dateSlot.date, // Or construct full ISO string
+                    endTime: normalizedEndTime,
+                    duration: normalizedDuration,
                     available: true,
                     services: []
                   };
@@ -134,40 +172,47 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                   currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
                     a.time.localeCompare(b.time)
                   );
+                } else {
+                  slot.endTime = slot.endTime || normalizedEndTime;
+                  slot.duration = slot.duration || normalizedDuration;
                 }
 
-        // Find service details (fallback if missing)
-        const serviceDetails = dateSlot.serviceId
-          ? allServices.find((s) => s.id === dateSlot.serviceId)
-          : null;
+                const fallbackService = allServices.length === 1 ? allServices[0] : null;
 
-        const serviceObj: Service = serviceDetails
-          ? {
-              ...serviceDetails,
-              basePrice: serviceDetails.price,
-              availableWith: [],
-            }
-          : {
-              id: dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
-              name: dateSlot.serviceName || "Available Session",
-              duration: dateSlot.duration || 60,
-              basePrice: dateSlot.price || 0,
-              currency: dateSlot.currency || "EUR",
-              category: dateSlot.category || "Breathwork",
-              availableWith: [],
-            };
+                const serviceObj: Service = serviceDetails || fallbackService
+                  ? {
+                      ...(serviceDetails || fallbackService),
+                      id: (serviceDetails || fallbackService)?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
+                      name: (serviceDetails || fallbackService)?.name || dateSlot.serviceName || "Session",
+                      basePrice: (normalizedPrice ?? normalizePrice(fallbackService)) ?? null,
+                      currency: (serviceDetails || fallbackService)?.currency || normalizedCurrency,
+                      description: (serviceDetails || fallbackService)?.description || dateSlot.description || dateSlot.notes || "Session",
+                      duration: (serviceDetails || fallbackService)?.duration || normalizedDuration,
+                      category: (serviceDetails || fallbackService)?.category || dateSlot.category || "Breathwork",
+                      availableWith: [],
+                    }
+                  : {
+                      id: dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
+                      name: dateSlot.serviceName || "Session",
+                      description: dateSlot.description || dateSlot.notes || "Session",
+                      duration: normalizedDuration,
+                      basePrice: normalizedPrice ?? null,
+                      currency: normalizedCurrency,
+                      category: dateSlot.category || "Breathwork",
+                      availableWith: [],
+                    };
 
-        // Check if service already in slot
-        let serviceInSlot = slot.services.find((s: Service) => s.id === serviceObj.id);
-        if (!serviceInSlot) {
-          serviceInSlot = { ...serviceObj, availableWith: [] };
-          slot.services.push(serviceInSlot);
-        }
+                // Check if service already in slot
+                let serviceInSlot = slot.services.find((s: Service) => s.id === serviceObj.id);
+                if (!serviceInSlot) {
+                  serviceInSlot = { ...serviceObj, availableWith: [] };
+                  slot.services.push(serviceInSlot);
+                }
 
-        // Add member to service
-        if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
-          serviceInSlot.availableWith.push(member);
-        }
+                // Add member to service
+                if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
+                  serviceInSlot.availableWith.push(member);
+                }
               }
             });
           });
@@ -229,7 +274,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const { services } = await servicesAPI.getAll();
+        const { services } = await sessionsAPI.getAll();
         setAllServices(services || []);
       } catch (error) {
         console.error("Failed to fetch services:", error);
@@ -250,6 +295,36 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
       new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1)
     );
     setSelectedDay(null);
+  };
+
+  const normalizePrice = (service: any): number | null => {
+    const candidates = [
+      service?.basePrice,
+      service?.price,
+      service?.rate,
+      service?.amount,
+      service?.price_cents ? service.price_cents / 100 : null,
+      service?.amount_cents ? service.amount_cents / 100 : null,
+      service?.cost,
+      service?.defaultPrice,
+      service?.pricing?.price,
+      service?.pricing?.amount,
+      typeof service?.amount_cents === "number" ? service.amount_cents / 100 : null,
+    ];
+    const found = candidates.find((v) => v !== undefined && v !== null);
+    const numeric = found !== undefined ? Number(found) : null;
+    return Number.isFinite(numeric) ? numeric : null;
+  };
+
+  const computeEndTime = (startTime: string, durationMinutes?: number, explicitEnd?: string) => {
+    if (explicitEnd) return explicitEnd;
+    const [h, m] = startTime.split(":").map(Number);
+    const start = h * 60 + (m || 0);
+    const duration = durationMinutes || 60;
+    const endMinutes = start + duration;
+    const endH = Math.floor(endMinutes / 60) % 24;
+    const endM = endMinutes % 60;
+    return `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
   };
 
   const getDaySlots = (day: number): TimeSlot[] => {
@@ -285,22 +360,36 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
     return availability[day].hasAvailability;
   };
 
-  const handleServiceSlotClick = (slot: TimeSlot, service: Service, teamMember: TeamMember) => {
+  const handleServiceSlotClick = (
+    slot: TimeSlot,
+    service: Service,
+    teamMember: TeamMember,
+    dayOverride?: number
+  ) => {
     if (!slot.available) return;
+
+    const dayToUse = dayOverride ?? selectedDay;
+    if (!dayToUse) return;
 
     // Format the selected date
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();
-    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(selectedDay).padStart(2, '0')}`;
+    const dateStr = `${year}-${String(month).padStart(2, '0')}-${String(dayToUse).padStart(2, '0')}`;
 
     // Navigate to booking flow with all pre-selected data - skip directly to step 2
     if (onNavigateToBooking) {
+      const priceValue = normalizePrice(service);
       onNavigateToBooking({
         preselectedDate: dateStr,
         preselectedTime: slot.time,
         preselectedDateTime: slot.dateTime,
         preselectedService: service.id,
         preselectedTeamMember: teamMember.id,
+        preselectedServiceName: service.name,
+        preselectedServiceDescription: service.description,
+        preselectedServicePrice: priceValue,
+        preselectedCurrency: service.currency || "EUR",
+        preselectedDuration: service.duration,
       });
     }
   };
@@ -454,22 +543,25 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                           <div key={slotIndex} className="space-y-2">
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
                               <Clock className="h-4 w-4" />
-                              <span>{slot.time}</span>
+                              <span>
+                                {slot.time}
+                                {slot.endTime ? ` - ${slot.endTime}` : ""}
+                              </span>
                             </div>
 
                             {slot.available && slot.services && slot.services.length > 0 ? (
-                              <div className="space-y-2 pl-6">
-                                {slot.services.map((service: Service) => (
-                                  <div key={service.id} className="space-y-2">
-                                    {service.availableWith.map((member: TeamMember) => (
-                                      <button
-                                        key={`${service.id}-${member.id}`}
-                                        onClick={() => handleServiceSlotClick(slot, service, member)}
-                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
-                                      >
-                                        <div className="space-y-2">
-                                          <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
+                          <div className="space-y-2 pl-6">
+                            {slot.services.map((service: Service) => (
+                              <div key={service.id} className="space-y-2">
+                                {service.availableWith.map((member: TeamMember) => (
+                                  <button
+                                    key={`${service.id}-${member.id}`}
+                                    onClick={() => handleServiceSlotClick(slot, service, member)}
+                                    className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
+                                  >
+                                      <div className="space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1 min-w-0">
                                               <div className="flex items-center gap-2">
                                                 <p className="text-sm truncate">{service.name}</p>
                                                 <Badge variant="secondary" className="text-xs shrink-0">
@@ -486,12 +578,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                                                 <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                                               </div>
                                             </div>
-                                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                              <span className="text-sm">
-                                                {service.currency} {service.basePrice}
-                                              </span>
-                                              <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                            </div>
+                                          <div className="flex flex-col items-end gap-1 shrink-0">
+                                            <span className="text-sm">
+                                              {normalizePrice(service) !== null
+                                                ? convertAndFormat(
+                                                    normalizePrice(service) as number,
+                                                    service.currency || "EUR"
+                                                  )
+                                                : "Price varies"}
+                                            </span>
+                                            <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </div>
                                           </div>
                                         </div>
                                       </button>
@@ -525,6 +622,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                               <Clock className="h-4 w-4" />
                               <span>
                                 {monthName} {day}, {year} — {slot.time}
+                                {slot.endTime ? ` - ${slot.endTime}` : ""}
                               </span>
                             </div>
                             {slot.services && slot.services.length > 0 ? (
@@ -532,9 +630,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                                 {slot.services.map((service: Service) => (
                                   <div key={service.id} className="space-y-2">
                                     {service.availableWith.map((member: TeamMember) => (
-                                      <div
+                                      <button
                                         key={`${service.id}-${member.id}-${day}-${slot.time}`}
-                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20"
+                                        onClick={() => handleServiceSlotClick(slot, service, member, day)}
+                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
                                       >
                                         <div className="flex items-start justify-between gap-2">
                                           <div className="flex-1 min-w-0">
@@ -554,13 +653,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                                               <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                                             </div>
                                           </div>
-                                          <div className="flex flex-col items-end gap-1 shrink-0">
-                                            <span className="text-sm">
-                                              {service.currency} {service.basePrice}
-                                            </span>
-                                          </div>
-                                        </div>
+                                      <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <span className="text-sm">
+                                          {normalizePrice(service) !== null
+                                            ? convertAndFormat(
+                                                normalizePrice(service) as number,
+                                                service.currency || "EUR"
+                                              )
+                                            : "Price varies"}
+                                        </span>
+                                        <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                       </div>
+                                    </div>
+                                  </button>
                                     ))}
                                   </div>
                                 ))}
@@ -646,6 +751,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                         <MapPin className="h-4 w-4" />
                         <span>{program.location || 'Location TBD'}</span>
                       </div>
+                      <div className="flex items-center gap-2 text-foreground font-medium">
+                        <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -674,7 +782,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
           ) : products.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {products.map((product) => (
-                <Card key={product.id} className="hover:shadow-lg transition-shadow cursor-pointer group">
+                <Card
+                  key={product.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => onNavigateToProduct && onNavigateToProduct(product.id)}
+                >
                   <CardHeader className="pb-4">
                     <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors relative overflow-hidden">
                       {product.type === 'video_course' ? (
@@ -697,7 +809,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram }: Pub
                     <div className="space-y-2 text-sm text-muted-foreground">
                       <p className="line-clamp-2">{product.description || 'No description'}</p>
                       <div className="flex items-center gap-2 pt-2">
-                        <span className="font-medium text-foreground">€{product.price || 0}</span>
+                        <span className="font-medium text-foreground">
+                          {convertAndFormat(product.price || 0, product.currency || "EUR")}
+                        </span>
                         <span>•</span>
                         <span>{product.itemCount || 0} Items</span>
                       </div>

@@ -19,7 +19,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select";
-import { servicesAPI } from "../utils/api";
+
+import { sessionsAPI as servicesAPI, teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface ServiceModalProps {
@@ -40,47 +41,117 @@ const categories = [
   "Sound Healing",
 ];
 
+const allowedCurrencies = ["EUR", "DKK"];
+const allowedStatus = ["active", "inactive"];
+
+const sanitizeCurrency = (value?: string) =>
+  allowedCurrencies.includes(value || "") ? value! : "EUR";
+
+const sanitizeStatus = (value?: string) =>
+  allowedStatus.includes(value || "") ? value! : "active";
+
+const sanitizeCategory = (value?: string) =>
+  value && categories.includes(value) ? value : "Breathwork";
+
 export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceModalProps) {
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
   const [formData, setFormData] = useState({
     name: service?.name || "",
     description: service?.description || "",
     duration: service?.duration || 60,
     price: service?.price || 0,
-    currency: service?.currency || "EUR",
-    category: service?.category || "Breathwork",
-    status: service?.status || "active",
+    currency: sanitizeCurrency(service?.currency),
+    category: sanitizeCategory(service?.category),
+    status: sanitizeStatus(service?.status),
+    teamMemberId:
+      service?.teamMemberId ||
+      service?.owner_id ||
+      service?.ownerId ||
+      service?.created_by ||
+      "none",
   });
 
-  // Sync form when a different service is opened
+  // Sync when service prop changes
   useEffect(() => {
     setFormData({
       name: service?.name || "",
       description: service?.description || "",
       duration: service?.duration || 60,
       price: service?.price || 0,
-      currency: service?.currency || "EUR",
-      category: service?.category || "Breathwork",
-      status: service?.status || "active",
+      currency: sanitizeCurrency(service?.currency),
+      category: sanitizeCategory(service?.category),
+      status: sanitizeStatus(service?.status),
+      teamMemberId:
+        service?.teamMemberId ||
+        service?.owner_id ||
+        service?.ownerId ||
+        service?.created_by ||
+        "none",
     });
   }, [service]);
+
+  useEffect(() => {
+    const loadTeamMembers = async () => {
+      try {
+        const token = await getAccessToken(); // FIXED
+        const { teamMembers: members } = await teamMembersAPI.getAll({ status: "active" });
+        setTeamMembers(members || []);
+      } catch (error) {
+        console.error("Error loading team members:", error);
+        setTeamMembers([]);
+      }
+    };
+    loadTeamMembers();
+  }, [getAccessToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const accessToken = getAccessToken();
+      const accessToken = await getAccessToken(); // FIXED
       if (!accessToken) {
         alert("Please log in to continue");
         return;
       }
 
+      if (!formData.name || !formData.category || !formData.currency) {
+        alert("Please fill in all required fields.");
+        setLoading(false);
+        return;
+      }
+
+      if (
+        formData.price === null ||
+        formData.price === undefined ||
+        Number.isNaN(Number(formData.price))
+      ) {
+        alert("Please set a valid price (0 for free).");
+        setLoading(false);
+        return;
+      }
+
+      if (!formData.duration || Number(formData.duration) <= 0) {
+        alert("Please set a duration greater than 0.");
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        ...formData,
+        teamMemberId:
+          formData.teamMemberId && formData.teamMemberId !== "none"
+            ? formData.teamMemberId
+            : undefined,
+      };
+
       if (service) {
-        await servicesAPI.update(service.id, formData, accessToken);
+        await servicesAPI.update(service.id, payload, accessToken);
       } else {
-        await servicesAPI.create(formData, accessToken);
+        await servicesAPI.create(payload, accessToken);
       }
 
       onSuccess();
@@ -94,13 +165,16 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
   };
 
   const handleDelete = async () => {
-    if (!service || !window.confirm("Are you sure you want to delete this service? This action cannot be undone.")) {
+    if (
+      !service ||
+      !window.confirm("Are you sure you want to delete this service? This action cannot be undone.")
+    ) {
       return;
     }
 
     setLoading(true);
     try {
-      const accessToken = getAccessToken();
+      const accessToken = await getAccessToken(); // FIXED
       if (!accessToken) return;
 
       await servicesAPI.delete(service.id, accessToken);
@@ -108,7 +182,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       onClose();
     } catch (error) {
       console.error("Error deleting service:", error);
-      alert("Failed to delete service");
+      alert("Failed to delete session");
     } finally {
       setLoading(false);
     }
@@ -118,20 +192,20 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{service ? "Edit Service" : "Create New Service"}</DialogTitle>
+          <DialogTitle>{service ? "Edit Session" : "Create New Session"}</DialogTitle>
           <DialogDescription>
             {service
-              ? "Update service information and pricing"
-              : "Add a new service to your WEZET platform"}
+              ? "Update session information and pricing"
+              : "Add a new session to your WEZET platform"}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            {/* Service Name */}
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="name">Service Name *</Label>
+                <Label htmlFor="name">Session Name *</Label>
                 {service && (
                   <Button
                     type="button"
@@ -148,6 +222,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                   </Button>
                 )}
               </div>
+
               <Input
                 id="name"
                 value={formData.name}
@@ -155,7 +230,8 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 placeholder="Transformational Breathwork"
                 required
               />
-            </div>            {/* Description */}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
               <Textarea
@@ -167,7 +243,26 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               />
             </div>
 
-            {/* Duration, Price, Currency */}
+            <div className="space-y-2">
+              <Label>Assign to team member</Label>
+              <Select
+                value={formData.teamMemberId}
+                onValueChange={(value) => setFormData({ ...formData, teamMemberId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select team member (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Unassigned</SelectItem>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name || member.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration (minutes) *</Label>
@@ -203,11 +298,11 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Select
-                  value={formData.currency}
+                  value={formData.currency || ""}
                   onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="EUR">EUR (€)</SelectItem>
@@ -217,16 +312,15 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               </div>
             </div>
 
-            {/* Category and Status */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
-                  value={formData.category}
+                  value={formData.category || ""}
                   onValueChange={(value: string) => setFormData({ ...formData, category: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
@@ -241,11 +335,11 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               <div className="space-y-2">
                 <Label htmlFor="status">Status</Label>
                 <Select
-                  value={formData.status}
+                  value={formData.status || ""}
                   onValueChange={(value: string) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="active">Active</SelectItem>
@@ -260,6 +354,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
               Cancel
             </Button>
+
             {service && (
               <Button
                 type="button"
@@ -272,6 +367,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                 Delete
               </Button>
             )}
+
             <Button type="submit" disabled={loading}>
               {loading ? (
                 <>

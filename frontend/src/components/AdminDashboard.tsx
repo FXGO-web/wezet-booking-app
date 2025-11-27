@@ -69,8 +69,8 @@ const navigationCards: NavigationCard[] = [
     route: "bookings-directory",
   },
   {
-    title: "Services & Categories",
-    description: "Configure services, pricing & categories",
+    title: "Sessions & Categories",
+    description: "Configure sessions, pricing & categories",
     icon: Layers,
     route: "services-categories",
   },

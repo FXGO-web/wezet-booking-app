@@ -22,7 +22,7 @@ import { CreateSessionModal } from "./CreateSessionModal";
 import { useAuth } from "../hooks/useAuth";
 import { useCurrency } from "../context/CurrencyContext";
 import { supabase } from "../utils/supabase/client";
-import { servicesAPI, teamMembersAPI } from "../utils/api";
+import { sessionsAPI, teamMembersAPI } from "../utils/api";
 import { toast } from "sonner";
 
 const QuickAction = ({
@@ -89,7 +89,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
     const loadServices = async () => {
       setLoadingServices(true);
       try {
-        const { services: serviceList } = await servicesAPI.getAll();
+        const { services: serviceList } = await sessionsAPI.getAll();
         setServices(serviceList || []);
       } catch (error) {
         console.error("Error loading services:", error);
@@ -418,10 +418,10 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>My services</CardTitle>
-                <CardDescription>
+              <CardTitle>My sessions</CardTitle>
+              <CardDescription>
                   Only real data — no demo events.
-                </CardDescription>
+              </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {loadingServices ? (
@@ -450,15 +450,15 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
-                    <div className="font-medium text-foreground">{emptyServiceState.title}</div>
+                    <div className="font-medium text-foreground">No sessions linked yet</div>
                     <p className="mt-1">{emptyServiceState.description}</p>
                     <div className="mt-3 flex gap-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleNavigate("services-categories")}
+                        onClick={() => setIsCreateSessionOpen(true)}
                       >
-                        Create service
+                        Create session
                       </Button>
                       <Button
                         variant="ghost"

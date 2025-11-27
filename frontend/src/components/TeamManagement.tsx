@@ -5,7 +5,7 @@ import { Badge } from "./ui/badge";
 import { Plus, Edit, Loader2, Download, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Card, CardContent } from "./ui/card";
-import { servicesAPI, teamMembersAPI } from "../utils/api";
+import { sessionsAPI, teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { TeamMemberModal } from "./TeamMemberModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
@@ -189,7 +189,7 @@ export function TeamManagement() {
       // Fetch members + services so we can reflect active offerings
       const [membersRes, servicesRes] = await Promise.all([
         teamMembersAPI.getAll(filters),
-        servicesAPI.getAll({}),
+        sessionsAPI.getAll({}),
       ]);
 
       const data = membersRes?.teamMembers || [];

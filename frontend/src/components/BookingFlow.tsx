@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -19,7 +19,7 @@ import {
   Loader2,
   MapPin
 } from "lucide-react";
-import { servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
+import { sessionsAPI as servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
 import { toast } from "sonner";
 import { format, parse } from "date-fns";
 import { useAuth } from "../hooks/useAuth";
@@ -34,19 +34,42 @@ interface BookingFlowProps {
     preselectedDateTime?: string;
     preselectedTeamMember?: string;
     preselectedService?: string;
+    preselectedServiceName?: string;
+    preselectedServiceDescription?: string;
+    preselectedServicePrice?: number;
+    preselectedCurrency?: string;
+    preselectedDuration?: number;
   } | null;
 }
 
 export function BookingFlow({ preselection }: BookingFlowProps) {
-  const [currentStep, setCurrentStep] = useState<BookingStep>(1);
+  const [currentStep, setCurrentStep] = useState<BookingStep>(preselection ? 2 : 1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const { user, getAccessToken } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
+  const [allowDateChange, setAllowDateChange] = useState(!preselection);
 
   // Data from backend
   const [services, setServices] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [prefilledServiceInfo, setPrefilledServiceInfo] = useState<{
+    id?: string;
+    name?: string;
+    description?: string;
+    price?: number | null;
+    currency?: string;
+    duration?: number;
+  } | null>(preselection
+    ? {
+        id: preselection.preselectedService,
+        name: preselection.preselectedServiceName,
+        description: preselection.preselectedServiceDescription,
+        price: preselection.preselectedServicePrice ?? null,
+        currency: preselection.preselectedCurrency,
+        duration: preselection.preselectedDuration,
+      }
+    : null);
 
   // Selections
   const [selectedService, setSelectedService] = useState<string | null>(null);
@@ -72,6 +95,12 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (preselection?.preselectedService && !selectedService) {
+      setSelectedService(preselection.preselectedService);
+    }
+  }, [preselection?.preselectedService, selectedService]);
+
   // Auto-advance after login
   useEffect(() => {
     if (user && showAuth) {
@@ -82,7 +111,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
   useEffect(() => {
     // If we have preselection data from calendar, apply it and skip to step 2
-    if (preselection && services.length > 0 && teamMembers.length > 0) {
+    if (preselection) {
       // Set preselected service
       if (preselection.preselectedService) {
         setSelectedService(preselection.preselectedService);
@@ -102,6 +131,14 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         setSelectedDate(parsedDate);
         setSelectedTime(preselection.preselectedTime);
       }
+
+      setPrefilledServiceInfo({
+        id: preselection.preselectedService,
+        name: preselection.preselectedServiceName,
+        price: preselection.preselectedServicePrice ?? null,
+        currency: preselection.preselectedCurrency,
+        duration: preselection.preselectedDuration,
+      });
 
       // If we have all required data (service, team member, date, time), skip to step 2
       if (preselection.preselectedService &&
@@ -140,6 +177,30 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
   const selectedServiceData = services.find(s => s && s.id === selectedService);
   const selectedTeamMemberData = teamMembers.find(tm => tm && tm.id === selectedTeamMember);
+  const selectedPrice = useMemo(() => {
+    const source = selectedServiceData || prefilledServiceInfo;
+    if (!source) return null;
+    const raw =
+      source.basePrice ??
+      source.price ??
+      source.rate ??
+      null;
+    return raw !== null ? Number(raw) : null;
+  }, [selectedServiceData, prefilledServiceInfo]);
+
+  const displayService = selectedServiceData || prefilledServiceInfo || null;
+  const showSteps = currentStep < 3 && !preselection;
+  const selectedTimeRange = useMemo(() => {
+    if (!selectedTime) return null;
+    const duration = displayService?.duration || selectedServiceData?.duration || 60;
+    const [h, m] = selectedTime.split(":").map(Number);
+    const start = h * 60 + (m || 0);
+    const end = start + duration;
+    const endH = Math.floor(end / 60) % 24;
+    const endM = end % 60;
+    const endStr = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
+    return `${selectedTime} - ${endStr}`;
+  }, [selectedTime, displayService?.duration, selectedServiceData?.duration]);
 
   // Available time slots
   const timeSlots = [
@@ -160,6 +221,12 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       setCurrentStep((currentStep + 1) as BookingStep);
     }
   };
+
+  useEffect(() => {
+    if (preselection && currentStep === 1) {
+      setCurrentStep(2);
+    }
+  }, [preselection, currentStep]);
 
   const handleBack = () => {
     if (currentStep > 1) {
@@ -185,8 +252,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       const dateTime = `${dateStr}T${selectedTime}:00`;
 
       const bookingData = {
-        serviceId: selectedService,
-        serviceName: selectedServiceData?.name,
+        serviceId: selectedService || displayService?.id,
+        serviceName: displayService?.name || selectedServiceData?.name,
+        serviceDescription: displayService?.description,
         teamMemberId: selectedTeamMember,
         teamMemberName: selectedTeamMemberData?.name,
         date: dateTime,
@@ -195,9 +263,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         clientEmail: formData.email,
         clientPhone: formData.phone,
         notes: formData.notes,
-        price: selectedServiceData?.basePrice || 0,
-        currency: selectedServiceData?.currency || 'EUR',
-        duration: selectedServiceData?.duration,
+        price: selectedPrice || 0,
+        currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
+        duration: displayService?.duration || selectedServiceData?.duration,
         status: 'confirmed',
       };
 
@@ -253,7 +321,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         </div>
 
         {/* Progress Steps - Now only 2 steps */}
-        {currentStep < 3 && (
+        {showSteps && (
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -458,59 +526,130 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         {/* Step 2: Combined Details & Payment */}
         {currentStep === 2 && (
           <div className="space-y-6">
-            <h2>Complete Your Booking</h2>
+            <h2 className="sr-only">Complete Your Booking</h2>
+
+            {/* Compact session header */}
+            <Card className="shadow-sm border-muted">
+              <CardContent className="p-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4">
+                  <div className="flex items-start gap-3 flex-1">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="text-base font-semibold leading-tight">
+                          {displayService?.name || "Selected session"}
+                        </h3>
+                        {displayService?.category && (
+                          <Badge variant="secondary" className="text-xs">
+                            {displayService.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                        <span>{displayService?.duration || selectedServiceData?.duration || "—"} min</span>
+                        <span>•</span>
+                        <span>
+                          {selectedTimeRange || selectedTime || "Time TBD"}
+                        </span>
+                        {selectedPrice !== null && (
+                          <>
+                            <span>•</span>
+                            <span className="text-foreground font-medium">
+                              {displayService?.currency || selectedServiceData?.currency || "EUR"} {selectedPrice}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  {selectedDate && selectedTime && (
+                    <div className="text-sm text-muted-foreground whitespace-nowrap">
+                      {format(selectedDate, 'PPP')}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Date & Time Selection */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Select Date & Time</CardTitle>
-                <CardDescription>Choose when you'd like your session</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Date & Time</CardTitle>
+                    <CardDescription>
+                      {allowDateChange ? "Choose when you'd like your session" : "Locked from your selection"}
+                    </CardDescription>
+                  </div>
+                  {preselection && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAllowDateChange((v) => !v)}
+                    >
+                      {allowDateChange ? "Keep selection" : "Change date/time"}
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label>Select Date</Label>
-                    <div className="flex justify-center">
-                      <CalendarComponent
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        disabled={(date: Date) => date < new Date()}
-                        className="rounded-xl border"
-                      />
+                {allowDateChange ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <Label>Select Date</Label>
+                      <div className="flex justify-center">
+                        <CalendarComponent
+                          mode="single"
+                          selected={selectedDate}
+                          onSelect={setSelectedDate}
+                          disabled={(date: Date) => date < new Date()}
+                          className="rounded-xl border"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Available Time Slots</Label>
+                      {!selectedDate ? (
+                        <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+                          Please select a date first
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-2">
+                          {timeSlots.map((time) => (
+                            <Button
+                              key={time}
+                              variant={selectedTime === time ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedTime(time)}
+                              className="justify-center"
+                            >
+                              {time}
+                            </Button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>Available Time Slots</Label>
-                    {!selectedDate ? (
-                      <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
-                        Please select a date first
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2">
-                        {timeSlots.map((time) => (
-                          <Button
-                            key={time}
-                            variant={selectedTime === time ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSelectedTime(time)}
-                            className="justify-center"
-                          >
-                            {time}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
+                ) : (
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-2 text-sm">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-foreground">
+                      {selectedDate
+                        ? `${format(selectedDate, 'EEEE, MMMM d, yyyy')} at ${selectedTimeRange || selectedTime}`
+                        : "No date selected"}
+                    </span>
                   </div>
-                </div>
+                )}
 
-                {selectedDate && selectedTime && (
+                {selectedDate && selectedTime && allowDateChange && (
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-primary" />
                       <span className="text-foreground">
-                        {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTime}
+                        {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeRange || selectedTime}
                       </span>
                     </div>
                   </div>
@@ -527,28 +666,55 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     Fill in your details and payment information
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Session Summary */}
-                  <div className="flex items-start justify-between p-4 bg-muted/50 rounded-xl">
+              <CardContent className="space-y-6">
+                {/* Session Summary */}
+                <div className="rounded-xl border bg-card/50 p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <h3 className="text-base">{selectedServiceData?.name}</h3>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Clock className="h-4 w-4" />
-                        {selectedServiceData?.duration} min
+                      <h3 className="text-base font-semibold">{displayService?.name || "Selected session"}</h3>
+                      <div className="flex items-center gap-3 text-sm text-muted-foreground flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" />
+                          <span>{displayService?.duration || selectedServiceData?.duration || "—"} min</span>
+                        </div>
+                        {selectedTime && (
+                          <>
+                            <span>•</span>
+                            <span>{selectedTimeRange || selectedTime}</span>
+                          </>
+                        )}
+                        {selectedTeamMemberData && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <User className="h-4 w-4" />
+                              {selectedTeamMemberData.name}
+                            </span>
+                          </>
+                        )}
                       </div>
-                      {selectedTeamMemberData && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <User className="h-4 w-4" />
-                          {selectedTeamMemberData.name}
+                      {selectedDate && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          {format(selectedDate, 'PPP')}
                         </div>
                       )}
                     </div>
-                    <div className="text-lg">
-                      {selectedServiceData?.basePrice
-                        ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}`
-                        : 'Price varies'}
+                    <div className="text-right shrink-0">
+                      <div className="text-sm text-muted-foreground">Amount</div>
+                      <div className="text-lg font-semibold">
+                        {selectedPrice !== null
+                          ? `${displayService?.currency || selectedServiceData?.currency || 'EUR'} ${selectedPrice}`
+                          : '—'}
+                      </div>
                     </div>
                   </div>
+                  <div className="text-xs text-muted-foreground leading-relaxed bg-muted/40 rounded-lg p-3">
+                    {displayService?.description
+                      ? displayService.description
+                      : "Review your details and confirm your session."}
+                  </div>
+                </div>
 
                   <Separator />
 
@@ -653,30 +819,26 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                   <CardTitle className="text-base">Order Summary</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Session</span>
-                      <span>
-                        {selectedServiceData?.basePrice
-                          ? `${selectedServiceData?.currency} ${selectedServiceData?.basePrice}`
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Session</span>
+                        <span>
+                          {selectedPrice !== null
+                          ? `${selectedServiceData?.currency || 'EUR'} ${selectedPrice}`
                           : 'Price varies'}
-                      </span>
-                    </div>
-                    {selectedServiceData?.basePrice && (
-                      <>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Platform fee</span>
-                          <span>{selectedServiceData?.currency} 25</span>
-                        </div>
-                        <Separator />
-                        <div className="flex justify-between">
-                          <span>Total</span>
-                          <span className="text-lg">
-                            {selectedServiceData?.currency} {(selectedServiceData?.basePrice || 0) + 25}
-                          </span>
-                        </div>
-                      </>
-                    )}
+                        </span>
+                      </div>
+                      {selectedPrice !== null && (
+                        <>
+                          <Separator />
+                          <div className="flex justify-between">
+                            <span>Total</span>
+                            <span className="text-lg">
+                              {selectedServiceData?.currency || 'EUR'} {selectedPrice}
+                            </span>
+                          </div>
+                        </>
+                      )}
                   </div>
 
                   <Separator />
@@ -716,8 +878,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     Processing...
                   </>
                 ) : (
-                  selectedServiceData?.basePrice
-                    ? `Confirm & Pay ${selectedServiceData?.currency} ${(selectedServiceData?.basePrice || 0) + 25}`
+                  selectedPrice !== null
+                    ? `Confirm & Pay ${selectedServiceData?.currency || 'EUR'} ${(selectedPrice || 0) + 25}`
                     : "Request Booking"
                 )}
               </Button>

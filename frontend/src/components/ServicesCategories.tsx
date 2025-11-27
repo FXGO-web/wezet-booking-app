@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
 import { Badge } from "./ui/badge";
 import { Plus, Edit, Wind, Heart, MessageCircle, BookOpen, Mountain, Loader2, Download, Trash2 } from "lucide-react";
-import { servicesAPI } from "../utils/api";
+import { sessionsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { ServiceModal } from "./ServiceModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
@@ -97,10 +97,10 @@ export function ServicesCategories() {
   };
 
   // Table columns configuration
-  const columns: Column[] = [
-    {
-      key: 'name',
-      label: 'Service',
+const columns: Column[] = [
+  {
+    key: 'name',
+    label: 'Session',
       sortable: true,
       render: (value: string, row: Service) => {
         const Icon = getCategoryIcon(row.category);
@@ -203,8 +203,8 @@ export function ServicesCategories() {
       const accessToken = getAccessToken();
       if (!accessToken) return;
 
-      await servicesAPI.delete(id, accessToken);
-      toast.success("Service deleted successfully");
+      await sessionsAPI.delete(id, accessToken);
+      toast.success("Session deleted successfully");
       fetchServices();
     } catch (error) {
       console.error("Error deleting service:", error);
@@ -221,7 +221,7 @@ export function ServicesCategories() {
       if (filterValues.category && filterValues.category !== 'all') filters.category = filterValues.category;
       if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
-      const { services: data } = await servicesAPI.getAll(filters);
+      const { services: data } = await sessionsAPI.getAll(filters);
       setServices(data || []);
     } catch (error) {
       console.error('Error fetching services:', error);
@@ -250,7 +250,7 @@ export function ServicesCategories() {
   };
 
   const handleExport = () => {
-    const headers = ['Service Name', 'Category', 'Duration (min)', 'Price', 'Currency', 'Status'];
+    const headers = ['Session Name', 'Category', 'Duration (min)', 'Price', 'Currency', 'Status'];
     const rows = filteredServices.map(s => [
       s.name,
       s.category,
@@ -269,13 +269,13 @@ export function ServicesCategories() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `services-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `sessions-${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     window.URL.revokeObjectURL(url);
 
-    toast.success(`Exported ${filteredServices.length} services`);
+    toast.success(`Exported ${filteredServices.length} sessions`);
   };
 
   // Apply filters
@@ -302,9 +302,9 @@ export function ServicesCategories() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <h1>Services & Categories</h1>
+            <h1>Sessions & Categories</h1>
             <p className="text-muted-foreground">
-              Manage services, pricing, duration & categories
+              Manage sessions, pricing, duration & categories
             </p>
           </div>
           <div className="flex gap-2">
@@ -318,7 +318,7 @@ export function ServicesCategories() {
             </Button>
             <Button onClick={handleAddClick}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Service
+              Add Session
             </Button>
           </div>
         </div>
@@ -380,7 +380,7 @@ export function ServicesCategories() {
         {/* Results Summary */}
         {!loading && (
           <div className="text-sm text-muted-foreground text-center">
-            Showing {filteredServices.length} of {services.length} services
+            Showing {filteredServices.length} of {services.length} sessions
           </div>
         )}
       </div>

@@ -35,7 +35,7 @@ import {
   Loader2,
   CalendarDays,
 } from "lucide-react";
-import { availabilityAPI, servicesAPI } from "../utils/api";
+import { availabilityAPI, sessionsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -169,7 +169,7 @@ export function AvailabilityManagement() {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const { services } = await servicesAPI.getAll();
+        const { services } = await sessionsAPI.getAll();
         setServices(services || []);
       } catch (error) {
         console.error("Error fetching services:", error);

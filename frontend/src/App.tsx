@@ -72,6 +72,8 @@ function AppContent() {
     useState(false);
   const [bookingPreselection, setBookingPreselection] =
     useState<any>(null);
+  const userBadgeLabel =
+    user?.user_metadata?.role || "Client";
 
   // Handle URL parameters for routing
   useEffect(() => {
@@ -87,6 +89,68 @@ function AppContent() {
       setActiveView("home");
     }
   }, [user, activeView]);
+
+  const HeaderBar = ({
+    onBack,
+    backLabel = "Back to Home",
+  }: {
+    onBack?: () => void;
+    backLabel?: string;
+  }) => (
+    <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          {onBack ? (
+            <Button
+              variant="ghost"
+              onClick={onBack}
+              className="px-2"
+            >
+              ← {backLabel}
+            </Button>
+          ) : (
+            <>
+              <span className="text-xl font-bold tracking-tight">
+                WEZET
+              </span>
+              {user && (
+                <Badge variant="secondary" className="text-xs">
+                  {userBadgeLabel}
+                </Badge>
+              )}
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-4">
+          <CurrencySelector />
+          <NotificationCenter />
+          {user ? (
+            <>
+              <div className="text-sm text-muted-foreground hidden sm:block">
+                {user.user_metadata?.name || user.email}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={signOut}
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setActiveView("auth")}
+            >
+              Log In
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
   const handleInitializeDemo = async () => {
     setInitializingData(true);
@@ -130,16 +194,7 @@ function AppContent() {
   if (activeView === "auth") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <AuthPage />
       </div>
     );
@@ -148,16 +203,7 @@ function AppContent() {
   if (activeView === "design-system") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <DesignSystem />
       </div>
     );
@@ -166,21 +212,7 @@ function AppContent() {
   if (activeView === "calendar") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-            {!user && (
-              <Button onClick={() => setActiveView("auth")}>
-                Log In
-              </Button>
-            )}
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <PublicCalendar
           onNavigateToBooking={(bookingData) => {
             // Store booking data for BookingFlow
@@ -195,6 +227,10 @@ function AppContent() {
             console.log("Navigating to program:", programId);
             setActiveView("retreat-detail");
           }}
+          onNavigateToProduct={(productId) => {
+            console.log("Navigating to product:", productId);
+            setActiveView("on-demand-product-detail");
+          }}
         />
       </div>
     );
@@ -203,19 +239,12 @@ function AppContent() {
   if (activeView === "booking") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => {
-                setActiveView("home");
-                setBookingPreselection(null);
-              }}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar
+          onBack={() => {
+            setActiveView("home");
+            setBookingPreselection(null);
+          }}
+        />
         <BookingFlow preselection={bookingPreselection} />
       </div>
     );
@@ -224,16 +253,7 @@ function AppContent() {
   if (activeView === "client-dashboard") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <ClientDashboard
           onNavigate={(route) => setActiveView(route)}
           onBookSession={() => setActiveView("booking-flow")}
@@ -245,16 +265,7 @@ function AppContent() {
   if (activeView === "team-dashboard") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <TeamDashboard onNavigate={(route) => setActiveView(route)} />
       </div>
     );
@@ -263,16 +274,7 @@ function AppContent() {
   if (activeView === "team-directory") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <TeamDirectory />
       </div>
     );
@@ -281,16 +283,7 @@ function AppContent() {
   if (activeView === "admin-dashboard") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <AdminDashboard
           onNavigate={(route) => setActiveView(route)}
         />
@@ -301,16 +294,7 @@ function AppContent() {
   if (activeView === "analytics-dashboard") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <AnalyticsDashboard />
       </div>
     );
@@ -319,16 +303,7 @@ function AppContent() {
   if (activeView === "availability-editor") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <AvailabilityEditor />
       </div>
     );
@@ -337,16 +312,7 @@ function AppContent() {
   if (activeView === "availability-management") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <AvailabilityManagement />
       </div>
     );
@@ -355,16 +321,7 @@ function AppContent() {
   if (activeView === "digital-content-library") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <DigitalContentLibrary />
       </div>
     );
@@ -373,16 +330,7 @@ function AppContent() {
   if (activeView === "content-viewer") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <ContentViewer />
       </div>
     );
@@ -391,16 +339,7 @@ function AppContent() {
   if (activeView === "on-demand-product-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <OnDemandProductDetail />
       </div>
     );
@@ -409,16 +348,7 @@ function AppContent() {
   if (activeView === "retreat-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <RetreatDetail />
       </div>
     );
@@ -427,16 +357,7 @@ function AppContent() {
   if (activeView === "wordpress-calendar-widget") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <div className="min-h-screen bg-background py-24">
           <div className="max-w-7xl mx-auto px-6 md:px-12">
             <div className="max-w-md mx-auto">
@@ -468,16 +389,7 @@ function AppContent() {
   if (activeView === "team-member-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <TeamMemberDetail />
       </div>
     );
@@ -486,16 +398,7 @@ function AppContent() {
   if (activeView === "services-categories") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <ServicesCategories />
       </div>
     );
@@ -503,26 +406,20 @@ function AppContent() {
 
   if (activeView === "public-service-detail") {
     return (
-      <PublicServiceDetail
-        onBack={() => setActiveView("home")}
-        onBook={() => setActiveView("booking")}
-      />
+      <div>
+        <HeaderBar onBack={() => setActiveView("home")} />
+        <PublicServiceDetail
+          onBack={() => setActiveView("home")}
+          onBook={() => setActiveView("booking")}
+        />
+      </div>
     );
   }
 
   if (activeView === "service-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <ServiceDetail />
       </div>
     );
@@ -531,16 +428,7 @@ function AppContent() {
   if (activeView === "locations-directory") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <LocationsDirectory />
       </div>
     );
@@ -549,16 +437,7 @@ function AppContent() {
   if (activeView === "location-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <LocationDetail />
       </div>
     );
@@ -567,16 +446,7 @@ function AppContent() {
   if (activeView === "bookings-directory") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <BookingsDirectory />
       </div>
     );
@@ -585,16 +455,7 @@ function AppContent() {
   if (activeView === "booking-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <BookingDetail />
       </div>
     );
@@ -603,16 +464,7 @@ function AppContent() {
   if (activeView === "digital-content-management") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <DigitalContentManagement />
       </div>
     );
@@ -621,16 +473,7 @@ function AppContent() {
   if (activeView === "digital-content-detail") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <DigitalContentDetail />
       </div>
     );
@@ -639,16 +482,7 @@ function AppContent() {
   if (activeView === "programs-retreats") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("admin-dashboard")}
-            >
-              ← Back to Dashboard
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
         <ProgramsRetreats onBack={() => setActiveView("admin-dashboard")} />
       </div>
     );
@@ -657,16 +491,7 @@ function AppContent() {
   if (activeView === "products-on-demand") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("admin-dashboard")}
-            >
-              ← Back to Dashboard
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
         <ProductsOnDemand onBack={() => setActiveView("admin-dashboard")} />
       </div>
     );
@@ -675,16 +500,7 @@ function AppContent() {
   if (activeView === "settings-page") {
     return (
       <div>
-        <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-          <div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              onClick={() => setActiveView("home")}
-            >
-              ← Back to Home
-            </Button>
-          </div>
-        </div>
+        <HeaderBar onBack={() => setActiveView("home")} />
         <SettingsPage />
       </div>
     );
@@ -692,49 +508,7 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Navigation Bar */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="text-xl font-bold tracking-tight">WEZET</span>
-            {user && (
-              <Badge variant="secondary" className="text-xs">
-                {user.user_metadata?.role || "Client"}
-              </Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                <div className="text-sm text-muted-foreground hidden sm:block">
-                  {user.user_metadata?.name || user.email}
-                </div>
-                <CurrencySelector />
-                <NotificationCenter />
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={signOut}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <CurrencySelector />
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => setActiveView("auth")}
-                >
-                  Log In
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <HeaderBar />
 
       {/* Main Navigation Grid */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-12">

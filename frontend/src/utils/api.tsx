@@ -174,6 +174,9 @@ export const servicesAPI = {
   },
 };
 
+// Alias for sessions to align naming without changing backend endpoints
+export const sessionsAPI = servicesAPI;
+
 // ============================================
 // LOCATIONS API
 // ============================================
