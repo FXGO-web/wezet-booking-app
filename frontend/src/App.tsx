@@ -66,12 +66,22 @@ import {
 } from "lucide-react";
 
 function AppContent() {
+  const EMBED_ALLOWED_VIEWS = [
+    "calendar",
+    "booking",
+    "auth",
+    "wordpress-calendar-widget",
+  ];
   const { user, loading, signOut, getAccessToken } = useAuth();
   const [activeView, setActiveView] = useState("home");
   const [initializingData, setInitializingData] =
     useState(false);
   const [bookingPreselection, setBookingPreselection] =
     useState<any>(null);
+  const [returnView, setReturnView] = useState<string | null>(
+    null,
+  );
+  const [embedMode, setEmbedMode] = useState(false);
   const userBadgeLabel =
     user?.user_metadata?.role || "Client";
 
@@ -79,8 +89,16 @@ function AppContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const viewParam = params.get("view");
+    const embedParam = params.get("embed");
+    const returnParam = params.get("return");
     if (viewParam) {
       setActiveView(viewParam);
+    }
+    if (embedParam) {
+      setEmbedMode(embedParam === "1" || embedParam === "true");
+    }
+    if (returnParam) {
+      setReturnView(returnParam);
     }
   }, []);
 
@@ -89,6 +107,13 @@ function AppContent() {
       setActiveView("home");
     }
   }, [user, activeView]);
+
+  // If we're embedded, constrain navigation to a safe subset
+  useEffect(() => {
+    if (embedMode && !EMBED_ALLOWED_VIEWS.includes(activeView)) {
+      setActiveView("calendar");
+    }
+  }, [embedMode, activeView]);
 
   const HeaderBar = ({
     onBack,
@@ -212,7 +237,25 @@ function AppContent() {
   if (activeView === "calendar") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        {!embedMode && (
+          <HeaderBar onBack={() => setActiveView("home")} />
+        )}
+        {embedMode && (
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+            <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const base = window.location.origin;
+                  window.open(`${base}/?view=client-dashboard`, "_blank");
+                }}
+              >
+                Ir al panel
+              </Button>
+            </div>
+          </div>
+        )}
         <PublicCalendar
           onNavigateToBooking={(bookingData) => {
             // Store booking data for BookingFlow
@@ -220,6 +263,7 @@ function AppContent() {
               "Navigating to booking with data:",
               bookingData,
             );
+            setReturnView("calendar");
             setBookingPreselection(bookingData);
             setActiveView("booking");
           }}
@@ -239,12 +283,29 @@ function AppContent() {
   if (activeView === "booking") {
     return (
       <div>
-        <HeaderBar
-          onBack={() => {
-            setActiveView("home");
-            setBookingPreselection(null);
-          }}
-        />
+        {embedMode ? (
+          <div className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b">
+            <div className="max-w-5xl mx-auto px-4 py-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setActiveView(returnView || "calendar");
+                  setBookingPreselection(null);
+                }}
+              >
+                ← Back to Calendar
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <HeaderBar
+            onBack={() => {
+              setActiveView(returnView || "home");
+              setBookingPreselection(null);
+            }}
+          />
+        )}
         <BookingFlow preselection={bookingPreselection} />
       </div>
     );
@@ -356,13 +417,23 @@ function AppContent() {
 
   if (activeView === "wordpress-calendar-widget") {
     return (
-      <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
-        <div className="min-h-screen bg-background py-24">
-          <div className="max-w-7xl mx-auto px-6 md:px-12">
-            <div className="max-w-md mx-auto">
-              <WordPressCalendarWidget />
-            </div>
+      <div className={embedMode ? "bg-[#f8f7f4]" : ""}>
+        {!embedMode && (
+          <HeaderBar onBack={() => setActiveView("home")} />
+        )}
+        <div
+          className={`min-h-screen ${
+            embedMode ? "bg-[#f8f7f4] py-10" : "bg-background py-24"
+          }`}
+        >
+          <div className="max-w-6xl mx-auto px-4 md:px-8">
+            <WordPressCalendarWidget
+              onNavigateToBooking={(bookingData) => {
+                setReturnView("wordpress-calendar-widget");
+                setBookingPreselection(bookingData);
+                setActiveView("booking");
+              }}
+            />
           </div>
         </div>
       </div>
