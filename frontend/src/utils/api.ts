@@ -2,6 +2,7 @@
 // API central para la UI de WEZET -> Supabase
 
 import { supabase } from "./supabase/client";
+import { Database } from "../types/database.types";
 
 /**
  * NOTA GENERAL
@@ -272,12 +273,11 @@ export const locationsAPI = {
   },
 
   create: async (location: any) => {
-    const payload = {
+    const payload: Database["public"]["Tables"]["locations"]["Insert"] = {
       name: location.name,
       address: location.address ?? null,
-      city: location.city ?? null,
-      country: location.country ?? null,
-      timezone: location.timezone ?? "Europe/Madrid",
+      type: location.type ?? "in-person", // Default to in-person if missing, or handle as needed
+      capacity: location.capacity ?? null,
     };
 
     const { data, error } = await supabase
@@ -354,9 +354,9 @@ export const bookingsAPI = {
           date: start ? start.toISOString().slice(0, 10) : "",
           time: start
             ? start.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+              hour: "2-digit",
+              minute: "2-digit",
+            })
             : "",
           price:
             b.price ?? b.session?.template?.price ?? null,
@@ -396,13 +396,17 @@ export const bookingsAPI = {
   },
 
   create: async (booking: any) => {
-    const payload = {
+    const payload: Database["public"]["Tables"]["bookings"]["Insert"] = {
       customer_id: booking.customerId,
-      session_id: booking.sessionId,
+      session_id: booking.sessionId, // Note: bookings table refers to sessions, not templates directly usually? Wait, schema has session_id.
       status: booking.status ?? "pending",
-      price: booking.price ?? null,
+      total_price: booking.price ?? 0, // Schema has total_price, not price
       currency: booking.currency ?? "EUR",
       notes: booking.notes ?? null,
+      instructor_id: booking.instructorId ?? null,
+      session_template_id: booking.sessionTemplateId ?? null,
+      start_time: booking.startTime, // Schema requires start_time
+      end_time: booking.endTime, // Schema requires end_time
     };
 
     const { data, error } = await supabase
@@ -481,61 +485,33 @@ export const statsAPI = {
 };
 
 // ===========================================================
-// SETTINGS — FIX CORS + invoke() forever
+// SETTINGS (Custom Vercel API Route)
 // ===========================================================
-
-const SETTINGS_URL =
-  "https://aadzzhdouuxkvelxyoyf.supabase.co/functions/v1/settings";
 
 export const settingsAPI = {
   get: async () => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      throw new Error("No valid session found. User must be logged in.");
-    }
-
-    const res = await fetch(SETTINGS_URL, {
+    const { data, error } = await supabase.functions.invoke("settings", {
       method: "GET",
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-      },
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Settings GET failed: ${res.status} - ${text}`);
+    if (error) {
+      throw new Error(`Settings fetch failed: ${error.message}`);
     }
 
-    return res.json();
+    return data;
   },
 
   update: async (settings: any) => {
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
-
-    if (!session?.access_token) {
-      throw new Error("No valid session found. User must be logged in.");
-    }
-
-    const res = await fetch(SETTINGS_URL, {
+    const { data, error } = await supabase.functions.invoke("settings", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify(settings),
+      body: settings,
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`Settings update failed: ${res.status} - ${text}`);
+    if (error) {
+      throw new Error(`Settings update failed: ${error.message}`);
     }
 
-    return res.json();
+    return data;
   },
 };
 
@@ -625,7 +601,7 @@ export const availabilityAPI = {
 
     if (schedule.length === 0) return [];
 
-    const rows = schedule.map((s: any) => ({
+    const rows: Database["public"]["Tables"]["availability_rules"]["Insert"][] = schedule.map((s: any) => ({
       instructor_id: teamMemberId,
       session_template_id: serviceId ?? s.sessionTemplateId ?? null,
       weekday: s.dayOfWeek ?? s.weekday,
@@ -651,12 +627,12 @@ export const availabilityAPI = {
   ) => {
     if (dates.length === 0) return [];
 
-    const rows = dates.map((d: any) => ({
+    const rows: Database["public"]["Tables"]["availability_exceptions"]["Insert"][] = dates.map((d: any) => ({
       instructor_id: teamMemberId,
       session_template_id: serviceId ?? d.sessionTemplateId ?? null,
       date: d.date,
-      start_time: d.startTime ?? d.start_time ?? null,
-      end_time: d.endTime ?? d.end_time ?? null,
+      start_time: d.startTime ?? d.start_time ?? "00:00", // Ensure valid time
+      end_time: d.endTime ?? d.end_time ?? "23:59", // Ensure valid time
       is_available: d.isAvailable ?? d.is_available ?? true,
       location_id: d.locationId ?? d.location_id ?? null,
     }));
@@ -673,7 +649,7 @@ export const availabilityAPI = {
   blockDates: async (teamMemberId: string, dates: any[]) => {
     if (dates.length === 0) return [];
 
-    const rows = dates.map((d: any) => ({
+    const rows: Database["public"]["Tables"]["availability_blocked_dates"]["Insert"][] = dates.map((d: any) => ({
       instructor_id: teamMemberId,
       date: d.date,
       reason: d.reason ?? null,

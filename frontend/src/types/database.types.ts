@@ -114,54 +114,66 @@ export interface Database {
             availability_rules: {
                 Row: {
                     id: string
-                    profile_id: string
-                    day_of_week: number // 0-6
+                    instructor_id: string
+                    session_template_id: string | null
+                    weekday: number // 0-6
                     start_time: string // HH:MM
                     end_time: string // HH:MM
+                    location_id: string | null
                     created_at: string
                 }
                 Insert: {
                     id?: string
-                    profile_id: string
-                    day_of_week: number
+                    instructor_id: string
+                    session_template_id?: string | null
+                    weekday: number
                     start_time: string
                     end_time: string
+                    location_id?: string | null
                     created_at?: string
                 }
                 Update: {
                     id?: string
-                    profile_id?: string
-                    day_of_week?: number
+                    instructor_id?: string
+                    session_template_id?: string | null
+                    weekday?: number
                     start_time?: string
                     end_time?: string
+                    location_id?: string | null
                     created_at?: string
                 }
             }
-            availability_specific_slots: {
+            availability_exceptions: {
                 Row: {
                     id: string
-                    profile_id: string
+                    instructor_id: string
+                    session_template_id: string | null
                     date: string // YYYY-MM-DD
                     start_time: string
                     end_time: string
+                    location_id: string | null
                     is_available: boolean
                     created_at: string
                 }
                 Insert: {
                     id?: string
-                    profile_id: string
+                    instructor_id: string
+                    session_template_id?: string | null
                     date: string
                     start_time: string
                     end_time: string
+                    location_id?: string | null
                     is_available?: boolean
                     created_at?: string
                 }
                 Update: {
                     id?: string
-                    profile_id?: string
+                    instructor_id?: string
+                    session_template_id?: string | null
                     date?: string
                     start_time?: string
                     end_time?: string
+                    location_id?: string | null
                     is_available?: boolean
                     created_at?: string
                 }
@@ -169,21 +181,21 @@ export interface Database {
             availability_blocked_dates: {
                 Row: {
                     id: string
-                    profile_id: string
+                    instructor_id: string
                     date: string
                     reason: string | null
                     created_at: string
                 }
                 Insert: {
                     id?: string
-                    profile_id: string
+                    instructor_id: string
                     date: string
                     reason?: string | null
                     created_at?: string
                 }
                 Update: {
                     id?: string
-                    profile_id?: string
+                    instructor_id?: string
                     date?: string
                     reason?: string | null
                     created_at?: string
@@ -192,45 +204,129 @@ export interface Database {
             bookings: {
                 Row: {
                     id: string
-                    customer_id: string
-                    session_template_id: string | null
-                    instructor_id: string | null
-                    start_time: string
-                    end_time: string
-                    status: 'pending' | 'confirmed' | 'cancelled' | 'completed'
-                    total_price: number
+                    session_id: string
+                    customer_id: string | null
+                    status: 'pending' | 'confirmed' | 'cancelled' | 'no_show'
+                    price: number | null
                     currency: string
                     notes: string | null
                     created_at: string
-                    updated_at: string
                 }
                 Insert: {
                     id?: string
-                    customer_id: string
-                    session_template_id?: string | null
-                    instructor_id?: string | null
-                    start_time: string
-                    end_time: string
-                    status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
-                    total_price: number
+                    session_id: string
+                    customer_id?: string | null
+                    status?: 'pending' | 'confirmed' | 'cancelled' | 'no_show'
+                    price?: number | null
                     currency?: string
                     notes?: string | null
                     created_at?: string
-                    updated_at?: string
                 }
                 Update: {
                     id?: string
-                    customer_id?: string
-                    session_template_id?: string | null
-                    instructor_id?: string | null
-                    start_time?: string
-                    end_time?: string
-                    status?: 'pending' | 'confirmed' | 'cancelled' | 'completed'
-                    total_price?: number
+                    session_id?: string
+                    customer_id?: string | null
+                    status?: 'pending' | 'confirmed' | 'cancelled' | 'no_show'
+                    price?: number | null
                     currency?: string
                     notes?: string | null
                     created_at?: string
-                    updated_at?: string
+                }
+            }
+            sessions: {
+                Row: {
+                    id: string
+                    session_template_id: string
+                    instructor_id: string | null
+                    location_id: string | null
+                    category_id: string | null
+                    start_time: string
+                    end_time: string
+                    capacity: number | null
+                    booked_count: number
+                    status: 'scheduled' | 'cancelled' | 'completed'
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    session_template_id: string
+                    instructor_id?: string | null
+                    location_id?: string | null
+                    category_id?: string | null
+                    start_time: string
+                    end_time: string
+                    capacity?: number | null
+                    booked_count?: number
+                    status?: 'scheduled' | 'cancelled' | 'completed'
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    session_template_id?: string
+                    instructor_id?: string | null
+                    location_id?: string | null
+                    category_id?: string | null
+                    start_time?: string
+                    end_time?: string
+                    capacity?: number | null
+                    booked_count?: number
+                    status?: 'scheduled' | 'cancelled' | 'completed'
+                    created_at?: string
+                }
+            }
+            categories: {
+                Row: {
+                    id: string
+                    name: string
+                    slug: string | null
+                    applies_to: 'session' | 'program' | 'product' | 'all'
+                    description: string | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    name: string
+                    slug?: string | null
+                    applies_to?: 'session' | 'program' | 'product' | 'all'
+                    description?: string | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    name?: string
+                    slug?: string | null
+                    applies_to?: 'session' | 'program' | 'product' | 'all'
+                    description?: string | null
+                    created_at?: string
+                }
+            }
+            notifications: {
+                Row: {
+                    id: string
+                    user_id: string
+                    type: string | null
+                    title: string
+                    message: string
+                    read: boolean
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    type?: string | null
+                    title: string
+                    message: string
+                    read?: boolean
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    type?: string | null
+                    title?: string
+                    message?: string
+                    read?: boolean
+                    created_at?: string
                 }
             }
             platform_settings: {
