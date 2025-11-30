@@ -382,9 +382,9 @@ export const bookingsAPI = {
           date: start ? start.toISOString().slice(0, 10) : "",
           time: start
             ? start.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
+              hour: "2-digit",
+              minute: "2-digit",
+            })
             : "",
           price:
             b.price ??
@@ -527,18 +527,45 @@ export const statsAPI = {
 
 export const settingsAPI = {
   get: async () => {
+    // Obtener sesión actual
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error("No valid session found. User must be logged in.");
+    }
+
     const { data, error } = await supabase.functions.invoke("settings", {
       method: "GET",
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
+
     if (error) throw error;
     return data;
   },
 
   update: async (settings: any) => {
+    // Obtener sesión actual
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session?.access_token) {
+      throw new Error("No valid session found. User must be logged in.");
+    }
+
     const { data, error } = await supabase.functions.invoke("settings", {
       method: "POST",
       body: settings,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
     });
+
     if (error) throw error;
     return data;
   },

@@ -1,7 +1,8 @@
+// supabase/functions/settings/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4?bundle";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
 
-// CORS HEADERS
+// CORS
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -11,17 +12,50 @@ const corsHeaders = {
 
 serve(async (req) => {
   try {
-    // Handle CORS
+    // Preflight CORS
     if (req.method === "OPTIONS") {
-      return new Response("ok", {
+      return new Response("ok", { headers: corsHeaders });
+    }
+
+    // Obtener Authorization: Bearer <token>
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const jwt = authHeader.replace("Bearer ", "");
+
+    if (!jwt) {
+      return new Response(
+        JSON.stringify({ error: "Missing Bearer token" }),
+        { status: 401, headers: corsHeaders }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Cliente con service_role
+    const supabase = createClient(supabaseUrl, serviceKey, {
+      global: { headers: { Authorization: `Bearer ${jwt}` } },
+    });
+
+    // Validar usuario autenticado
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(jwt);
+
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Invalid user token" }), {
+        status: 401,
         headers: corsHeaders,
       });
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    // Solo permitir admins
+    if (user.user_metadata?.role !== "admin") {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: corsHeaders,
+      });
+    }
 
     // GET SETTINGS
     if (req.method === "GET") {
@@ -57,12 +91,12 @@ serve(async (req) => {
       });
     }
 
-    return new Response("Method not allowed", {
+    return new Response("Method Not Allowed", {
       status: 405,
       headers: corsHeaders,
     });
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
