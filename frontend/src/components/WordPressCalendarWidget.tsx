@@ -55,6 +55,7 @@ interface WordPressCalendarWidgetProps {
     preselectedServicePrice?: number | null;
     preselectedCurrency?: string;
     preselectedDuration?: number;
+    preselectedEndTime?: string;
   }) => void;
 }
 
@@ -203,7 +204,7 @@ export function WordPressCalendarWidget({
             }
 
             const serviceDetails = dateSlot.serviceId
-              ? allServices.find((s) => s.id === dateSlot.serviceId)
+              ? allServices.find((s) => String(s.id) === String(dateSlot.serviceId))
               : null;
 
             const normalizedPrice =
@@ -240,7 +241,7 @@ export function WordPressCalendarWidget({
             const serviceObj: Service = baseService
               ? {
                   ...(baseService as any),
-                  id: baseService?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
+                  id: String(baseService?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
                   name:
                     baseService?.name ||
                     dateSlot.serviceName ||
@@ -259,7 +260,7 @@ export function WordPressCalendarWidget({
                   availableWith: [],
                 }
               : {
-                  id: dateSlot.serviceId || `generic-${day}-${time}-${member.id}`,
+                  id: String(dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
                   name: dateSlot.serviceName || dateSlot.title || "Session",
                   description: dateSlot.description || dateSlot.notes || "",
                   duration: normalizedDuration,
@@ -349,13 +350,14 @@ export function WordPressCalendarWidget({
       preselectedDate: dateStr,
       preselectedTime: slot.time,
       preselectedDateTime: slot.dateTime,
-      preselectedService: service.id,
+      preselectedService: String(service.id),
       preselectedTeamMember: teamMember.id,
       preselectedServiceName: service.name,
       preselectedServiceDescription: service.description,
       preselectedServicePrice: priceValue,
       preselectedCurrency: service.currency || "EUR",
       preselectedDuration: service.duration,
+      preselectedEndTime: slot.endTime,
     });
   };
 

@@ -63,5 +63,31 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
+    proxy: {
+      '/functions/v1': {
+        target: 'https://aadzzhdouuxkvelxyoyf.supabase.co',
+        changeOrigin: true,
+        secure: false,
+        configure: (proxy, _options) => {
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('[Vite Proxy] Proxying:', req.url);
+            // Strip headers that might cause 400/431 errors
+            proxyReq.removeHeader('cookie');
+            proxyReq.removeHeader('origin');
+            proxyReq.removeHeader('referer');
+            // Force content-type if missing (though usually present)
+            if (!proxyReq.getHeader('content-type')) {
+              proxyReq.setHeader('Content-Type', 'application/json');
+            }
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('[Vite Proxy] Response:', proxyRes.statusCode, req.url);
+          });
+          proxy.on('error', (err, _req, _res) => {
+            console.error('[Vite Proxy] Error:', err);
+          });
+        },
+      },
+    },
   },
 });

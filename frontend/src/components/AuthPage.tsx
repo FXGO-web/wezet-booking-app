@@ -9,7 +9,11 @@ import { Loader2, Lock, Mail, User, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 export function AuthPage() {
-  const { signIn, signUp } = useAuth();
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSent, setResetSent] = useState(false);
+  const { signIn, signUp, resetPassword } = useAuth();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -23,6 +27,27 @@ export function AuthPage() {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const { error } = await resetPassword(resetEmail);
+      if (error) {
+        setError(error.message || 'Failed to send reset email');
+      } else {
+        setResetSent(true);
+        setSuccess('Password reset email sent! Check your inbox.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,6 +102,90 @@ export function AuthPage() {
       setLoading(false);
     }
   };
+
+  if (showResetPassword) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background flex items-center justify-center p-6">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-4">
+              <Sparkles className="h-8 w-8 text-primary" />
+            </div>
+            <h1 className="text-3xl">Reset Password</h1>
+            <p className="text-muted-foreground">
+              Enter your email to receive a reset link
+            </p>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Forgot Password</CardTitle>
+              <CardDescription>
+                We'll send you a link to reset your password
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {resetSent ? (
+                <div className="space-y-4">
+                  <Alert className="border-green-200 bg-green-50 text-green-800">
+                    <AlertDescription>{success}</AlertDescription>
+                  </Alert>
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    onClick={() => {
+                      setResetSent(false);
+                      setShowResetPassword(false);
+                    }}
+                  >
+                    Back to Sign In
+                  </Button>
+                </div>
+              ) : (
+                <form onSubmit={handleResetPassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="name@example.com"
+                        value={resetEmail}
+                        onChange={(e) => setResetEmail(e.target.value)}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Send Reset Link
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => setShowResetPassword(false)}
+                  >
+                    Back to Sign In
+                  </Button>
+                </form>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background flex items-center justify-center p-6">
@@ -155,7 +264,11 @@ export function AuthPage() {
                 </form>
 
                 <div className="text-center">
-                  <Button variant="link" className="text-sm text-muted-foreground">
+                  <Button
+                    variant="link"
+                    className="text-sm text-muted-foreground"
+                    onClick={() => setShowResetPassword(true)}
+                  >
                     Forgot password?
                   </Button>
                 </div>

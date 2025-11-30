@@ -12,11 +12,11 @@ import {
   TableHeader,
   TableRow,
 } from "./ui/table";
-import { 
-  Calendar, 
-  Clock, 
-  DollarSign, 
-  Users, 
+import {
+  Calendar,
+  Clock,
+  DollarSign,
+  Users,
   TrendingUp,
   Video,
   MessageCircle,
@@ -25,28 +25,38 @@ import {
   Star,
   CalendarPlus
 } from "lucide-react";
-import { CreateSessionModal } from "./CreateSessionModal";
+import { ServiceModal } from "./ServiceModal";
 
 const WEEKLY_SCHEDULE = [
-  { day: "Mon", date: "Nov 11", slots: [
-    { time: "9:00 AM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-    { time: "2:00 PM", client: "Jamie L.", type: "Energy", status: "confirmed" },
-  ]},
-  { day: "Tue", date: "Nov 12", slots: [
-    { time: "10:00 AM", client: "Sam R.", type: "Movement", status: "confirmed" },
-  ]},
-  { day: "Wed", date: "Nov 13", slots: [
-    { time: "9:00 AM", client: "Available", type: "Open", status: "available" },
-    { time: "4:00 PM", client: "Morgan T.", type: "Breathwork", status: "pending" },
-  ]},
-  { day: "Thu", date: "Nov 14", slots: [
-    { time: "11:00 AM", client: "Casey P.", type: "Energy", status: "confirmed" },
-    { time: "3:00 PM", client: "Available", type: "Open", status: "available" },
-  ]},
-  { day: "Fri", date: "Nov 15", slots: [
-    { time: "2:00 PM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
-    { time: "5:00 PM", client: "Jordan M.", type: "Movement", status: "confirmed" },
-  ]},
+  {
+    day: "Mon", date: "Nov 11", slots: [
+      { time: "9:00 AM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
+      { time: "2:00 PM", client: "Jamie L.", type: "Energy", status: "confirmed" },
+    ]
+  },
+  {
+    day: "Tue", date: "Nov 12", slots: [
+      { time: "10:00 AM", client: "Sam R.", type: "Movement", status: "confirmed" },
+    ]
+  },
+  {
+    day: "Wed", date: "Nov 13", slots: [
+      { time: "9:00 AM", client: "Available", type: "Open", status: "available" },
+      { time: "4:00 PM", client: "Morgan T.", type: "Breathwork", status: "pending" },
+    ]
+  },
+  {
+    day: "Thu", date: "Nov 14", slots: [
+      { time: "11:00 AM", client: "Casey P.", type: "Energy", status: "confirmed" },
+      { time: "3:00 PM", client: "Available", type: "Open", status: "available" },
+    ]
+  },
+  {
+    day: "Fri", date: "Nov 15", slots: [
+      { time: "2:00 PM", client: "Alex K.", type: "Breathwork", status: "confirmed" },
+      { time: "5:00 PM", client: "Jordan M.", type: "Movement", status: "confirmed" },
+    ]
+  },
 ];
 
 const UPCOMING_SESSIONS = [
@@ -185,11 +195,11 @@ export function MentorDashboard() {
                                 key={idx}
                                 className={`
                                   p-3 rounded-xl flex items-center justify-between
-                                  ${slot.status === 'available' 
-                                    ? 'bg-muted/30 border border-dashed border-muted-foreground/30' 
+                                  ${slot.status === 'available'
+                                    ? 'bg-muted/30 border border-dashed border-muted-foreground/30'
                                     : slot.status === 'pending'
-                                    ? 'bg-amber-500/10 border border-amber-500/30'
-                                    : 'bg-primary/5 border border-primary/20'
+                                      ? 'bg-amber-500/10 border border-amber-500/30'
+                                      : 'bg-primary/5 border border-primary/20'
                                   }
                                 `}
                               >
@@ -430,9 +440,10 @@ export function MentorDashboard() {
       </div>
 
       {/* Create Session Modal */}
-      <CreateSessionModal 
-        open={isCreateSessionOpen}
-        onOpenChange={setIsCreateSessionOpen}
+      <ServiceModal
+        isOpen={isCreateSessionOpen}
+        onClose={() => setIsCreateSessionOpen(false)}
+        onSuccess={() => setIsCreateSessionOpen(false)}
       />
     </div>
   );

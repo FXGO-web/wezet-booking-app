@@ -145,9 +145,9 @@ export function SettingsPage() {
 
       await settingsAPI.update(data, accessToken);
       toast.success(`${section} saved successfully`);
-    } catch (error) {
+    } catch (error: any) {
       console.error(`Error saving ${section}:`, error);
-      toast.error(`Failed to save ${section}`);
+      toast.error(`Failed to save ${section}: ${error.message || "Unknown error"}`);
     } finally {
       setSaving(null);
     }
@@ -268,7 +268,7 @@ export function SettingsPage() {
                 <Select
                   defaultValue="pst"
                   value={timezone}
-                  onValueChange={(value) => setTimezone(value)}
+                  onValueChange={(value: string) => setTimezone(value)}
                 >
                   <SelectTrigger id="timezone">
                     <SelectValue />
@@ -278,6 +278,9 @@ export function SettingsPage() {
                     <SelectItem value="est">Eastern Standard Time (EST)</SelectItem>
                     <SelectItem value="cst">Central Standard Time (CST)</SelectItem>
                     <SelectItem value="utc">UTC</SelectItem>
+                    <SelectItem value="Europe/Copenhagen">Central European Time (Copenhagen)</SelectItem>
+                    <SelectItem value="Europe/Paris">Central European Time (Paris)</SelectItem>
+                    <SelectItem value="Europe/London">Greenwich Mean Time (London)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -309,7 +312,7 @@ export function SettingsPage() {
                 <Select
                   defaultValue="eur"
                   value={defaultCurrency}
-                  onValueChange={(value) => setDefaultCurrency(value)}
+                  onValueChange={(value: string) => setDefaultCurrency(value)}
                 >
                   <SelectTrigger id="defaultCurrency">
                     <SelectValue />
@@ -330,7 +333,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={multiCurrency}
-                  onCheckedChange={(checked) => setMultiCurrency(checked)}
+                  onCheckedChange={(checked: boolean) => setMultiCurrency(checked)}
                 />
               </div>
 
@@ -413,7 +416,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={requireApproval}
-                  onCheckedChange={(checked) => setRequireApproval(checked)}
+                  onCheckedChange={(checked: boolean) => setRequireApproval(checked)}
                 />
               </div>
 
@@ -470,7 +473,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={testMode}
-                  onCheckedChange={(checked) => setTestMode(checked)}
+                  onCheckedChange={(checked: boolean) => setTestMode(checked)}
                 />
               </div>
 
@@ -560,7 +563,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={newBookingNotify}
-                  onCheckedChange={(checked) => setNewBookingNotify(checked)}
+                  onCheckedChange={(checked: boolean) => setNewBookingNotify(checked)}
                 />
               </div>
 
@@ -573,7 +576,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={cancelNotify}
-                  onCheckedChange={(checked) => setCancelNotify(checked)}
+                  onCheckedChange={(checked: boolean) => setCancelNotify(checked)}
                 />
               </div>
 
@@ -586,7 +589,7 @@ export function SettingsPage() {
                 </div>
                 <Switch
                   defaultChecked={dailySummary}
-                  onCheckedChange={(checked) => setDailySummary(checked)}
+                  onCheckedChange={(checked: boolean) => setDailySummary(checked)}
                 />
               </div>
 

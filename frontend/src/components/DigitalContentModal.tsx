@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "./ui/select";
 import { Loader2 } from "lucide-react";
-import { digitalContentAPI } from "../utils/api";
+import { productsAPI as digitalContentAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface DigitalContentModalProps {

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Plus, Video, Package, PlayCircle, Loader2 } from "lucide-react";
 import { productsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
+import { useCurrency } from "../context/CurrencyContext";
 import { ProductModal } from "./ProductModal";
 
 interface ProductsOnDemandProps {
@@ -12,6 +13,7 @@ interface ProductsOnDemandProps {
 
 export function ProductsOnDemand({ onBack }: ProductsOnDemandProps) {
     const { getAccessToken } = useAuth();
+    const { convertAndFormat } = useCurrency();
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -114,7 +116,9 @@ export function ProductsOnDemand({ onBack }: ProductsOnDemandProps) {
                                     <div className="space-y-2 text-sm text-muted-foreground">
                                         <p>{product.description || 'No description'}</p>
                                         <div className="flex items-center gap-2 pt-2">
-                                            <span className="font-medium text-foreground">€{product.price || 0}</span>
+                                            <span className="font-medium text-foreground">
+                                                {convertAndFormat(product.price || 0, product.currency || "EUR")}
+                                            </span>
                                             <span>•</span>
                                             <span>{product.itemCount || 0} Items</span>
                                         </div>

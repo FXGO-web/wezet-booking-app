@@ -18,7 +18,7 @@ import {
   Mountain,
   Play,
 } from "lucide-react";
-import { CreateSessionModal } from "./CreateSessionModal";
+import { ServiceModal } from "./ServiceModal";
 import { useAuth } from "../hooks/useAuth";
 import { useCurrency } from "../context/CurrencyContext";
 import { supabase } from "../utils/supabase/client";
@@ -85,20 +85,20 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
     setBio(user?.user_metadata?.bio || "");
   }, [user?.user_metadata]);
 
-  useEffect(() => {
-    const loadServices = async () => {
-      setLoadingServices(true);
-      try {
-        const { services: serviceList } = await sessionsAPI.getAll();
-        setServices(serviceList || []);
-      } catch (error) {
-        console.error("Error loading services:", error);
-        setServices([]);
-      } finally {
-        setLoadingServices(false);
-      }
-    };
+  const loadServices = async () => {
+    setLoadingServices(true);
+    try {
+      const { services: serviceList } = await sessionsAPI.getAll();
+      setServices(serviceList || []);
+    } catch (error) {
+      console.error("Error loading services:", error);
+      setServices([]);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
 
+  useEffect(() => {
     loadServices();
   }, []);
 
@@ -281,108 +281,108 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           <div className="lg:col-span-2 space-y-6">
             <div ref={profileCardRef}>
               <Card className="border-primary/20">
-              <CardHeader className="pb-2">
-                <CardTitle>Public profile</CardTitle>
-                <CardDescription>
-                  Keep your profile fresh: image, headline, and short bio.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-6 md:items-center">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-16 w-16 border-2 border-primary/10">
-                      {avatarUrl && (
-                        <AvatarImage src={avatarUrl} alt={userName} />
-                      )}
-                      <AvatarFallback className="bg-primary/5 text-primary text-xl font-medium">
-                        {userName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{userName}</div>
-                      <p className="text-sm text-muted-foreground">
-                        {headline || userRole}
-                      </p>
-                    </div>
-                </div>
-                <div className="flex-1 space-y-2">
-                    <Label htmlFor="avatarUrl">Profile image (URL o upload)</Label>
-                    <div className="flex flex-col gap-2">
-                      <Input
-                        id="avatarUrl"
-                        placeholder="https://..."
-                        value={avatarUrl}
-                        onChange={(e) => setAvatarUrl(e.target.value)}
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        <input
-                          ref={avatarFileInputRef}
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          className="hidden"
-                          onChange={handleAvatarFileChange}
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => avatarFileInputRef.current?.click()}
-                        >
-                          <Upload className="mr-2 h-4 w-4" />
-                          Upload / replace
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          onClick={() => setAvatarUrl("")}
-                        >
-                          Reset
-                        </Button>
+                <CardHeader className="pb-2">
+                  <CardTitle>Public profile</CardTitle>
+                  <CardDescription>
+                    Keep your profile fresh: image, headline, and short bio.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex flex-col md:flex-row gap-6 md:items-center">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-16 w-16 border-2 border-primary/10">
+                        {avatarUrl && (
+                          <AvatarImage src={avatarUrl} alt={userName} />
+                        )}
+                        <AvatarFallback className="bg-primary/5 text-primary text-xl font-medium">
+                          {userName.substring(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{userName}</div>
+                        <p className="text-sm text-muted-foreground">
+                          {headline || userRole}
+                        </p>
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        Usa PNG, JPG o WEBP. Ratio 1:1 (cuadrado) y recomendado 600x600px para que se vea nítido.
-                      </p>
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <Label htmlFor="avatarUrl">Profile image (URL o upload)</Label>
+                      <div className="flex flex-col gap-2">
+                        <Input
+                          id="avatarUrl"
+                          placeholder="https://..."
+                          value={avatarUrl}
+                          onChange={(e) => setAvatarUrl(e.target.value)}
+                        />
+                        <div className="flex flex-wrap gap-2">
+                          <input
+                            ref={avatarFileInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/webp"
+                            className="hidden"
+                            onChange={handleAvatarFileChange}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => avatarFileInputRef.current?.click()}
+                          >
+                            <Upload className="mr-2 h-4 w-4" />
+                            Upload / replace
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setAvatarUrl("")}
+                          >
+                            Reset
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Usa PNG, JPG o WEBP. Ratio 1:1 (cuadrado) y recomendado 600x600px para que se vea nítido.
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="headline">Headline</Label>
-                    <Input
-                      id="headline"
-                      placeholder="Breathwork & Education specialist"
-                      value={headline}
-                      onChange={(e) => setHeadline(e.target.value)}
-                    />
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="headline">Headline</Label>
+                      <Input
+                        id="headline"
+                        placeholder="Breathwork & Education specialist"
+                        value={headline}
+                        onChange={(e) => setHeadline(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Short bio</Label>
+                      <Textarea
+                        id="bio"
+                        rows={4}
+                        placeholder="In 2-3 sentences, share what you offer and what sets you apart."
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="bio">Short bio</Label>
-                    <Textarea
-                      id="bio"
-                      rows={4}
-                      placeholder="In 2-3 sentences, share what you offer and what sets you apart."
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                    />
-                  </div>
-                </div>
 
-                <div className="flex justify-end">
-                  <Button onClick={handleProfileSave} disabled={savingProfile}>
-                    {savingProfile ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Save changes
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
+                  <div className="flex justify-end">
+                    <Button onClick={handleProfileSave} disabled={savingProfile}>
+                      {savingProfile ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="mr-2 h-4 w-4" />
+                          Save changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             </div>
 
@@ -437,10 +437,10 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-              <CardTitle>My sessions</CardTitle>
-              <CardDescription>
+                <CardTitle>My sessions</CardTitle>
+                <CardDescription>
                   Only real data — no demo events.
-              </CardDescription>
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {loadingServices ? (
@@ -535,9 +535,13 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
       </div>
 
       {/* Create Session Modal */}
-      <CreateSessionModal
-        open={isCreateSessionOpen}
-        onOpenChange={setIsCreateSessionOpen}
+      <ServiceModal
+        isOpen={isCreateSessionOpen}
+        onClose={() => setIsCreateSessionOpen(false)}
+        onSuccess={() => {
+          loadServices();
+          toast.success("Session created successfully");
+        }}
       />
     </div>
   );

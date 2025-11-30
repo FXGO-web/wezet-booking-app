@@ -32,6 +32,7 @@ interface BookingFlowProps {
     preselectedDate?: string;
     preselectedTime?: string;
     preselectedDateTime?: string;
+    preselectedEndTime?: string;
     preselectedTeamMember?: string;
     preselectedService?: string;
     preselectedServiceName?: string;
@@ -175,8 +176,12 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     }
   };
 
-  const selectedServiceData = services.find(s => s && s.id === selectedService);
-  const selectedTeamMemberData = teamMembers.find(tm => tm && tm.id === selectedTeamMember);
+  const selectedServiceData = services.find(
+    (s) => s && String(s.id) === String(selectedService)
+  );
+  const selectedTeamMemberData = teamMembers.find(
+    (tm) => tm && String(tm.id) === String(selectedTeamMember)
+  );
   const selectedPrice = useMemo(() => {
     const source = selectedServiceData || prefilledServiceInfo;
     if (!source) return null;
@@ -192,6 +197,10 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   const showSteps = currentStep < 3 && !preselection;
   const selectedTimeRange = useMemo(() => {
     if (!selectedTime) return null;
+    if (preselection?.preselectedEndTime) {
+      return `${selectedTime} - ${preselection.preselectedEndTime}`;
+    }
+
     const duration = displayService?.duration || selectedServiceData?.duration || 60;
     const [h, m] = selectedTime.split(":").map(Number);
     const start = h * 60 + (m || 0);
@@ -200,7 +209,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     const endM = end % 60;
     const endStr = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
     return `${selectedTime} - ${endStr}`;
-  }, [selectedTime, displayService?.duration, selectedServiceData?.duration]);
+  }, [selectedTime, displayService?.duration, selectedServiceData?.duration, preselection?.preselectedEndTime]);
 
   // Available time slots
   const timeSlots = [

@@ -9,16 +9,14 @@ import { ScrollArea } from "./ui/scroll-area";
 import { Bell, Check, Calendar, XCircle, Clock } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { useAuth } from "../hooks/useAuth";
-import { projectId, publicAnonKey, edgeFunctionName } from "../utils/supabase/info";
-
-const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/${edgeFunctionName}`;
+import { supabase } from "../utils/supabase/client";
 
 interface Notification {
   id: string;
   type: string;
   subject: string;
   read: boolean;
-  createdAt: string;
+  created_at: string; // Changed from createdAt to match Supabase convention usually
   data: {
     serviceName: string;
     teamMemberName: string;
@@ -40,7 +38,7 @@ const notificationColors: Record<string, string> = {
 };
 
 export function NotificationCenter() {
-  const { user, getAccessToken } = useAuth();
+  const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
@@ -50,20 +48,15 @@ export function NotificationCenter() {
 
     setLoading(true);
     try {
-      const accessToken = getAccessToken();
-      if (!accessToken) return;
+      // Assuming 'notifications' table exists and RLS handles user filtering
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      const response = await fetch(`${API_BASE_URL}/notifications`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (error) throw error;
 
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications || []);
-      }
+      setNotifications(data as unknown as Notification[] || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     } finally {
@@ -79,24 +72,18 @@ export function NotificationCenter() {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      const accessToken = getAccessToken();
-      if (!accessToken) return;
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId);
 
-      const response = await fetch(`${API_BASE_URL}/notifications/${notificationId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      if (error) throw error;
 
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(n =>
-            n.id === notificationId ? { ...n, read: true } : n
-          )
-        );
-      }
+      setNotifications(prev =>
+        prev.map(n =>
+          n.id === notificationId ? { ...n, read: true } : n
+        )
+      );
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -182,7 +169,7 @@ export function NotificationCenter() {
                         )}
 
                         <p className="text-xs text-muted-foreground">
-                          {new Date(notification.createdAt).toLocaleDateString('en-US', {
+                          {new Date(notification.created_at).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             hour: 'numeric',

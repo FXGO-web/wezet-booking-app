@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
-import { CalendarDays, Loader2, Trash2 } from "lucide-react";
+import { CalendarDays, Loader2, Trash2, MapPin } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "./ui/select";
 
-import { sessionsAPI as servicesAPI, teamMembersAPI } from "../utils/api";
+import { sessionsAPI as servicesAPI, teamMembersAPI, locationsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface ServiceModalProps {
@@ -57,6 +57,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [locations, setLocations] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     name: service?.name || "",
@@ -72,6 +73,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       service?.ownerId ||
       service?.created_by ||
       "none",
+    locationId: service?.locationId || service?.location_id || "none",
   });
 
   // Sync when service prop changes
@@ -90,21 +92,27 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
         service?.ownerId ||
         service?.created_by ||
         "none",
+      locationId: service?.locationId || service?.location_id || "none",
     });
   }, [service]);
 
   useEffect(() => {
-    const loadTeamMembers = async () => {
+    const loadData = async () => {
       try {
-        const token = await getAccessToken(); // FIXED
-        const { teamMembers: members } = await teamMembersAPI.getAll({ status: "active" });
+        const token = await getAccessToken();
+        const [{ teamMembers: members }, { locations: locs }] = await Promise.all([
+          teamMembersAPI.getAll({ status: "active" }),
+          locationsAPI.getAll()
+        ]);
         setTeamMembers(members || []);
+        setLocations(locs || []);
       } catch (error) {
-        console.error("Error loading team members:", error);
+        console.error("Error loading data:", error);
         setTeamMembers([]);
+        setLocations([]);
       }
     };
-    loadTeamMembers();
+    loadData();
   }, [getAccessToken]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -112,7 +120,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     setLoading(true);
 
     try {
-      const accessToken = await getAccessToken(); // FIXED
+      const accessToken = await getAccessToken();
       if (!accessToken) {
         alert("Please log in to continue");
         return;
@@ -146,6 +154,10 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
           formData.teamMemberId && formData.teamMemberId !== "none"
             ? formData.teamMemberId
             : undefined,
+        locationId:
+          formData.locationId && formData.locationId !== "none"
+            ? formData.locationId
+            : undefined,
       };
 
       if (service) {
@@ -174,7 +186,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
 
     setLoading(true);
     try {
-      const accessToken = await getAccessToken(); // FIXED
+      const accessToken = await getAccessToken();
       if (!accessToken) return;
 
       await servicesAPI.delete(service.id, accessToken);
@@ -243,24 +255,46 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>Assign to team member</Label>
-              <Select
-                value={formData.teamMemberId}
-                onValueChange={(value) => setFormData({ ...formData, teamMemberId: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select team member (optional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Unassigned</SelectItem>
-                  {teamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name || member.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Assign to team member</Label>
+                <Select
+                  value={formData.teamMemberId}
+                  onValueChange={(value) => setFormData({ ...formData, teamMemberId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select team member (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Unassigned</SelectItem>
+                    {teamMembers.map((member) => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name || member.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Location</Label>
+                <Select
+                  value={formData.locationId}
+                  onValueChange={(value) => setFormData({ ...formData, locationId: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select location (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No specific location</SelectItem>
+                    {locations.map((loc) => (
+                      <SelectItem key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

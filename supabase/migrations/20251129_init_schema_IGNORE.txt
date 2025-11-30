@@ -1,0 +1,421 @@
+--------------------------------------------------------------------------------
+-- 1. CLEAN UP LEGACY TABLES
+--------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS public.kv_store CASCADE;
+DROP TABLE IF EXISTS public.ix_custom_e0d9c111 CASCADE;
+
+--------------------------------------------------------------------------------
+-- 2. CORE ENTITIES
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.locations (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    address text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.categories (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.profiles (
+    id uuid PRIMARY KEY,
+    full_name text,
+    email text,
+    role text CHECK (role IN ('admin','instructor','client')) NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 3. SESSION TEMPLATES
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.session_templates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    category_id uuid REFERENCES public.categories(id),
+    location_id uuid REFERENCES public.locations(id),
+    name text NOT NULL,
+    description text,
+    duration_minutes int NOT NULL,
+    price numeric(10,2),
+    currency text DEFAULT 'EUR',
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 4. AVAILABILITY
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.availability_rules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    weekday int CHECK (weekday BETWEEN 0 AND 6),
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.availability_specific_slots (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.availability_blocked_dates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    reason text,
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 5. BOOKINGS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.bookings (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_template_id uuid REFERENCES public.session_templates(id) ON DELETE CASCADE,
+    instructor_id uuid REFERENCES public.profiles(id),
+    customer_id uuid REFERENCES public.profiles(id),
+    date date NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    status text CHECK (status IN ('pending','confirmed','cancelled')) DEFAULT 'pending',
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 6. PLATFORM SETTINGS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.platform_settings (
+    id int PRIMARY KEY DEFAULT 1,
+    platform_name text DEFAULT 'WEZET',
+    support_email text DEFAULT 'support@wezet.com',
+    timezone text DEFAULT 'UTC',
+
+    default_currency text DEFAULT 'EUR',
+    tax_rate numeric(5,2) DEFAULT 0,
+
+    min_booking_advance_hours int DEFAULT 24,
+    max_booking_advance_days int DEFAULT 60,
+    cancellation_window_hours int DEFAULT 48,
+    require_approval boolean DEFAULT false,
+
+    stripe_public_key text,
+    stripe_secret_key text,
+    stripe_test_mode boolean DEFAULT true,
+
+    email_template_confirmation text DEFAULT 'Hi {{client_name}}, your booking is confirmed.',
+    email_template_reminder text DEFAULT 'Reminder: You have a session tomorrow.',
+    email_template_cancellation text DEFAULT 'Your booking has been cancelled.',
+
+    notify_new_bookings boolean DEFAULT true,
+    notify_cancellations boolean DEFAULT true,
+    notify_daily_summary boolean DEFAULT false
+);
+
+INSERT INTO public.platform_settings (id) VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
+--------------------------------------------------------------------------------
+-- 7. NOTIFICATIONS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.notifications (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    message text NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    read boolean DEFAULT false
+);
+
+--------------------------------------------------------------------------------
+-- 8. RLS ENABLE
+--------------------------------------------------------------------------------
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.session_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_specific_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_blocked_dates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+
+--------------------------------------------------------------------------------
+-- 9. RLS POLICIES
+--------------------------------------------------------------------------------
+
+-- PROFILES
+CREATE POLICY admin_all_profiles ON public.profiles
+    FOR ALL USING (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');
+
+-- SESSION TEMPLATES
+CREATE POLICY instructor_manage_own_templates ON public.session_templates
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY admin_read_all_templates ON public.session_templates
+    FOR SELECT USING (true);
+
+-- BOOKINGS
+CREATE POLICY client_view_own_bookings ON public.bookings
+    FOR SELECT USING (customer_id = auth.uid());
+
+CREATE POLICY instructor_view_assigned_bookings ON public.bookings
+    FOR SELECT USING (instructor_id = auth.uid());
+
+CREATE POLICY admin_all_bookings ON public.bookings
+    FOR ALL USING (true);
+
+-- AVAILABILITY
+CREATE POLICY instructor_manage_own_availability ON public.availability_rules
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY instructor_manage_own_slots ON public.availability_specific_slots
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY instructor_manage_own_blocked ON public.availability_blocked_dates
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+-- NOTIFICATIONS
+CREATE POLICY user_read_own_notifications ON public.notifications
+    FOR SELECT USING (user_id = auth.uid());
+
+-- PLATFORM SETTINGS: read-only to everyone authenticated, update only admins
+CREATE POLICY read_settings ON public.platform_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY write_settings_admin_only ON public.platform_settings
+    FOR UPDATE USING (auth.role() = 'service_role')
+    WITH CHECK (auth.role() = 'service_role');
+
+--------------------------------------------------------------------------------
+-- END
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- 1. CLEAN UP LEGACY TABLES
+--------------------------------------------------------------------------------
+
+DROP TABLE IF EXISTS public.kv_store CASCADE;
+DROP TABLE IF EXISTS public.ix_custom_e0d9c111 CASCADE;
+
+--------------------------------------------------------------------------------
+-- 2. CORE ENTITIES
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.locations (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    address text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.categories (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    name text NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.profiles (
+    id uuid PRIMARY KEY,
+    full_name text,
+    email text,
+    role text CHECK (role IN ('admin','instructor','client')) NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 3. SESSION TEMPLATES
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.session_templates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    category_id uuid REFERENCES public.categories(id),
+    location_id uuid REFERENCES public.locations(id),
+    name text NOT NULL,
+    description text,
+    duration_minutes int NOT NULL,
+    price numeric(10,2),
+    currency text DEFAULT 'EUR',
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 4. AVAILABILITY
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.availability_rules (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    weekday int CHECK (weekday BETWEEN 0 AND 6),
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.availability_specific_slots (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.availability_blocked_dates (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    instructor_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    date date NOT NULL,
+    reason text,
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 5. BOOKINGS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.bookings (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_template_id uuid REFERENCES public.session_templates(id) ON DELETE CASCADE,
+    instructor_id uuid REFERENCES public.profiles(id),
+    customer_id uuid REFERENCES public.profiles(id),
+    date date NOT NULL,
+    start_time time NOT NULL,
+    end_time time NOT NULL,
+    status text CHECK (status IN ('pending','confirmed','cancelled')) DEFAULT 'pending',
+    created_at timestamptz DEFAULT now()
+);
+
+--------------------------------------------------------------------------------
+-- 6. PLATFORM SETTINGS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.platform_settings (
+    id int PRIMARY KEY DEFAULT 1,
+    platform_name text DEFAULT 'WEZET',
+    support_email text DEFAULT 'support@wezet.com',
+    timezone text DEFAULT 'UTC',
+
+    default_currency text DEFAULT 'EUR',
+    tax_rate numeric(5,2) DEFAULT 0,
+
+    min_booking_advance_hours int DEFAULT 24,
+    max_booking_advance_days int DEFAULT 60,
+    cancellation_window_hours int DEFAULT 48,
+    require_approval boolean DEFAULT false,
+
+    stripe_public_key text,
+    stripe_secret_key text,
+    stripe_test_mode boolean DEFAULT true,
+
+    email_template_confirmation text DEFAULT 'Hi {{client_name}}, your booking is confirmed.',
+    email_template_reminder text DEFAULT 'Reminder: You have a session tomorrow.',
+    email_template_cancellation text DEFAULT 'Your booking has been cancelled.',
+
+    notify_new_bookings boolean DEFAULT true,
+    notify_cancellations boolean DEFAULT true,
+    notify_daily_summary boolean DEFAULT false
+);
+
+INSERT INTO public.platform_settings (id) VALUES (1)
+ON CONFLICT (id) DO NOTHING;
+
+--------------------------------------------------------------------------------
+-- 7. NOTIFICATIONS
+--------------------------------------------------------------------------------
+
+CREATE TABLE public.notifications (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
+    title text NOT NULL,
+    message text NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    read boolean DEFAULT false
+);
+
+--------------------------------------------------------------------------------
+-- 8. RLS ENABLE
+--------------------------------------------------------------------------------
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.session_templates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_specific_slots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.availability_blocked_dates ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
+
+--------------------------------------------------------------------------------
+-- 9. RLS POLICIES
+--------------------------------------------------------------------------------
+
+-- PROFILES
+CREATE POLICY admin_all_profiles ON public.profiles
+    FOR ALL USING (auth.role() = 'authenticated')
+    WITH CHECK (auth.role() = 'authenticated');
+
+-- SESSION TEMPLATES
+CREATE POLICY instructor_manage_own_templates ON public.session_templates
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY admin_read_all_templates ON public.session_templates
+    FOR SELECT USING (true);
+
+-- BOOKINGS
+CREATE POLICY client_view_own_bookings ON public.bookings
+    FOR SELECT USING (customer_id = auth.uid());
+
+CREATE POLICY instructor_view_assigned_bookings ON public.bookings
+    FOR SELECT USING (instructor_id = auth.uid());
+
+CREATE POLICY admin_all_bookings ON public.bookings
+    FOR ALL USING (true);
+
+-- AVAILABILITY
+CREATE POLICY instructor_manage_own_availability ON public.availability_rules
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY instructor_manage_own_slots ON public.availability_specific_slots
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+CREATE POLICY instructor_manage_own_blocked ON public.availability_blocked_dates
+    FOR ALL USING (instructor_id = auth.uid())
+    WITH CHECK (instructor_id = auth.uid());
+
+-- NOTIFICATIONS
+CREATE POLICY user_read_own_notifications ON public.notifications
+    FOR SELECT USING (user_id = auth.uid());
+
+-- PLATFORM SETTINGS: read-only to everyone authenticated, update only admins
+CREATE POLICY read_settings ON public.platform_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY write_settings_admin_only ON public.platform_settings
+    FOR UPDATE USING (auth.role() = 'service_role')
+    WITH CHECK (auth.role() = 'service_role');
+
+--------------------------------------------------------------------------------
+-- END
+--------------------------------------------------------------------------------^C
+:q
+

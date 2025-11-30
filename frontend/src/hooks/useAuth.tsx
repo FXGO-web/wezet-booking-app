@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { supabase } from '../utils/supabase/client';
+import { authAPI } from '../utils/api';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -10,6 +11,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, name: string, role?: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   getAccessToken: () => string | null;
+  resetPassword: (email: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -121,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signUp = async (email: string, password: string, name: string, role: string = 'client') => {
     // Note: We need to call our backend endpoint for signup
     // because we need to set user_metadata which requires admin privileges
-    const { authAPI } = await import('../utils/api');
 
     try {
       await authAPI.signup(email, password, name, role);
@@ -150,6 +151,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp,
     signOut,
     getAccessToken,
+    resetPassword: async (email: string) => {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      return { error };
+    },
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
