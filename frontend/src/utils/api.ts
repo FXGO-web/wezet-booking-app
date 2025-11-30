@@ -68,12 +68,8 @@ export const teamMembersAPI = {
   getAll: async (filters?: { role?: string; search?: string }) => {
     let query = supabase.from("profiles").select("*");
 
-    if (filters?.role) {
-      query = query.eq("role", filters.role);
-    }
-    if (filters?.search) {
-      query = query.ilike("full_name", `%${filters.search}%`);
-    }
+    if (filters?.role) query = query.eq("role", filters.role);
+    if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -87,7 +83,6 @@ export const teamMembersAPI = {
       .select("*")
       .eq("id", id)
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -98,7 +93,6 @@ export const teamMembersAPI = {
       .insert(member)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -110,7 +104,6 @@ export const teamMembersAPI = {
       .eq("id", id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -123,16 +116,14 @@ export const teamMembersAPI = {
 };
 
 // ===========================================================
-// CUSTOMERS API (clientes = profiles con role 'client')
+// CUSTOMERS API
 // ===========================================================
 
 export const customersAPI = {
   getAll: async (filters?: { search?: string }) => {
     let query = supabase.from("profiles").select("*").eq("role", "client");
 
-    if (filters?.search) {
-      query = query.ilike("full_name", `%${filters.search}%`);
-    }
+    if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -167,14 +158,8 @@ export const servicesAPI = {
       `
       );
 
-    if (filters?.category) {
-      // filters.category = category_id (uuid)
-      query = query.eq("category_id", filters.category);
-    }
-
-    if (filters?.search) {
-      query = query.ilike("name", `%${filters.search}%`);
-    }
+    if (filters?.category) query = query.eq("category_id", filters.category);
+    if (filters?.search) query = query.ilike("name", `%${filters.search}%`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -211,7 +196,8 @@ export const servicesAPI = {
       location_id: service.locationId ?? service.location_id ?? null,
       instructor_id: service.instructorId ?? service.instructor_id ?? null,
       capacity: service.capacity ?? null,
-      session_type: service.sessionType ?? service.session_type ?? "class_group",
+      session_type:
+        service.sessionType ?? service.session_type ?? "class_group",
       is_active: service.status ? service.status === "active" : true,
     };
 
@@ -220,7 +206,6 @@ export const servicesAPI = {
       .insert(payload)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -229,27 +214,23 @@ export const servicesAPI = {
     const mapped: any = {};
     if (updates.name) mapped.name = updates.name;
     if (updates.description) mapped.description = updates.description;
-    if (updates.duration ?? updates.duration_minutes) {
+    if (updates.duration ?? updates.duration_minutes)
       mapped.duration_minutes =
         updates.duration ?? updates.duration_minutes;
-    }
-    if (updates.basePrice ?? updates.price) {
+    if (updates.basePrice ?? updates.price)
       mapped.price = updates.basePrice ?? updates.price;
-    }
     if (updates.currency) mapped.currency = updates.currency;
-    if (updates.categoryId ?? updates.category_id) {
+    if (updates.categoryId ?? updates.category_id)
       mapped.category_id = updates.categoryId ?? updates.category_id;
-    }
-    if (updates.locationId ?? updates.location_id) {
+    if (updates.locationId ?? updates.location_id)
       mapped.location_id = updates.locationId ?? updates.location_id;
-    }
-    if (updates.instructorId ?? updates.instructor_id) {
-      mapped.instructor_id = updates.instructorId ?? updates.instructor_id;
-    }
+    if (updates.instructorId ?? updates.instructor_id)
+      mapped.instructor_id =
+        updates.instructorId ?? updates.instructor_id;
     if (updates.capacity !== undefined) mapped.capacity = updates.capacity;
-    if (updates.sessionType ?? updates.session_type) {
-      mapped.session_type = updates.sessionType ?? updates.session_type;
-    }
+    if (updates.sessionType ?? updates.session_type)
+      mapped.session_type =
+        updates.sessionType ?? updates.session_type;
     if (updates.status) mapped.is_active = updates.status === "active";
 
     const { data, error } = await supabase
@@ -258,7 +239,6 @@ export const servicesAPI = {
       .eq("id", id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -273,7 +253,6 @@ export const servicesAPI = {
   },
 };
 
-// Alias para compatibilidad
 export const sessionsAPI = servicesAPI;
 
 // ===========================================================
@@ -284,9 +263,7 @@ export const locationsAPI = {
   getAll: async (filters?: { search?: string }) => {
     let query = supabase.from("locations").select("*");
 
-    if (filters?.search) {
-      query = query.ilike("name", `%${filters.search}%`);
-    }
+    if (filters?.search) query = query.ilike("name", `%${filters.search}%`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -320,14 +297,13 @@ export const locationsAPI = {
       .eq("id", id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
 };
 
 // ===========================================================
-// BOOKINGS (bookings + sessions + profiles + templates)
+// BOOKINGS
 // ===========================================================
 
 export const bookingsAPI = {
@@ -353,15 +329,11 @@ export const bookingsAPI = {
       `
       );
 
-    if (filters?.status) {
-      query = query.eq("status", filters.status);
-    }
-    if (filters?.teamMemberId) {
+    if (filters?.status) query = query.eq("status", filters.status);
+    if (filters?.teamMemberId)
       query = query.eq("session.instructor_id", filters.teamMemberId);
-    }
-    if (filters?.serviceId) {
+    if (filters?.serviceId)
       query = query.eq("session.session_template_id", filters.serviceId);
-    }
 
     const { data, error } = await query;
     if (error) throw error;
@@ -382,14 +354,12 @@ export const bookingsAPI = {
           date: start ? start.toISOString().slice(0, 10) : "",
           time: start
             ? start.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+                hour: "2-digit",
+                minute: "2-digit",
+              })
             : "",
           price:
-            b.price ??
-            b.session?.template?.price ??
-            null,
+            b.price ?? b.session?.template?.price ?? null,
           currency:
             b.currency ??
             b.session?.template?.currency ??
@@ -440,7 +410,6 @@ export const bookingsAPI = {
       .insert(payload)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -458,32 +427,21 @@ export const bookingsAPI = {
       .eq("id", id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
 };
 
 // ===========================================================
-// DIGITAL CONTENT / PRODUCTS (placeholder)
+// DIGITAL CONTENT
 // ===========================================================
 
 export const digitalContentAPI = {
-  getAll: async () => {
-    // No hay tabla todavía -> devolvemos vacío pero mantenemos la forma.
-    return { content: [] };
-  },
-
-  create: async (_content: any) => {
-    return {};
-  },
-
-  update: async (_id: string, _updates: any) => {
-    return {};
-  },
+  getAll: async () => ({ content: [] }),
+  create: async () => ({}),
+  update: async () => ({}),
 };
 
-// Alias para componentes que usan productsAPI
 export const productsAPI = digitalContentAPI;
 
 // ===========================================================
@@ -500,7 +458,6 @@ export const statsAPI = {
       .from("profiles")
       .select("*", { count: "exact", head: true });
 
-    // Revenue: simple suma de booking.price (puede mejorarse con una RPC)
     const { data: bookingRows, error } = await supabase
       .from("bookings")
       .select("price");
@@ -508,8 +465,10 @@ export const statsAPI = {
     if (error) throw error;
 
     const revenue =
-      bookingRows?.reduce((acc: number, b: any) => acc + (Number(b.price) || 0), 0) ??
-      0;
+      bookingRows?.reduce(
+        (acc: number, b: any) => acc + (Number(b.price) || 0),
+        0
+      ) ?? 0;
 
     return {
       stats: {
@@ -522,12 +481,14 @@ export const statsAPI = {
 };
 
 // ===========================================================
-// SETTINGS (Edge Function: settings)
+// SETTINGS — FIX CORS + invoke() forever
 // ===========================================================
+
+const SETTINGS_URL =
+  "https://aadzzhdouuxkvelxyoyf.supabase.co/functions/v1/settings";
 
 export const settingsAPI = {
   get: async () => {
-    // Obtener sesión actual
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -536,19 +497,22 @@ export const settingsAPI = {
       throw new Error("No valid session found. User must be logged in.");
     }
 
-    const { data, error } = await supabase.functions.invoke("settings", {
+    const res = await fetch(SETTINGS_URL, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${session.access_token}`,
       },
     });
 
-    if (error) throw error;
-    return data;
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Settings GET failed: ${res.status} - ${text}`);
+    }
+
+    return res.json();
   },
 
   update: async (settings: any) => {
-    // Obtener sesión actual
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -557,40 +521,34 @@ export const settingsAPI = {
       throw new Error("No valid session found. User must be logged in.");
     }
 
-    const { data, error } = await supabase.functions.invoke("settings", {
+    const res = await fetch(SETTINGS_URL, {
       method: "POST",
-      body: settings,
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`,
       },
+      body: JSON.stringify(settings),
     });
 
-    if (error) throw error;
-    return data;
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Settings update failed: ${res.status} - ${text}`);
+    }
+
+    return res.json();
   },
 };
 
 // ===========================================================
-// ANALYTICS (placeholder – para que los imports no rompan)
+// ANALYTICS (placeholder)
 // ===========================================================
 
 export const analyticsAPI = {
-  getOverview: async (_timeRange: string = "30d") => {
-    return { revenue: [], bookings: [] };
-  },
-  getRevenueReport: async (_start: string, _end: string) => {
-    return { revenue: 0, breakdown: [] };
-  },
-  getTeamPerformance: async (_timeRange: string = "30d") => {
-    return { team: [] };
-  },
-  getCategoryBreakdown: async (_timeRange: string = "30d") => {
-    return { categories: [] };
-  },
-  exportReport: async (_type: "revenue" | "bookings" | "team", _timeRange: string = "30d") => {
-    return { url: "" };
-  },
+  getOverview: async () => ({ revenue: [], bookings: [] }),
+  getRevenueReport: async () => ({ revenue: 0, breakdown: [] }),
+  getTeamPerformance: async () => ({ team: [] }),
+  getCategoryBreakdown: async () => ({ categories: [] }),
+  exportReport: async () => ({ url: "" }),
 };
 
 // ===========================================================
@@ -598,19 +556,14 @@ export const analyticsAPI = {
 // ===========================================================
 
 export const availabilityAPI = {
-  /**
-   * Lista instructores (para Availability UI)
-   */
   getTeamMembers: async () => {
-    const { teamMembers } = await teamMembersAPI.getAll({ role: "instructor" });
+    const { teamMembers } = await teamMembersAPI.getAll({
+      role: "instructor",
+    });
     return { members: teamMembers };
   },
 
-  /**
-   * Devuelve reglas + excepciones + días bloqueados
-   */
   get: async (teamMemberId: string, serviceId?: string) => {
-    // Rules
     let rulesQuery = supabase
       .from("availability_rules")
       .select("*")
@@ -621,7 +574,6 @@ export const availabilityAPI = {
     const { data: rules, error: rulesError } = await rulesQuery;
     if (rulesError) throw rulesError;
 
-    // Exceptions
     let exQuery = supabase
       .from("availability_exceptions")
       .select("*")
@@ -632,7 +584,6 @@ export const availabilityAPI = {
     const { data: exceptions, error: exError } = await exQuery;
     if (exError) throw exError;
 
-    // Blocked
     const { data: blocked, error: blockedError } = await supabase
       .from("availability_blocked_dates")
       .select("*")
@@ -647,27 +598,23 @@ export const availabilityAPI = {
     };
   },
 
-  /**
-   * Usa la Edge Function get_month_calendar
-   */
   getAvailability: async (year: number, month: number) => {
-    const { data, error } = await supabase.functions.invoke("get_month_calendar", {
-      body: { year, month },
-    });
+    const { data, error } = await supabase.functions.invoke(
+      "get_month_calendar",
+      {
+        body: { year, month },
+      }
+    );
     if (error) throw error;
     return data;
   },
 
-  /**
-   * Actualiza reglas recurrentes
-   */
   updateSchedule: async (
     teamMemberId: string,
     schedule: any[],
     _accessToken?: string,
     serviceId?: string
   ) => {
-    // borrar reglas existentes del instructor (y opcionalmente del servicio)
     let del = supabase
       .from("availability_rules")
       .delete()
@@ -696,9 +643,6 @@ export const availabilityAPI = {
     return data;
   },
 
-  /**
-   * Excepciones para días concretos
-   */
   updateSpecificDates: async (
     teamMemberId: string,
     dates: any[],
@@ -753,23 +697,17 @@ export const availabilityAPI = {
     return { success: true };
   },
 
-  getAvailableSlots: async (
-    _teamMemberId: string,
-    _date: string,
-    _serviceId?: string
-  ) => {
-    // Esto idealmente debería ser otra Edge Function.
+  getAvailableSlots: async () => {
     return { slots: [] };
   },
 };
 
 // ===========================================================
-// PROGRAMS (Education + Retreats)
+// PROGRAMS
 // ===========================================================
 
 export const programsAPI = {
   getAll: async (filters?: { search?: string }) => {
-    // 1. Buscar categorías Education y Retreats
     const { data: categories, error: catError } = await supabase
       .from("categories")
       .select("id, name")
@@ -779,9 +717,7 @@ export const programsAPI = {
 
     const categoryIds = (categories ?? []).map((c) => c.id);
 
-    if (categoryIds.length === 0) {
-      return { programs: [] };
-    }
+    if (categoryIds.length === 0) return { programs: [] };
 
     let query = supabase
       .from("session_templates")
@@ -793,9 +729,8 @@ export const programsAPI = {
       )
       .in("category_id", categoryIds);
 
-    if (filters?.search) {
+    if (filters?.search)
       query = query.ilike("name", `%${filters.search}%`);
-    }
 
     const { data, error } = await query;
     if (error) throw error;

@@ -1,6 +1,4 @@
-// supabase/functions/settings/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.38.4";
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // CORS
 const corsHeaders = {
@@ -10,95 +8,83 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
-serve(async (req) => {
-  try {
-    // Preflight CORS
-    if (req.method === "OPTIONS") {
-      return new Response("ok", { headers: corsHeaders });
-    }
-
-    // Obtener Authorization: Bearer <token>
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const jwt = authHeader.replace("Bearer ", "");
-
-    if (!jwt) {
-      return new Response(
-        JSON.stringify({ error: "Missing Bearer token" }),
-        { status: 401, headers: corsHeaders }
-      );
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Cliente con service_role
-    const supabase = createClient(supabaseUrl, serviceKey, {
-      global: { headers: { Authorization: `Bearer ${jwt}` } },
-    });
-
-    // Validar usuario autenticado
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(jwt);
-
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid user token" }), {
-        status: 401,
-        headers: corsHeaders,
-      });
-    }
-
-    // Solo permitir admins
-    if (user.user_metadata?.role !== "admin") {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403,
-        headers: corsHeaders,
-      });
-    }
-
-    // GET SETTINGS
-    if (req.method === "GET") {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("*")
-        .single();
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    // UPDATE SETTINGS
-    if (req.method === "POST") {
-      const body = await req.json();
-
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .update(body)
-        .eq("id", body.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      return new Response(JSON.stringify(data), {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
-
-    return new Response("Method Not Allowed", {
-      status: 405,
+Deno.serve(async (req) => {
+  // 1. Preflight OPTIONS
+  if (req.method === "OPTIONS") {
+    return new Response("ok", {
       headers: corsHeaders,
     });
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
+  }
+
+  // 2. Leer Authorization
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return new Response(
+      JSON.stringify({ error: "Missing Authorization" }),
+      { status: 401, headers: corsHeaders },
+    );
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+
+  // 3. Validar JWT del usuario usando SERVICE ROLE KEY
+  const authClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    }
+  );
+
+  const { data: user, error: authError } = await authClient.auth.getUser();
+
+  if (authError || !user) {
+    return new Response(
+      JSON.stringify({ error: "Invalid JWT" }),
+      { status: 403, headers: corsHeaders },
+    );
+  }
+
+  // 4. Cliente DB con SERVICE ROLE KEY
+  const db = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
+  // GET
+  if (req.method === "GET") {
+    const { data, error } = await db
+      .from("platform_settings")
+      .select("*")
+      .single();
+
+    return new Response(JSON.stringify(data ?? { error }), {
+      status: error ? 400 : 200,
+      headers: corsHeaders,
     });
   }
+
+  // POST
+  if (req.method === "POST") {
+    const body = await req.json();
+
+    const { data, error } = await db
+      .from("platform_settings")
+      .update(body)
+      .eq("id", 1)
+      .select()
+      .single();
+
+    return new Response(JSON.stringify(data ?? { error }), {
+      status: error ? 400 : 200,
+      headers: corsHeaders,
+    });
+  }
+
+  return new Response(
+    JSON.stringify({ error: "Method not allowed" }),
+    { status: 405, headers: corsHeaders },
+  );
 });

@@ -76,82 +76,69 @@ export function SettingsPage() {
     loadSettings();
   }, []);
 
-  const loadSettings = async () => {
-    setLoading(true);
-    try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        console.log("No access token, using defaults");
-        setLoading(false);
-        return;
-      }
+ const loadSettings = async () => {
+  setLoading(true);
+  try {
+    const settings = await settingsAPI.get();
 
-      const { settings } = await settingsAPI.get(accessToken);
+    if (settings) {
+      // General
+      setPlatformName(settings.platformName || "WEZET");
+      setSupportEmail(settings.supportEmail || "support@wezet.com");
+      setTimezone(settings.timezone || "pst");
 
-      if (settings) {
-        // General
-        setPlatformName(settings.platformName || "WEZET");
-        setSupportEmail(settings.supportEmail || "support@wezet.com");
-        setTimezone(settings.timezone || "pst");
+      // Currency
+      setDefaultCurrency(settings.defaultCurrency || "EUR");
+      setMultiCurrency(settings.multiCurrency ?? true);
+      setTaxRate(settings.taxRate?.toString() || "8.5");
 
-        // Currency
-        setDefaultCurrency(settings.defaultCurrency || "EUR");
-        setMultiCurrency(settings.multiCurrency ?? true);
-        setTaxRate(settings.taxRate?.toString() || "8.5");
+      // Booking Rules
+      setMinAdvance(settings.minAdvance?.toString() || "24");
+      setMaxAdvance(settings.maxAdvance?.toString() || "90");
+      setCancelWindow(settings.cancelWindow?.toString() || "48");
+      setRequireApproval(settings.requireApproval ?? false);
 
-        // Booking Rules
-        setMinAdvance(settings.minAdvance?.toString() || "24");
-        setMaxAdvance(settings.maxAdvance?.toString() || "90");
-        setCancelWindow(settings.cancelWindow?.toString() || "48");
-        setRequireApproval(settings.requireApproval ?? false);
+      // Payment
+      setStripePublic(settings.stripePublic || "");
+      setStripeSecret(settings.stripeSecret || "");
+      setTestMode(settings.testMode ?? true);
 
-        // Payment
-        setStripePublic(settings.stripePublic || "");
-        setStripeSecret(settings.stripeSecret || "");
-        setTestMode(settings.testMode ?? true);
+      // Email Templates
+      setBookingConfirm(settings.bookingConfirm || bookingConfirm);
+      setBookingReminder(settings.bookingReminder || bookingReminder);
+      setCancellation(settings.cancellation || cancellation);
 
-        // Email Templates
-        setBookingConfirm(settings.bookingConfirm || bookingConfirm);
-        setBookingReminder(settings.bookingReminder || bookingReminder);
-        setCancellation(settings.cancellation || cancellation);
+      // Notifications
+      setNewBookingNotify(settings.newBookingNotify ?? true);
+      setCancelNotify(settings.cancelNotify ?? true);
+      setDailySummary(settings.dailySummary ?? true);
+      setNotifyEmail(settings.notifyEmail || "admin@wezet.com");
 
-        // Notifications
-        setNewBookingNotify(settings.newBookingNotify ?? true);
-        setCancelNotify(settings.cancelNotify ?? true);
-        setDailySummary(settings.dailySummary ?? true);
-        setNotifyEmail(settings.notifyEmail || "admin@wezet.com");
-
-        // Policies
-        setRefundPolicy(settings.refundPolicy || refundPolicy);
-        setPrivacyPolicy(settings.privacyPolicy || "https://wezet.com/privacy");
-        setTermsUrl(settings.termsUrl || "https://wezet.com/terms");
-      }
-    } catch (error) {
-      console.error("Error loading settings:", error);
-      toast.error("Failed to load settings");
-    } finally {
-      setLoading(false);
+      // Policies
+      setRefundPolicy(settings.refundPolicy || refundPolicy);
+      setPrivacyPolicy(settings.privacyPolicy || "https://wezet.com/privacy");
+      setTermsUrl(settings.termsUrl || "https://wezet.com/terms");
     }
-  };
+  } catch (error) {
+    console.error("Error loading settings:", error);
+    toast.error("Failed to load settings");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const saveSettings = async (section: string, data: any) => {
-    setSaving(section);
-    try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        toast.error("Please log in to save settings");
-        return;
-      }
-
-      await settingsAPI.update(data, accessToken);
-      toast.success(`${section} saved successfully`);
-    } catch (error: any) {
-      console.error(`Error saving ${section}:`, error);
-      toast.error(`Failed to save ${section}: ${error.message || "Unknown error"}`);
-    } finally {
-      setSaving(null);
-    }
-  };
+ const saveSettings = async (section: string, data: any) => {
+  setSaving(section);
+  try {
+    await settingsAPI.update(data);
+    toast.success(`${section} saved successfully`);
+  } catch (error: any) {
+    console.error(`Error saving ${section}:`, error);
+    toast.error(`Failed to save ${section}: ${error.message || "Unknown error"}`);
+  } finally {
+    setSaving(null);
+  }
+};
 
   const handleSaveGeneral = () => {
     saveSettings("General Settings", {

@@ -1,7 +1,0 @@
-[functions]
-verify_jwt = false
-
-[functions.cors]
-allowed_origins = ["*"]
-allowed_headers = ["authorization", "x-client-info", "apikey", "content-type"]
-allowed_methods = ["GET", "POST", "OPTIONS"]
