@@ -528,6 +528,7 @@ export const settingsAPI = {
       newBookingNotify: s.notify_new_bookings,
       cancelNotify: s.notify_cancellations,
       dailySummary: s.notify_daily_summary,
+      notifyEmail: s.notify_email,
       // policies are not in the provided DB schema snippet but assuming if they were:
       // refundPolicy: s.refund_policy, etc.
       // If they are missing in DB, they will be undefined and frontend will use defaults.
@@ -568,8 +569,7 @@ export const settingsAPI = {
     if (settings.newBookingNotify !== undefined) mapped.notify_new_bookings = settings.newBookingNotify;
     if (settings.cancelNotify !== undefined) mapped.notify_cancellations = settings.cancelNotify;
     if (settings.dailySummary !== undefined) mapped.notify_daily_summary = settings.dailySummary;
-    // notifyEmail is not in DB, mapping to support_email as fallback if supportEmail not present, 
-    // but usually supportEmail is handled in General. We'll skip notifyEmail to avoid overwriting.
+    if (settings.notifyEmail) mapped.notify_email = settings.notifyEmail;
 
     const { data, error } = await supabase.functions.invoke("settings", {
       method: "POST",

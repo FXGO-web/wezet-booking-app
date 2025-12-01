@@ -83,6 +83,7 @@ export function SettingsPage() {
       const { settings } = await settingsAPI.get();
 
       if (settings) {
+        console.log("Loaded settings:", settings);
         // General
         setPlatformName(settings.platformName || "WEZET");
         setSupportEmail(settings.supportEmail || "support@wezet.com");
