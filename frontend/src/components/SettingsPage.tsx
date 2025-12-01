@@ -80,6 +80,7 @@ export function SettingsPage() {
   const loadSettings = async () => {
     setLoading(true);
     try {
+      console.log("Attempting to load settings...");
       const { settings } = await settingsAPI.get();
 
       if (settings) {
