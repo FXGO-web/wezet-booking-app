@@ -267,13 +267,32 @@ export function SettingsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button
-              onClick={handleSaveGeneral}
-              disabled={saving === "General Settings"}
-            >
-              {saving === "General Settings" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Save General Settings
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleSaveGeneral}
+                disabled={saving === "General Settings"}
+              >
+                {saving === "General Settings" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Save General Settings
+              </Button>
+              <Button
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const { supabase } = await import("../utils/supabase/client");
+                    const { data, error } = await supabase.functions.invoke("settings?fix_admin=true", { method: "GET" });
+                    if (error) throw error;
+                    toast.success("Permissions fixed! Please reload the page.");
+                    console.log("Fix admin response:", data);
+                  } catch (e: any) {
+                    toast.error("Failed to fix permissions: " + e.message);
+                    console.error(e);
+                  }
+                }}
+              >
+                Fix Permissions (Click Me)
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
