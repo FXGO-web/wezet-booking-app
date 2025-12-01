@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
       }
     );
 
-    const { data: user, error: authError } = await authClient.auth.getUser();
+    const { data: { user }, error: authError } = await authClient.auth.getUser();
 
     if (authError || !user) {
       return new Response(
