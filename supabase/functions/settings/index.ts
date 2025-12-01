@@ -68,8 +68,11 @@ Deno.serve(async (req) => {
       .eq("id", user.id)
       .single()).data?.role : "anon";
 
+    console.log(`User: ${user?.id}, Role: ${userRole}, Method: ${req.method}`);
+
     // Allow GET for everyone, but POST only for admins
     if (req.method === "POST" && userRole !== "admin") {
+      console.error(`Unauthorized POST attempt by user ${user?.id} with role ${userRole}`);
       return new Response(
         JSON.stringify({ error: "Unauthorized: Admin access required" }),
         { status: 403, headers: corsHeaders },
