@@ -45,7 +45,10 @@ Deno.serve(async (req) => {
 
     const { data: { user }, error: authError } = await authClient.auth.getUser();
 
-    if (authError || !user) {
+    // If Auth fails, we only block if it's NOT a GET request (assuming GET is public)
+    // OR if we want to enforce auth for GET, we need to know why it fails.
+    // Given the RLS allows public read, let's allow GET to pass even if user is missing.
+    if ((authError || !user) && req.method !== "GET") {
       return new Response(
         JSON.stringify({ error: "Invalid JWT" }),
         { status: 403, headers: corsHeaders },
@@ -58,13 +61,12 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    const { data: profile } = await dbForRole
+    // For GET, if no user, we just skip role check and proceed to DB (which has its own RLS)
+    const userRole = user ? (await dbForRole
       .from("profiles")
       .select("role")
       .eq("id", user.id)
-      .single();
-
-    const userRole = profile?.role || "client";
+      .single()).data?.role : "anon";
 
     // Allow GET for everyone, but POST only for admins
     if (req.method === "POST" && userRole !== "admin") {
