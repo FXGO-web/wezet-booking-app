@@ -150,7 +150,7 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
     }
   };
 
-  const handleAvatarFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const input = event.target;
     const file = input.files?.[0];
     if (!file) return;
@@ -162,52 +162,72 @@ export function TeamDashboard({ onNavigate }: TeamDashboardProps) {
       return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    const img = new Image();
+    // 1. Upload to Supabase Storage
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${user?.id}/${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
 
-    img.onload = () => {
-      const isSquare = Math.abs(img.width - img.height) <= 5;
-      if (!isSquare) {
-        toast.error("Usa una imagen cuadrada 1:1.");
-        URL.revokeObjectURL(objectUrl);
-        input.value = "";
-        return;
-      }
+    const toastId = toast.loading("Uploading image...");
 
-      if (img.width < 600 || img.height < 600) {
-        toast.warning("Recomendado mínimo 600x600px para un buen preview.");
-      }
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, file);
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        if (typeof reader.result === "string") {
-          setAvatarUrl(reader.result);
-          toast.success("Imagen lista. Guarda los cambios para publicarla.");
-        }
-      };
-      reader.readAsDataURL(file);
+      if (uploadError) throw uploadError;
 
-      URL.revokeObjectURL(objectUrl);
+      // 2. Get Public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(filePath);
+
+      setAvatarUrl(publicUrl);
+      toast.success("Image uploaded successfully", { id: toastId });
+
+      // Auto-save the new URL to profile
+      await saveProfileWithUrl(publicUrl);
+
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error);
+      toast.error(`Upload failed: ${error.message}`, { id: toastId });
+    } finally {
       input.value = "";
-    };
+    }
+  };
 
-    img.onerror = () => {
-      toast.error("No pudimos leer la imagen seleccionada.");
-      URL.revokeObjectURL(objectUrl);
-      input.value = "";
-    };
+  const saveProfileWithUrl = async (url: string) => {
+    if (!user?.id) return;
 
-    img.src = objectUrl;
+    try {
+      // Update Auth Metadata (Lightweight URL only)
+      await supabase.auth.updateUser({
+        data: { avatar_url: url }
+      });
+
+      // Update Profiles Table
+      const accessToken = getAccessToken();
+      if (accessToken) {
+        await teamMembersAPI.update(
+          user.id,
+          { avatarUrl: url },
+          accessToken
+        );
+      }
+    } catch (error) {
+      console.error("Error syncing avatar URL:", error);
+    }
   };
 
   const handleProfileSave = async () => {
     setSavingProfile(true);
     try {
+      // Update Auth Metadata
       await supabase.auth.updateUser({
         data: {
-          avatar_url: avatarUrl,
           headline,
           bio,
+          // Ensure we keep the avatar_url if it exists
+          avatar_url: avatarUrl
         },
       });
 

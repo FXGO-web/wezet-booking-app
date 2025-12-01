@@ -99,9 +99,18 @@ export const teamMembersAPI = {
   },
 
   update: async (id: string, updates: any) => {
+    const mapped: any = {};
+    if (updates.full_name) mapped.full_name = updates.full_name;
+    if (updates.fullName) mapped.full_name = updates.fullName;
+    if (updates.avatar_url) mapped.avatar_url = updates.avatar_url;
+    if (updates.avatarUrl) mapped.avatar_url = updates.avatarUrl;
+    if (updates.role) mapped.role = updates.role;
+    if (updates.bio) mapped.bio = updates.bio;
+    if (updates.email) mapped.email = updates.email;
+
     const { data, error } = await supabase
       .from("profiles")
-      .update(updates)
+      .update(mapped)
       .eq("id", id)
       .select()
       .single();
@@ -498,13 +507,73 @@ export const settingsAPI = {
       throw new Error(`Settings fetch failed: ${error.message}`);
     }
 
-    return data;
+    // Map snake_case from DB to camelCase for Frontend
+    const s = data?.settings || {};
+    const mappedSettings = {
+      platformName: s.platform_name,
+      supportEmail: s.support_email,
+      timezone: s.timezone,
+      defaultCurrency: s.default_currency,
+      taxRate: s.tax_rate,
+      minAdvance: s.min_booking_advance_hours,
+      maxAdvance: s.max_booking_advance_days,
+      cancelWindow: s.cancellation_window_hours,
+      requireApproval: s.require_approval,
+      stripePublic: s.stripe_public_key,
+      stripeSecret: s.stripe_secret_key,
+      testMode: s.stripe_test_mode,
+      bookingConfirm: s.email_template_confirmation,
+      bookingReminder: s.email_template_reminder,
+      cancellation: s.email_template_cancellation,
+      newBookingNotify: s.notify_new_bookings,
+      cancelNotify: s.notify_cancellations,
+      dailySummary: s.notify_daily_summary,
+      // policies are not in the provided DB schema snippet but assuming if they were:
+      // refundPolicy: s.refund_policy, etc.
+      // If they are missing in DB, they will be undefined and frontend will use defaults.
+    };
+
+    return { settings: mappedSettings };
   },
 
   update: async (settings: any) => {
+    const mapped: any = {};
+
+    // General
+    if (settings.platformName) mapped.platform_name = settings.platformName;
+    if (settings.supportEmail) mapped.support_email = settings.supportEmail;
+    if (settings.timezone) mapped.timezone = settings.timezone;
+
+    // Currency
+    if (settings.defaultCurrency) mapped.default_currency = settings.defaultCurrency;
+    if (settings.taxRate !== undefined) mapped.tax_rate = settings.taxRate;
+
+    // Booking Rules
+    if (settings.minAdvance !== undefined) mapped.min_booking_advance_hours = settings.minAdvance;
+    if (settings.maxAdvance !== undefined) mapped.max_booking_advance_days = settings.maxAdvance;
+    if (settings.cancelWindow !== undefined) mapped.cancellation_window_hours = settings.cancelWindow;
+    if (settings.requireApproval !== undefined) mapped.require_approval = settings.requireApproval;
+
+    // Payment
+    if (settings.stripePublic) mapped.stripe_public_key = settings.stripePublic;
+    if (settings.stripeSecret) mapped.stripe_secret_key = settings.stripeSecret;
+    if (settings.testMode !== undefined) mapped.stripe_test_mode = settings.testMode;
+
+    // Email Templates
+    if (settings.bookingConfirm) mapped.email_template_confirmation = settings.bookingConfirm;
+    if (settings.bookingReminder) mapped.email_template_reminder = settings.bookingReminder;
+    if (settings.cancellation) mapped.email_template_cancellation = settings.cancellation;
+
+    // Notifications
+    if (settings.newBookingNotify !== undefined) mapped.notify_new_bookings = settings.newBookingNotify;
+    if (settings.cancelNotify !== undefined) mapped.notify_cancellations = settings.cancelNotify;
+    if (settings.dailySummary !== undefined) mapped.notify_daily_summary = settings.dailySummary;
+    // notifyEmail is not in DB, mapping to support_email as fallback if supportEmail not present, 
+    // but usually supportEmail is handled in General. We'll skip notifyEmail to avoid overwriting.
+
     const { data, error } = await supabase.functions.invoke("settings", {
       method: "POST",
-      body: settings,
+      body: mapped,
     });
 
     if (error) {
