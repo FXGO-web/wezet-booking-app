@@ -10,6 +10,7 @@ import { BookingModal } from "./BookingModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
 import { SortableTable, Column } from "./SortableTable";
 import { toast } from "sonner";
+import { useCurrency } from "../context/CurrencyContext";
 
 interface Booking {
   id: string;
@@ -39,6 +40,7 @@ export function BookingsDirectory() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | undefined>(undefined);
   const { getAccessToken } = useAuth();
+  const { convertAndFormat } = useCurrency();
 
   // Filter configuration
   const filterConfig: FilterConfig[] = [
@@ -144,7 +146,7 @@ export function BookingsDirectory() {
       sortable: true,
       render: (value: number, row: Booking) => (
         <span className="font-medium">
-          {row.currency} {value}
+          {convertAndFormat(value, row.currency)}
         </span>
       ),
     },

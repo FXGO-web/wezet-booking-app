@@ -1,200 +1,80 @@
-import { useState, useEffect } from "react";
-import { Button } from "./ui/button";
-import { Card, CardContent } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Plus, Edit, Wind, Heart, MessageCircle, BookOpen, Mountain, Loader2, Download, Trash2 } from "lucide-react";
-import { sessionsAPI } from "../utils/api";
-import { useAuth } from "../hooks/useAuth";
-import { ServiceModal } from "./ServiceModal";
-import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
-import { SortableTable, Column } from "./SortableTable";
-import { toast } from "sonner";
+import { useCurrency } from "../context/CurrencyContext";
 
-interface Service {
-  id: string;
-  name: string;
-  duration: number;
-  price: number;
-  currency: string;
-  category: string;
-  description?: string;
-  status: "active" | "inactive";
-}
-
-interface Category {
-  id: string;
-  name: string;
-  icon: any;
-  count: number;
-}
-
-const categories: Category[] = [
-  { id: "breathwork", name: "Breathwork", icon: Wind, count: 0 },
-  { id: "bodywork", name: "Bodywork", icon: Heart, count: 0 },
-  { id: "coaching", name: "Coaching", icon: MessageCircle, count: 0 },
-  { id: "education", name: "Education", icon: BookOpen, count: 0 },
-  { id: "retreats", name: "Retreats", icon: Mountain, count: 0 },
-];
+// ... (imports)
 
 export function ServicesCategories() {
-  const [filterValues, setFilterValues] = useState<FilterValues>({});
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedService, setSelectedService] = useState<Service | undefined>(undefined);
-  const { getAccessToken } = useAuth();
+  const { convertAndFormat } = useCurrency();
+  // ... (state)
 
-  // Filter configuration
-  const filterConfig: FilterConfig[] = [
-    {
-      key: 'category',
-      label: 'Category',
-      type: 'select',
-      options: [
-        { value: 'all', label: 'All Categories' },
-        { value: 'breathwork', label: 'Breathwork' },
-        { value: 'bodywork', label: 'Bodywork' },
-        { value: 'coaching', label: 'Coaching' },
-        { value: 'education', label: 'Education' },
-        { value: 'retreats', label: 'Retreats' },
-      ],
-      placeholder: 'Filter by category',
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { value: 'all', label: 'All Status' },
-        { value: 'active', label: 'Active' },
-        { value: 'inactive', label: 'Inactive' },
-      ],
-      placeholder: 'Filter by status',
-    },
-    {
-      key: 'minPrice',
-      label: 'Min Price',
-      type: 'number',
-      placeholder: 'Minimum price',
-    },
-    {
-      key: 'maxPrice',
-      label: 'Max Price',
-      type: 'number',
-      placeholder: 'Maximum price',
-    },
-    {
-      key: 'minDuration',
-      label: 'Min Duration (min)',
-      type: 'number',
-      placeholder: 'Minimum duration',
-    },
-  ];
-
-  const getCategoryIcon = (categoryId: string) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category?.icon || Wind;
-  };
-
-  // Table columns configuration
-const columns: Column[] = [
+  // ... (columns)
   {
-    key: 'name',
-    label: 'Session',
-      sortable: true,
-      render: (value: string, row: Service) => {
-        const Icon = getCategoryIcon(row.category);
-        return (
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-              <Icon className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <div className="font-medium">{value}</div>
-              <div className="text-xs text-muted-foreground capitalize">{row.category}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'duration',
-      label: 'Duration',
-      sortable: true,
-      render: (value: number) => (
-        <span className="text-muted-foreground">
-          {value >= 60 ? `${Math.floor(value / 60)}h ${value % 60 > 0 ? `${value % 60}m` : ''}`.trim() : `${value}m`}
-        </span>
-      ),
-    },
-    {
-      key: 'price',
+    key: 'price',
       label: 'Price',
-      sortable: true,
-      render: (value: number, row: Service) => (
-        <span className="font-medium">
-          {row.currency} {value}
-        </span>
-      ),
+        sortable: true,
+          render: (value: number, row: Service) => (
+            <span className="font-medium">
+              {convertAndFormat(value, row.currency)}
+            </span>
+          ),
     },
-    {
-      key: 'category',
+  {
+    key: 'category',
       label: 'Category',
-      sortable: true,
-      render: (value: string) => (
-        <Badge variant="outline" className="capitalize">
-          {value}
-        </Badge>
-      ),
+        sortable: true,
+          render: (value: string) => (
+            <Badge variant="outline" className="capitalize">
+              {value}
+            </Badge>
+          ),
     },
-    {
-      key: 'status',
+  {
+    key: 'status',
       label: 'Status',
-      sortable: true,
-      render: (value: string) => (
-        <Badge
-          variant="secondary"
-          className={
-            value === "active"
-              ? "bg-green-100 text-green-800 hover:bg-green-100"
-              : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-          }
-        >
-          {value}
-        </Badge>
-      ),
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      sortable: false,
-      render: (_: any, row: Service) => (
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              handleEditClick(row);
-            }}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            onClick={(e: React.MouseEvent) => {
-              e.stopPropagation();
-              if (window.confirm("Are you sure you want to delete this service?")) {
-                handleDelete(row.id);
+        sortable: true,
+          render: (value: string) => (
+            <Badge
+              variant="secondary"
+              className={
+                value === "active"
+                  ? "bg-green-100 text-green-800 hover:bg-green-100"
+                  : "bg-gray-100 text-gray-800 hover:bg-gray-100"
               }
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+            >
+              {value}
+            </Badge>
+          ),
+    },
+  {
+    key: 'actions',
+      label: 'Actions',
+        sortable: false,
+          render: (_: any, row: Service) => (
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  handleEditClick(row);
+                }}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (window.confirm("Are you sure you want to delete this service?")) {
+                    handleDelete(row.id);
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ),
     },
   ];
 
