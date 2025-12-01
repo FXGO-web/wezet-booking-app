@@ -1,96 +1,131 @@
+import React, { useState, useEffect } from "react";
 import { useCurrency } from "../context/CurrencyContext";
+import { Badge } from "./ui/badge";
+import { Button } from "./ui/button";
+import { Card, CardContent } from "./ui/card";
+import { Edit, Trash2, Plus, Download, Loader2, Activity, Heart, Zap, Coffee } from "lucide-react";
+import { toast } from "sonner";
+import { ServiceModal } from "./ServiceModal";
+import { AdvancedFilters } from "./AdvancedFilters";
+import { SortableTable } from "./SortableTable";
+import { sessionsAPI } from "../utils/api";
+import { Database } from "../types/database.types";
 
-// ... (imports)
+type Service = Database['public']['Tables']['session_templates']['Row'];
+
+const CATEGORIES = [
+  { id: 'yoga', name: 'Yoga', icon: Activity },
+  { id: 'meditation', name: 'Meditation', icon: Heart },
+  { id: 'pilates', name: 'Pilates', icon: Zap },
+  { id: 'massage', name: 'Massage', icon: Coffee },
+];
 
 export function ServicesCategories() {
   const { convertAndFormat } = useCurrency();
-  // ... (state)
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filterValues, setFilterValues] = useState<any>({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | undefined>(undefined);
 
-  // ... (columns)
-  {
-    key: 'price',
-      label: 'Price',
-        sortable: true,
-          render: (value: number, row: Service) => (
-            <span className="font-medium">
-              {convertAndFormat(value, row.currency)}
-            </span>
-          ),
-    },
-  {
-    key: 'category',
-      label: 'Category',
-        sortable: true,
-          render: (value: string) => (
-            <Badge variant="outline" className="capitalize">
-              {value}
-            </Badge>
-          ),
-    },
-  {
-    key: 'status',
-      label: 'Status',
-        sortable: true,
-          render: (value: string) => (
-            <Badge
-              variant="secondary"
-              className={
-                value === "active"
-                  ? "bg-green-100 text-green-800 hover:bg-green-100"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-100"
-              }
-            >
-              {value}
-            </Badge>
-          ),
-    },
-  {
-    key: 'actions',
-      label: 'Actions',
-        sortable: false,
-          render: (_: any, row: Service) => (
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  handleEditClick(row);
-                }}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                onClick={(e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  if (window.confirm("Are you sure you want to delete this service?")) {
-                    handleDelete(row.id);
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ),
-    },
-  ];
+  const categories = CATEGORIES;
+
+  const handleEditClick = (service: Service) => {
+    setSelectedService(service);
+    setIsModalOpen(true);
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      const accessToken = getAccessToken();
-      if (!accessToken) return;
-
-      await sessionsAPI.delete(id, accessToken);
-      toast.success("Session deleted successfully");
-      fetchServices();
+      if (window.confirm("Are you sure you want to delete this service?")) {
+        await sessionsAPI.delete(id);
+        toast.success("Session deleted successfully");
+        fetchServices();
+      }
     } catch (error) {
       console.error("Error deleting service:", error);
       toast.error("Failed to delete service");
     }
   };
+
+  const columns = [
+    {
+      key: 'name',
+      label: 'Name',
+      sortable: true,
+      render: (value: string) => <span className="font-medium">{value}</span>,
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      sortable: true,
+      render: (value: number, row: Service) => (
+        <span className="font-medium">
+          {convertAndFormat(value, row.currency)}
+        </span>
+      ),
+    },
+    {
+      key: 'category',
+      label: 'Category',
+      sortable: true,
+      render: (value: string) => (
+        <Badge variant="outline" className="capitalize">
+          {value || 'Uncategorized'}
+        </Badge>
+      ),
+    },
+    {
+      key: 'is_active',
+      label: 'Status',
+      sortable: true,
+      render: (value: boolean) => {
+        const status = value ? 'active' : 'inactive';
+        return (
+          <Badge
+            variant="secondary"
+            className={
+              status === "active"
+                ? "bg-green-100 text-green-800 hover:bg-green-100"
+                : "bg-gray-100 text-gray-800 hover:bg-gray-100"
+            }
+          >
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      sortable: false,
+      render: (_: any, row: Service) => (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleEditClick(row);
+            }}
+          >
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleDelete(row.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   // Fetch services from API
   const fetchServices = async () => {
@@ -99,7 +134,6 @@ export function ServicesCategories() {
       const filters: any = {};
       if (filterValues.search) filters.search = filterValues.search;
       if (filterValues.category && filterValues.category !== 'all') filters.category = filterValues.category;
-      if (filterValues.status && filterValues.status !== 'all') filters.status = filterValues.status;
 
       const { services: data } = await sessionsAPI.getAll(filters);
       setServices(data || []);
@@ -120,11 +154,6 @@ export function ServicesCategories() {
     setIsModalOpen(true);
   };
 
-  const handleEditClick = (service: Service) => {
-    setSelectedService(service);
-    setIsModalOpen(true);
-  };
-
   const handleModalSuccess = () => {
     fetchServices();
   };
@@ -134,10 +163,10 @@ export function ServicesCategories() {
     const rows = filteredServices.map(s => [
       s.name,
       s.category,
-      s.duration.toString(),
+      s.duration_minutes.toString(),
       s.price.toString(),
       s.currency,
-      s.status,
+      s.is_active ? 'active' : 'inactive',
     ]);
 
     const csvContent = [
@@ -169,12 +198,47 @@ export function ServicesCategories() {
     }
 
     // Duration filter
-    if (filterValues.minDuration && service.duration < Number(filterValues.minDuration)) {
+    if (filterValues.minDuration && service.duration_minutes < Number(filterValues.minDuration)) {
       return false;
     }
 
     return true;
   });
+
+  // Filter config for AdvancedFilters
+  const filterConfig = [
+    {
+      id: 'category',
+      label: 'Category',
+      type: 'select',
+      options: [
+        { label: 'All Categories', value: 'all' },
+        ...categories.map(c => ({ label: c.name, value: c.id }))
+      ]
+    },
+    {
+      id: 'status',
+      label: 'Status',
+      type: 'select',
+      options: [
+        { label: 'All Status', value: 'all' },
+        { label: 'Active', value: 'active' },
+        { label: 'Inactive', value: 'inactive' }
+      ]
+    },
+    {
+      id: 'minPrice',
+      label: 'Min Price',
+      type: 'number',
+      placeholder: '0'
+    },
+    {
+      id: 'maxPrice',
+      label: 'Max Price',
+      type: 'number',
+      placeholder: '1000'
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-background">
