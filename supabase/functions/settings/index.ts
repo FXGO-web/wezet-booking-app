@@ -7,6 +7,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-requested-with, accept, accept-language, content-language",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Cache-Control": "no-cache, no-store, must-revalidate",
+  "Pragma": "no-cache",
+  "Expires": "0",
 };
 
 Deno.serve(async (req) => {
