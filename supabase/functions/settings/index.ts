@@ -23,14 +23,14 @@ Deno.serve(async (req) => {
   try {
     // 2. Leer Authorization
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader && req.method !== "GET") {
       return new Response(
         JSON.stringify({ error: "Missing Authorization" }),
         { status: 401, headers: corsHeaders },
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
 
     // 3. Validar JWT del usuario usando SERVICE ROLE KEY
     const authClient = createClient(
