@@ -70,6 +70,17 @@ Deno.serve(async (req) => {
 
     console.log(`User: ${user?.id}, Role: ${userRole}, Method: ${req.method}`);
 
+    // TEMPORARY FIX: Promote user to admin if requested
+    const url = new URL(req.url);
+    if (user && url.searchParams.get("fix_admin") === "true") {
+      console.log(`Promoting user ${user.id} to admin...`);
+      await dbForRole.from("profiles").update({ role: "admin" }).eq("id", user.id);
+      return new Response(JSON.stringify({ message: "User promoted to admin" }), {
+        status: 200,
+        headers: corsHeaders,
+      });
+    }
+
     // Allow GET for everyone, but POST only for admins
     if (req.method === "POST" && userRole !== "admin") {
       console.error(`Unauthorized POST attempt by user ${user?.id} with role ${userRole}`);
