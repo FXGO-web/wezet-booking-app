@@ -84,8 +84,14 @@ Deno.serve(async (req) => {
         .select("*")
         .single();
 
-      // Return 200 even if error, to ensure CORS headers pass through and we can see the error message
-      return new Response(JSON.stringify(data ?? { error }), {
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: corsHeaders,
+        });
+      }
+
+      return new Response(JSON.stringify({ settings: data }), {
         status: 200,
         headers: corsHeaders,
       });
@@ -102,7 +108,14 @@ Deno.serve(async (req) => {
         .select()
         .single();
 
-      return new Response(JSON.stringify(data ?? { error }), {
+      if (error) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: corsHeaders,
+        });
+      }
+
+      return new Response(JSON.stringify({ settings: data }), {
         status: 200,
         headers: corsHeaders,
       });
