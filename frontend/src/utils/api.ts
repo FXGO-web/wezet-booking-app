@@ -129,6 +129,8 @@ export const teamMembersAPI = {
     if (updates.specialties) mapped.specialties = updates.specialties;
     if (updates.status) mapped.status = updates.status;
 
+    console.log("Updating profile", id, "with payload:", mapped);
+
     const { data, error } = await supabase
       .from("profiles")
       .update(mapped)
