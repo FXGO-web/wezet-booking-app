@@ -310,16 +310,17 @@ export const locationsAPI = {
   },
 
   create: async (location: any) => {
-    const payload: Database["public"]["Tables"]["locations"]["Insert"] = {
+    // Strict payload for locations
+    const payload = {
       name: location.name,
-      address: location.address ?? null,
-      type: location.type ?? "in-person", // Default to in-person if missing, or handle as needed
-      capacity: location.capacity ?? null,
+      address: location.address || null,
+      type: location.type || "in-person",
+      capacity: location.capacity ? Number(location.capacity) : null,
     };
 
     const { data, error } = await supabase
       .from("locations")
-      .insert(payload)
+      .insert(payload as any)
       .select()
       .single();
 
