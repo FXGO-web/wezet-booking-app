@@ -678,6 +678,41 @@ export const availabilityAPI = {
     const { data: rules, error: rulesError } = await rulesQuery;
     if (rulesError) throw rulesError;
 
+    // Transform rules array to WeeklySchedule object
+    const schedule: any = {
+      monday: { enabled: false, slots: [] },
+      tuesday: { enabled: false, slots: [] },
+      wednesday: { enabled: false, slots: [] },
+      thursday: { enabled: false, slots: [] },
+      friday: { enabled: false, slots: [] },
+      saturday: { enabled: false, slots: [] },
+      sunday: { enabled: false, slots: [] },
+    };
+
+    const dayMap: Record<number, string> = {
+      0: "sunday",
+      1: "monday",
+      2: "tuesday",
+      3: "wednesday",
+      4: "thursday",
+      5: "friday",
+      6: "saturday",
+    };
+
+    if (rules) {
+      rules.forEach((rule: any) => {
+        const dayName = dayMap[rule.weekday];
+        if (dayName && schedule[dayName]) {
+          schedule[dayName].enabled = true;
+          schedule[dayName].slots.push({
+            id: rule.id,
+            startTime: rule.start_time.slice(0, 5), // HH:MM
+            endTime: rule.end_time.slice(0, 5),
+          });
+        }
+      });
+    }
+
     let exQuery = supabase
       .from("availability_exceptions")
       .select("*")
@@ -696,7 +731,7 @@ export const availabilityAPI = {
     if (blockedError) throw blockedError;
 
     return {
-      schedule: rules ?? [],
+      schedule,
       specificDates: exceptions ?? [],
       blockedDates: blocked ?? [],
     };
@@ -715,28 +750,53 @@ export const availabilityAPI = {
 
   updateSchedule: async (
     teamMemberId: string,
-    schedule: any[],
+    scheduleObj: any,
     _accessToken?: string,
     serviceId?: string
   ) => {
+    // Transform WeeklySchedule object to rules array
+    const rows: any[] = [];
+    const dayMapReverse: Record<string, number> = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
+    };
+
+    Object.keys(scheduleObj).forEach((dayName) => {
+      const dayData = scheduleObj[dayName];
+      if (dayData.enabled && dayData.slots.length > 0) {
+        dayData.slots.forEach((slot: any) => {
+          rows.push({
+            instructor_id: teamMemberId,
+            session_template_id: serviceId ?? null,
+            weekday: dayMapReverse[dayName],
+            start_time: slot.startTime,
+            end_time: slot.endTime,
+          });
+        });
+      }
+    });
+
+    // Delete existing rules for this instructor (and service if applicable)
     let del = supabase
       .from("availability_rules")
       .delete()
       .eq("instructor_id", teamMemberId);
-    if (serviceId) del = del.eq("session_template_id", serviceId);
+
+    if (serviceId) {
+      del = del.eq("session_template_id", serviceId);
+    } else {
+      del = del.is("session_template_id", null); // Only delete global rules if serviceId is not provided
+    }
+
     const { error: delError } = await del;
     if (delError) throw delError;
 
-    if (schedule.length === 0) return [];
-
-    const rows: Database["public"]["Tables"]["availability_rules"]["Insert"][] = schedule.map((s: any) => ({
-      instructor_id: teamMemberId,
-      session_template_id: serviceId ?? s.sessionTemplateId ?? null,
-      weekday: s.dayOfWeek ?? s.weekday,
-      start_time: s.startTime ?? s.start_time,
-      end_time: s.endTime ?? s.end_time,
-      location_id: s.locationId ?? s.location_id ?? null,
-    }));
+    if (rows.length === 0) return [];
 
     const { data, error } = await supabase
       .from("availability_rules")
