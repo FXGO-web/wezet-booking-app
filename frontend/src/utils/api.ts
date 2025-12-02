@@ -101,6 +101,8 @@ export const teamMembersAPI = {
       status: member.status || "active",
     };
 
+    console.log("Creating team member with payload:", payload);
+
     // Note: This insert might fail if the 'id' (UUID) is not provided, 
     // because 'profiles' table usually expects 'id' to match an auth.users 'id'.
     // If we want to create a "placeholder" profile without a real user, 
