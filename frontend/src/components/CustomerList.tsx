@@ -56,8 +56,10 @@ export function CustomerList() {
 
       const { teamMembers: data } = await teamMembersAPI.getAll(filters);
 
-      const customerRoles = ['Client', 'Subscriber'];
-      const filteredData = (data || []).filter((m: any) => customerRoles.includes(m.role));
+      const customerRoles = ['client', 'subscriber'];
+      const filteredData = (data || []).filter((m: any) =>
+        m.role && customerRoles.includes(m.role.toLowerCase())
+      );
 
       setCustomers(filteredData);
     } catch (error) {

@@ -213,8 +213,10 @@ export function TeamManagement() {
       );
 
       // Filter for Team Roles only
-      const teamRoles = ['Admin', 'Team Member', 'Teacher', 'Facilitator', 'Founder & CEO WEZET'];
-      const filteredData = (data || []).filter((m: any) => teamRoles.includes(m.role));
+      const teamRoles = ['admin', 'team member', 'teacher', 'facilitator', 'founder & ceo wezet', 'instructor'];
+      const filteredData = (data || []).filter((m: any) =>
+        m.role && teamRoles.includes(m.role.toLowerCase())
+      );
 
       const enrichedData = filteredData.map((member: any) => {
         const memberServices =
