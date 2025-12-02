@@ -112,13 +112,14 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
           // Find applicable services
           let applicableServices: any[] = [];
+          let isGenericSlot = false;
 
           if (slot.template_id) {
             const s = allServices.find(s => String(s.id) === String(slot.template_id));
             if (s) applicableServices.push(s);
           } else {
             // Generic slot: find all services for this instructor
-            // Check both nested instructor object and direct instructor_id
+            isGenericSlot = true;
             applicableServices = allServices.filter(s =>
               String(s.instructor?.id) === String(slot.instructor_id) ||
               String(s.instructor_id) === String(slot.instructor_id)
@@ -126,8 +127,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           }
 
           // If no specific services found for this instructor, and it's a generic slot,
-          // we might want to show a generic "Session" or maybe all services?
-          // For now, if no services found, we'll create a generic fallback.
+          // we fallback to a generic "Session" marker.
           if (applicableServices.length === 0) {
             applicableServices.push(null); // Marker for fallback
           }
@@ -143,13 +143,6 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             const endTime = slot.end ? slot.end.slice(0, 5) : computeEndTime(time, duration);
 
             // Find or create time slot
-            // We need to be careful: if we have multiple services with DIFFERENT durations, 
-            // they might effectively be different slots visually?
-            // But the UI groups by time. So one time slot can have multiple services.
-            // However, the slot itself has an 'endTime'. If services have different durations, 
-            // the slot's endTime might be ambiguous.
-            // For now, we'll use the endTime of the first service or the slot's own endTime.
-
             let timeSlot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
             if (!timeSlot) {
               timeSlot = {
@@ -188,6 +181,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 category: "General",
                 availableWith: []
               };
+
+            // Deduplication Logic:
+            // 1. If we are adding a specific service, remove any existing generic services from this slot.
+            if (serviceDetails) {
+              timeSlot.services = timeSlot.services.filter(s => !s.id.startsWith('generic-'));
+            }
+
+            // 2. If we are adding a generic service, but the slot already has specific services, SKIP adding this generic one.
+            if (!serviceDetails && timeSlot.services.some(s => !s.id.startsWith('generic-'))) {
+              return; // Skip adding generic service
+            }
 
             let serviceInSlot = timeSlot.services.find((s: Service) => s.id === serviceObj.id);
             if (!serviceInSlot) {
