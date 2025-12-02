@@ -62,7 +62,7 @@ export function TeamManagement() {
   // Table columns configuration
   const columns: Column[] = [
     {
-      key: 'name',
+      key: 'full_name',
       label: 'Member',
       sortable: true,
       render: (value: string, row: TeamMember) => (
@@ -72,7 +72,7 @@ export function TeamManagement() {
               <AvatarImage src={row.avatarUrl} alt={value} />
             )}
             <AvatarFallback className="bg-primary/10 text-primary">
-              {value.split(" ").map((n) => n[0]).join("")}
+              {(value || "Unknown").split(" ").map((n) => n[0]).join("")}
             </AvatarFallback>
           </Avatar>
           <div>

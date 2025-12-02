@@ -119,7 +119,7 @@ export function CustomerList() {
   // Table columns configuration
   const columns: Column[] = [
     {
-      key: 'name',
+      key: 'full_name',
       label: 'Customer',
       sortable: true,
       render: (value: string, row: Customer) => {
