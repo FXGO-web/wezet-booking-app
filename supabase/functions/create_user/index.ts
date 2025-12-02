@@ -20,23 +20,29 @@ serve(async (req) => {
 
         // 1. Check if the caller is an admin
         const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !user) throw new Error("Unauthorized");
-
-        const { data: profile } = await supabaseClient
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-        if (profile?.role !== "admin") {
-            throw new Error("Forbidden: Only admins can create users");
-        }
+        if (userError || !user) throw new Error("Unauthorized: Invalid token");
 
         // 2. Initialize Admin Client (Service Role)
         const supabaseAdmin = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
         );
+
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+
+        if (profileError) {
+            console.error("Profile fetch error:", profileError);
+            throw new Error("Failed to fetch admin profile");
+        }
+
+        if (profile?.role !== "admin") {
+            console.error(`User ${user.id} role is ${profile?.role}, expected admin`);
+            throw new Error("Forbidden: Only admins can create users");
+        }
 
         const { email, password, fullName, role, phone, bio, specialties, status, avatarUrl } = await req.json();
 
