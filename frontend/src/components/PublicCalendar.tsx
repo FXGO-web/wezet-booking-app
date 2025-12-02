@@ -53,8 +53,8 @@ interface PublicCalendarProps {
 
 export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct }: PublicCalendarProps) {
   const { convertAndFormat } = useCurrency();
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 10, 1)); // November 2025
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
   const [availability, setAvailability] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
@@ -610,74 +610,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                         ))
                       ) : (
                         <div className="pl-6 py-2 text-xs text-muted-foreground">
-                          No sessions available
+                          No sessions available for this date.
                         </div>
                       )
                     ) : (
-                      <div className="space-y-4">
-                        {getUpcomingSlots().length === 0 && (
-                          <div className="text-sm text-muted-foreground">No upcoming sessions</div>
-                        )}
-                        {getUpcomingSlots().map(({ day, slot }, idx) => (
-                          <div key={`${day}-${idx}`} className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Clock className="h-4 w-4" />
-                              <span>
-                                {monthName} {day}, {year} — {slot.time}
-                                {slot.endTime ? ` - ${slot.endTime}` : ""}
-                              </span>
-                            </div>
-                            {slot.services && slot.services.length > 0 ? (
-                              <div className="space-y-2 pl-6">
-                                {slot.services.map((service: Service) => (
-                                  <div key={service.id} className="space-y-2">
-                                    {service.availableWith.map((member: TeamMember) => (
-                                      <button
-                                        key={`${service.id}-${member.id}-${day}-${slot.time}`}
-                                        onClick={() => handleServiceSlotClick(slot, service, member, day)}
-                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
-                                              <p className="text-sm truncate">{service.name}</p>
-                                              <Badge variant="secondary" className="text-xs shrink-0">
-                                                {service.category}
-                                              </Badge>
-                                            </div>
-                                            <div className="flex items-center gap-2 mt-1">
-                                              <Avatar className="h-5 w-5">
-                                                {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
-                                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                                  {member.name.split(' ').map(n => n[0]).join('')}
-                                                </AvatarFallback>
-                                              </Avatar>
-                                              <span className="text-xs text-muted-foreground truncate">{member.name}</span>
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col items-end gap-1 shrink-0">
-                                            <span className="text-sm">
-                                              {normalizePrice(service) !== null
-                                                ? convertAndFormat(
-                                                  normalizePrice(service) as number,
-                                                  service.currency || "EUR"
-                                                )
-                                                : "Price varies"}
-                                            </span>
-                                            <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                                          </div>
-                                        </div>
-                                      </button>
-                                    ))}
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="pl-6 py-2 text-xs text-muted-foreground">No sessions available</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
+                      <div className="text-sm text-muted-foreground">Select a date to view sessions</div>
                     )}
                   </div>
                 )}
