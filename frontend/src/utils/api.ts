@@ -499,16 +499,19 @@ export const statsAPI = {
 
 export const settingsAPI = {
   get: async () => {
-    const { data, error } = await supabase.functions.invoke("settings", {
-      method: "GET",
-    });
+    // Direct DB call - RLS allows public read
+    const { data, error } = await supabase
+      .from("platform_settings")
+      .select("*")
+      .single();
 
     if (error) {
+      console.error("Settings fetch error:", error);
       throw new Error(`Settings fetch failed: ${error.message}`);
     }
 
     // Map snake_case from DB to camelCase for Frontend
-    const s = data?.settings || {};
+    const s = data || {};
     const mappedSettings = {
       platformName: s.platform_name,
       supportEmail: s.support_email,
@@ -529,9 +532,6 @@ export const settingsAPI = {
       cancelNotify: s.notify_cancellations,
       dailySummary: s.notify_daily_summary,
       notifyEmail: s.notify_email,
-      // policies are not in the provided DB schema snippet but assuming if they were:
-      // refundPolicy: s.refund_policy, etc.
-      // If they are missing in DB, they will be undefined and frontend will use defaults.
     };
 
     return { settings: mappedSettings };
@@ -571,12 +571,16 @@ export const settingsAPI = {
     if (settings.dailySummary !== undefined) mapped.notify_daily_summary = settings.dailySummary;
     if (settings.notifyEmail) mapped.notify_email = settings.notifyEmail;
 
-    const { data, error } = await supabase.functions.invoke("settings", {
-      method: "POST",
-      body: mapped,
-    });
+    // Direct DB update - RLS allows admin update
+    const { data, error } = await supabase
+      .from("platform_settings")
+      .update(mapped)
+      .eq("id", 1)
+      .select()
+      .single();
 
     if (error) {
+      console.error("Settings update error:", error);
       throw new Error(`Settings update failed: ${error.message}`);
     }
 
