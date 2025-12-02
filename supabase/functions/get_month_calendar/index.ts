@@ -46,13 +46,13 @@ Deno.serve(async (req) => {
         // 5) Get team members (profiles)
         const { data: profiles, error: profilesError } = await supabase
             .from("profiles")
-            .select("id, first_name, last_name, avatar_url, role")
+            .select("id, full_name, avatar_url, role")
             .in("role", ["instructor", "admin", "team_member"]); // Include relevant roles
         if (profilesError) throw profilesError;
 
         const teamMembers = profiles?.map((p: any) => ({
             id: p.id,
-            name: `${p.first_name || ""} ${p.last_name || ""}`.trim(),
+            name: p.full_name || "Unknown",
             avatarUrl: p.avatar_url
         })) || [];
 

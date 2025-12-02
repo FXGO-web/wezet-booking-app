@@ -89,171 +89,89 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
         // 1. Fetch calendar availability (real data from edge function)
         const response = await availabilityAPI.getAvailability(year, month);
-
-        // Use the response directly, but ensure it's an object
-        let currentAvailability: Record<number, any> = response?.availability || {};
-
+        const rawSlots = response?.slots || [];
         const members = response?.teamMembers || [];
         setTeamMembers(members);
 
-        // 2. Fetch specific dates for each team member (to overlay/enhance if needed)
-        // Note: The edge function should ideally handle this, but if we need client-side merging:
-        if (members.length > 0 && allServices.length > 0) {
-          const specificDatesPromises = members.map((member: TeamMember) =>
-            availabilityAPI
-              .get(member.id)
-              .then((res: any) => ({
-                memberId: member.id,
-                specificDates: res.specificDates || []
-              }))
-              .catch(() => ({
-                memberId: member.id,
-                specificDates: []
-              }))
-          );
+        let currentAvailability: Record<number, any> = {};
 
-          const membersSpecificDates = await Promise.all(specificDatesPromises);
+        rawSlots.forEach((slot: any) => {
+          const slotDate = new Date(slot.date);
+          // Ensure we are in the correct month (edge function should handle this, but safety check)
+          if (slotDate.getMonth() + 1 !== month || slotDate.getFullYear() !== year) return;
 
-          // 3. Merge specific dates into availability
-          membersSpecificDates.forEach(({ memberId, specificDates }) => {
-            const member = members.find((m: TeamMember) => m.id === memberId);
-            if (!member) return;
+          const day = slotDate.getDate();
+          const time = slot.start.slice(0, 5); // HH:MM
 
-            specificDates.forEach((dateSlot: any) => {
-              // Safely parse YYYY-MM-DD to avoid timezone issues
-              let slotDate: Date;
-              if (typeof dateSlot.date === 'string' && dateSlot.date.includes('-')) {
-                const [y, m, d] = dateSlot.date.split('T')[0].split('-').map(Number);
-                slotDate = new Date(y, m - 1, d);
-              } else {
-                slotDate = new Date(dateSlot.date);
-              }
+          if (!currentAvailability[day]) {
+            currentAvailability[day] = {
+              hasAvailability: true,
+              slots: []
+            };
+          }
 
-              // Check if date is in current month view
-              if (slotDate.getMonth() + 1 === month && slotDate.getFullYear() === year) {
-                const day = slotDate.getDate();
-                const time = dateSlot.startTime; // Assuming startTime is "HH:MM"
+          // Find service
+          const serviceDetails = allServices.find(s => String(s.id) === String(slot.template_id));
 
-                // Initialize day if not exists
-                if (!currentAvailability[day]) {
-                  currentAvailability[day] = {
-                    hasAvailability: true,
-                    slots: []
-                  };
-                } else {
-                  // If day exists, ensure hasAvailability is true
-                  currentAvailability[day].hasAvailability = true;
-                }
+          // Find member
+          const member = members.find((m: any) => String(m.id) === String(slot.instructor_id));
 
-                // Calculate duration from time range if not explicitly provided
-                let calculatedDuration = dateSlot.duration;
-                if (!calculatedDuration && dateSlot.endTime && (dateSlot.startTime || time)) {
-                  const startStr = dateSlot.startTime || time;
-                  const endStr = dateSlot.endTime;
-                  const [startH, startM] = startStr.split(':').map(Number);
-                  const [endH, endM] = endStr.split(':').map(Number);
-                  const diff = (endH * 60 + endM) - (startH * 60 + startM);
-                  if (diff > 0) calculatedDuration = diff;
-                }
+          if (!member) return; // Should not happen if data is consistent
 
-                // Price/duration normalization
-                let serviceDetails = dateSlot.serviceId
-                  ? allServices.find((s) => String(s.id) === String(dateSlot.serviceId))
-                  : null;
+          // Calculate duration/end time
+          const duration = serviceDetails?.duration || 60;
+          const endTime = slot.end ? slot.end.slice(0, 5) : computeEndTime(time, duration);
 
-                // Smart fallback: if no service found by ID, try matching by duration only (heuristic)
-                if (!serviceDetails && (dateSlot.duration || calculatedDuration)) {
-                  const durationToMatch = Number(dateSlot.duration || calculatedDuration);
-                  serviceDetails = allServices.find(s => Number(s.duration) === durationToMatch);
-                }
+          // Find or create time slot
+          let timeSlot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
+          if (!timeSlot) {
+            timeSlot = {
+              time: time,
+              dateTime: slot.date,
+              endTime: endTime,
+              duration: duration,
+              available: true,
+              services: []
+            };
+            currentAvailability[day].slots.push(timeSlot);
+            // Sort slots
+            currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
+              a.time.localeCompare(b.time)
+            );
+          }
 
-                const normalizedPrice =
-                  normalizePrice(serviceDetails) ??
-                  normalizePrice(dateSlot);
+          // Add service to slot
+          // If service is not defined (e.g. generic slot), create a generic service
+          const serviceObj: Service = serviceDetails
+            ? {
+              ...serviceDetails,
+              availableWith: []
+            }
+            : {
+              id: `generic-${day}-${time}`,
+              name: "Session",
+              duration: duration,
+              basePrice: null,
+              currency: "EUR",
+              category: "General",
+              availableWith: []
+            };
 
-                const normalizedCurrency =
-                  serviceDetails?.currency ||
-                  serviceDetails?.pricing?.currency ||
-                  dateSlot.currency ||
-                  "EUR";
+          let serviceInSlot = timeSlot.services.find((s: Service) => s.id === serviceObj.id);
+          if (!serviceInSlot) {
+            serviceInSlot = { ...serviceObj, availableWith: [] };
+            timeSlot.services.push(serviceInSlot);
+          }
 
-                const normalizedDuration =
-                  serviceDetails?.duration ||
-                  calculatedDuration ||
-                  60;
-
-                const normalizedEndTime = computeEndTime(
-                  dateSlot.startTime || dateSlot.time || time,
-                  normalizedDuration,
-                  dateSlot.endTime,
-                );
-
-                // Find or create time slot
-                let slot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
-                if (!slot) {
-                  slot = {
-                    time: time,
-                    dateTime: dateSlot.date, // Or construct full ISO string
-                    endTime: normalizedEndTime,
-                    duration: normalizedDuration,
-                    available: true,
-                    services: []
-                  };
-                  currentAvailability[day].slots.push(slot);
-                  // Sort slots by time
-                  currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
-                    a.time.localeCompare(b.time)
-                  );
-                } else {
-                  slot.endTime = slot.endTime || normalizedEndTime;
-                  slot.duration = slot.duration || normalizedDuration;
-                }
-
-                const fallbackService = allServices.length === 1 ? allServices[0] : null;
-
-                const serviceObj: Service = serviceDetails || fallbackService
-                  ? {
-                    ...(serviceDetails || fallbackService),
-                    id: String((serviceDetails || fallbackService)?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
-                    name: (serviceDetails || fallbackService)?.name || dateSlot.serviceName || dateSlot.title || dateSlot.name || "Session",
-                    basePrice: (normalizedPrice ?? normalizePrice(fallbackService)) ?? null,
-                    currency: (serviceDetails || fallbackService)?.currency || normalizedCurrency,
-                    description: (serviceDetails || fallbackService)?.description || dateSlot.description || dateSlot.notes || "Session",
-                    duration: (serviceDetails || fallbackService)?.duration || normalizedDuration,
-                    category: (serviceDetails || fallbackService)?.category || dateSlot.category || "Breathwork",
-                    availableWith: [],
-                  }
-                  : {
-                    id: String(dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
-                    name: dateSlot.serviceName || dateSlot.title || dateSlot.name || "Session",
-                    description: dateSlot.description || dateSlot.notes || "Session",
-                    duration: normalizedDuration,
-                    basePrice: normalizedPrice ?? null,
-                    currency: normalizedCurrency,
-                    category: dateSlot.category || "Breathwork",
-                    availableWith: [],
-                  };
-
-                // Check if service already in slot
-                let serviceInSlot = slot.services.find((s: Service) => s.id === serviceObj.id);
-                if (!serviceInSlot) {
-                  serviceInSlot = { ...serviceObj, availableWith: [] };
-                  slot.services.push(serviceInSlot);
-                }
-
-                // Add member to service
-                if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
-                  serviceInSlot.availableWith.push(member);
-                }
-              }
-            });
-          });
-        }
+          // Add member to service
+          if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
+            serviceInSlot.availableWith.push(member);
+          }
+        });
 
         setAvailability(currentAvailability);
       } catch (error) {
         console.error('Error fetching calendar availability:', error);
-        // Set empty data instead of showing error
         setAvailability({});
         setTeamMembers([]);
       } finally {
