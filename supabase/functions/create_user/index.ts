@@ -78,13 +78,15 @@ serve(async (req) => {
             }
         }
 
+        console.error(`[INFO] Returning successful response for new user ${newUser.user?.id}.`);
         return new Response(JSON.stringify(newUser), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
         });
 
-    } catch (error) {
-        return new Response(JSON.stringify({ error: error.message }), {
+    } catch (error: any) {
+        console.error("Create User Error:", error);
+        return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
         });
