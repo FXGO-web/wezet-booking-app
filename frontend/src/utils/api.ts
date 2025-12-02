@@ -735,7 +735,14 @@ export const availabilityAPI = {
 
     return {
       schedule,
-      specificDates: exceptions ?? [],
+      specificDates: exceptions?.map((e: any) => ({
+        ...e,
+        startTime: e.start_time?.slice(0, 5),
+        endTime: e.end_time?.slice(0, 5),
+        sessionTemplateId: e.session_template_id,
+        isAvailable: e.is_available,
+        locationId: e.location_id,
+      })) ?? [],
       blockedDates: blocked ?? [],
     };
   },

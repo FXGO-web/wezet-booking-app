@@ -62,7 +62,7 @@ interface WeeklySchedule {
 }
 
 interface SpecificDateSlot {
-
+  id: string;
   date: Date;
   startTime: string;
   endTime: string;
@@ -430,11 +430,25 @@ export function AvailabilityManagement() {
   };
 
   const handleAddSpecificDateSlot = (date: Date) => {
+    let duration = 60;
+    if (selectedService && selectedService !== 'all') {
+      const service = services.find(s => s.id === selectedService);
+      if (service) {
+        duration = service.duration_minutes || service.duration || 60;
+      }
+    }
+
+    const startTime = '09:00';
+    const [h, m] = startTime.split(':').map(Number);
+    const endDate = new Date();
+    endDate.setHours(h, m + duration, 0, 0);
+    const endTime = endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+
     const newSlot: SpecificDateSlot = {
       id: Date.now().toString(),
       date,
-      startTime: '09:00',
-      endTime: '10:00',
+      startTime,
+      endTime,
     };
     setSpecificDateSlots(prev => [...prev, newSlot]);
     toast.success(`Added slot for ${format(date, 'MMM d')}`);
