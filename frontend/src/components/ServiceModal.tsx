@@ -105,11 +105,15 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
           locationsAPI.getAll()
         ]);
 
+        console.log("ServiceModal: Raw team members:", members);
+
         // Filter for team roles only
         const teamRoles = ['admin', 'instructor', 'teacher', 'facilitator', 'team member', 'founder & ceo wezet', 'coach'];
         const filteredMembers = (members || []).filter((m: any) =>
           m.role && teamRoles.includes(m.role.toLowerCase())
         );
+
+        console.log("ServiceModal: Filtered members:", filteredMembers);
 
         setTeamMembers(filteredMembers);
         setLocations(locs || []);

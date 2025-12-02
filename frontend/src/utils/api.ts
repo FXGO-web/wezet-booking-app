@@ -248,12 +248,16 @@ export const servicesAPI = {
   },
 
   update: async (id: string, updates: any) => {
+    console.log("Updating service", id, "with payload:", updates);
     const mapped: any = {};
     if (updates.name) mapped.name = updates.name;
     if (updates.description) mapped.description = updates.description;
-    if (updates.duration ?? updates.duration_minutes)
-      mapped.duration_minutes =
-        updates.duration ?? updates.duration_minutes;
+
+    // Handle duration (check for 0 as well)
+    if (updates.duration !== undefined || updates.duration_minutes !== undefined) {
+      mapped.duration_minutes = updates.duration ?? updates.duration_minutes;
+    }
+
     if (updates.basePrice ?? updates.price)
       mapped.price = updates.basePrice ?? updates.price;
     if (updates.currency) mapped.currency = updates.currency;
@@ -261,14 +265,19 @@ export const servicesAPI = {
       mapped.category_id = updates.categoryId ?? updates.category_id;
     if (updates.locationId ?? updates.location_id)
       mapped.location_id = updates.locationId ?? updates.location_id;
-    if (updates.instructorId ?? updates.instructor_id)
+
+    // Map teamMemberId/instructorId to instructor_id
+    if (updates.instructorId ?? updates.instructor_id ?? updates.teamMemberId)
       mapped.instructor_id =
-        updates.instructorId ?? updates.instructor_id;
+        updates.instructorId ?? updates.instructor_id ?? updates.teamMemberId;
+
     if (updates.capacity !== undefined) mapped.capacity = updates.capacity;
     if (updates.sessionType ?? updates.session_type)
       mapped.session_type =
         updates.sessionType ?? updates.session_type;
     if (updates.status) mapped.is_active = updates.status === "active";
+
+    console.log("Mapped service update payload:", mapped);
 
     const { data, error } = await supabase
       .from("session_templates")
