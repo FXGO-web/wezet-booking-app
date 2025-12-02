@@ -816,6 +816,21 @@ export const availabilityAPI = {
     _accessToken?: string,
     serviceId?: string
   ) => {
+    // Delete existing exceptions for this instructor (and service if applicable)
+    let del = supabase
+      .from("availability_exceptions")
+      .delete()
+      .eq("instructor_id", teamMemberId);
+
+    if (serviceId) {
+      del = del.eq("session_template_id", serviceId);
+    } else {
+      del = del.is("session_template_id", null);
+    }
+
+    const { error: delError } = await del;
+    if (delError) throw delError;
+
     if (dates.length === 0) return [];
 
     const rows: Database["public"]["Tables"]["availability_exceptions"]["Insert"][] = dates.map((d: any) => ({

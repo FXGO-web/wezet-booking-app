@@ -87,13 +87,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         const month = currentDate.getMonth() + 1;
         const year = currentDate.getFullYear();
 
-        // 1. Fetch calendar availability (currently contains demo slots; we override to avoid fake availability)
+        // 1. Fetch calendar availability (real data from edge function)
         const response = await availabilityAPI.getAvailability(year, month);
-        let currentAvailability: Record<number, any> = {}; // ignore demo slots, we'll build from specific dates
+
+        // Use the response directly, but ensure it's an object
+        let currentAvailability: Record<number, any> = response?.availability || {};
+
         const members = response?.teamMembers || [];
         setTeamMembers(members);
 
-        // 2. Fetch specific dates for each team member
+        // 2. Fetch specific dates for each team member (to overlay/enhance if needed)
+        // Note: The edge function should ideally handle this, but if we need client-side merging:
         if (members.length > 0 && allServices.length > 0) {
           const specificDatesPromises = members.map((member: TeamMember) =>
             availabilityAPI
@@ -136,6 +140,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                     hasAvailability: true,
                     slots: []
                   };
+                } else {
+                  // If day exists, ensure hasAvailability is true
+                  currentAvailability[day].hasAvailability = true;
                 }
 
                 // Calculate duration from time range if not explicitly provided
@@ -440,32 +447,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             </p>
           </div>
 
-          {/* No Data Warning */}
-          {!loading && teamMembers.length === 0 && (
-            <Card className="border-primary/20 bg-primary/5">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Sparkles className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="flex-1 space-y-2">
-                    <h3 className="text-base">No Demo Data Available</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Please click the "Initialize Demo Data" button on the home page to populate the calendar with sample services and team members.
-                    </p>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-2"
-                      onClick={() => window.location.href = '/'}
-                    >
-                      Go to Home Page
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {/* No Data Warning - REMOVED */}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Calendar */}
