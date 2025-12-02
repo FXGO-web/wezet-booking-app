@@ -23,37 +23,24 @@ serve(async (req) => {
         if (userError || !user) throw new Error("Unauthorized: Invalid token");
 
         // 2. Initialize Admin Client (Service Role)
+        const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        console.log("Service Role Key present:", !!serviceRoleKey);
+
         const supabaseAdmin = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
-            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+            serviceRoleKey ?? ""
         );
 
-        const { data: profile, error: profileError } = await supabaseAdmin
-            .from("profiles")
-            .select("role")
-            .eq("id", user.id)
-            .single();
-
-        /*
-        if (profileError) {
-            console.error("Profile fetch error:", profileError);
-            throw new Error("Failed to fetch admin profile");
-        }
-
-        if (profile?.role !== "admin") {
-            console.error(`User ${user.id} role is ${profile?.role}, expected admin`);
-            throw new Error("Forbidden: Only admins can create users");
-        }
-        */
+        /* ... admin check commented out ... */
 
         const { email, password, fullName, role, phone, bio, specialties, status, avatarUrl } = await req.json();
 
-        if (!email) throw new Error("Email is required");
+        console.log(`Attempting to create user: ${email}`);
 
         // 3. Create the user
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
-            password: password || "TempPass123!", // Default temp password if none provided
+            password: password || "TempPass123!",
             email_confirm: true,
             user_metadata: {
                 full_name: fullName,
@@ -61,7 +48,10 @@ serve(async (req) => {
             },
         });
 
-        if (createError) throw createError;
+        if (createError) {
+            console.error("Supabase Auth Create Error:", createError);
+            throw createError;
+        }
 
         // 4. Update the profile with extra details
         // The trigger 'on_auth_user_created' usually creates the profile row, 
