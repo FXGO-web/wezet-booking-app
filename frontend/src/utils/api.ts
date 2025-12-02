@@ -96,6 +96,9 @@ export const teamMembersAPI = {
       role: member.role || "instructor",
       bio: member.bio || null,
       avatar_url: member.avatarUrl || member.avatar_url || null,
+      phone: member.phone || null,
+      specialties: member.specialties || [],
+      status: member.status || "active",
     };
 
     // Note: This insert might fail if the 'id' (UUID) is not provided, 
@@ -123,11 +126,15 @@ export const teamMembersAPI = {
     const mapped: any = {};
     if (updates.full_name) mapped.full_name = updates.full_name;
     if (updates.fullName) mapped.full_name = updates.fullName;
+    if (updates.name) mapped.full_name = updates.name; // Handle 'name' update
     if (updates.avatar_url) mapped.avatar_url = updates.avatar_url;
     if (updates.avatarUrl) mapped.avatar_url = updates.avatarUrl;
     if (updates.role) mapped.role = updates.role;
     if (updates.bio) mapped.bio = updates.bio;
     if (updates.email) mapped.email = updates.email;
+    if (updates.phone) mapped.phone = updates.phone;
+    if (updates.specialties) mapped.specialties = updates.specialties;
+    if (updates.status) mapped.status = updates.status;
 
     const { data, error } = await supabase
       .from("profiles")
