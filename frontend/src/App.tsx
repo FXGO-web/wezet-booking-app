@@ -34,6 +34,8 @@ import { CurrencyProvider } from "./context/CurrencyContext";
 import { CurrencySelector } from "./components/CurrencySelector";
 import { PublicServiceDetail } from "./components/PublicServiceDetail";
 import { Toaster } from "./components/ui/sonner";
+// Force Vercel Rebuild
+import { TooltipProvider } from "./components/ui/tooltip";
 import { NotificationCenter } from "./components/NotificationCenter";
 import { ProgramsRetreats } from "./components/ProgramsRetreats";
 import { ProductsOnDemand } from "./components/ProductsOnDemand";
@@ -422,9 +424,8 @@ function AppContent() {
           <HeaderBar onBack={() => setActiveView("home")} />
         )}
         <div
-          className={`min-h-screen ${
-            embedMode ? "bg-[#f8f7f4] py-10" : "bg-background py-24"
-          }`}
+          className={`min-h-screen ${embedMode ? "bg-[#f8f7f4] py-10" : "bg-background py-24"
+            }`}
         >
           <div className="max-w-6xl mx-auto px-4 md:px-8">
             <WordPressCalendarWidget
