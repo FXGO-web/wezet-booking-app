@@ -110,63 +110,96 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             };
           }
 
-          // Find service
-          const serviceDetails = allServices.find(s => String(s.id) === String(slot.template_id));
+          // Find applicable services
+          let applicableServices: any[] = [];
 
-          // Find member
-          const member = members.find((m: any) => String(m.id) === String(slot.instructor_id));
-
-          if (!member) return; // Should not happen if data is consistent
-
-          // Calculate duration/end time
-          const duration = serviceDetails?.duration || 60;
-          const endTime = slot.end ? slot.end.slice(0, 5) : computeEndTime(time, duration);
-
-          // Find or create time slot
-          let timeSlot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
-          if (!timeSlot) {
-            timeSlot = {
-              time: time,
-              dateTime: slot.date,
-              endTime: endTime,
-              duration: duration,
-              available: true,
-              services: []
-            };
-            currentAvailability[day].slots.push(timeSlot);
-            // Sort slots
-            currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
-              a.time.localeCompare(b.time)
+          if (slot.template_id) {
+            const s = allServices.find(s => String(s.id) === String(slot.template_id));
+            if (s) applicableServices.push(s);
+          } else {
+            // Generic slot: find all services for this instructor
+            // Check both nested instructor object and direct instructor_id
+            applicableServices = allServices.filter(s =>
+              String(s.instructor?.id) === String(slot.instructor_id) ||
+              String(s.instructor_id) === String(slot.instructor_id)
             );
           }
 
-          // Add service to slot
-          // If service is not defined (e.g. generic slot), create a generic service
-          const serviceObj: Service = serviceDetails
-            ? {
-              ...serviceDetails,
-              availableWith: []
+          // If no specific services found for this instructor, and it's a generic slot,
+          // we might want to show a generic "Session" or maybe all services?
+          // For now, if no services found, we'll create a generic fallback.
+          if (applicableServices.length === 0) {
+            applicableServices.push(null); // Marker for fallback
+          }
+
+          // Find member
+          const member = members.find((m: any) => String(m.id) === String(slot.instructor_id));
+          if (!member) return;
+
+          // Process each applicable service
+          applicableServices.forEach(serviceDetails => {
+            // Calculate duration/end time based on service or default
+            const duration = serviceDetails?.duration_minutes || serviceDetails?.duration || 60;
+            const endTime = slot.end ? slot.end.slice(0, 5) : computeEndTime(time, duration);
+
+            // Find or create time slot
+            // We need to be careful: if we have multiple services with DIFFERENT durations, 
+            // they might effectively be different slots visually?
+            // But the UI groups by time. So one time slot can have multiple services.
+            // However, the slot itself has an 'endTime'. If services have different durations, 
+            // the slot's endTime might be ambiguous.
+            // For now, we'll use the endTime of the first service or the slot's own endTime.
+
+            let timeSlot = currentAvailability[day].slots.find((s: TimeSlot) => s.time === time);
+            if (!timeSlot) {
+              timeSlot = {
+                time: time,
+                dateTime: slot.date,
+                endTime: endTime,
+                duration: duration,
+                available: true,
+                services: []
+              };
+              currentAvailability[day].slots.push(timeSlot);
+              // Sort slots
+              currentAvailability[day].slots.sort((a: TimeSlot, b: TimeSlot) =>
+                a.time.localeCompare(b.time)
+              );
             }
-            : {
-              id: `generic-${day}-${time}`,
-              name: "Session",
-              duration: duration,
-              basePrice: null,
-              currency: "EUR",
-              category: "General",
-              availableWith: []
-            };
 
-          let serviceInSlot = timeSlot.services.find((s: Service) => s.id === serviceObj.id);
-          if (!serviceInSlot) {
-            serviceInSlot = { ...serviceObj, availableWith: [] };
-            timeSlot.services.push(serviceInSlot);
-          }
+            // Map service details to Service object
+            const serviceObj: Service = serviceDetails
+              ? {
+                id: String(serviceDetails.id),
+                name: serviceDetails.name,
+                description: serviceDetails.description,
+                duration: serviceDetails.duration_minutes || serviceDetails.duration || 60,
+                basePrice: serviceDetails.price ?? serviceDetails.basePrice,
+                currency: serviceDetails.currency || "EUR",
+                category: typeof serviceDetails.category === 'object' ? serviceDetails.category?.name : (serviceDetails.category || "General"),
+                availableWith: []
+              }
+              : {
+                id: `generic-${day}-${time}`,
+                name: "Session",
+                duration: 60,
+                basePrice: null,
+                currency: "EUR",
+                category: "General",
+                availableWith: []
+              };
 
-          // Add member to service
-          if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
-            serviceInSlot.availableWith.push(member);
-          }
+            let serviceInSlot = timeSlot.services.find((s: Service) => s.id === serviceObj.id);
+            if (!serviceInSlot) {
+              serviceInSlot = { ...serviceObj, availableWith: [] };
+              timeSlot.services.push(serviceInSlot);
+            }
+
+            // Add member to service
+            if (!serviceInSlot.availableWith.find((m: TeamMember) => m.id === member.id)) {
+              serviceInSlot.availableWith.push(member);
+            }
+          });
         });
 
         setAvailability(currentAvailability);
