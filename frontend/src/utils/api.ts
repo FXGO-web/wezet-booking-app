@@ -320,6 +320,8 @@ export const locationsAPI = {
       capacity: location.capacity ? Number(location.capacity) : null,
     };
 
+    console.log("Creating location with payload:", payload);
+
     const { data, error } = await supabase
       .from("locations")
       .insert(payload as any)
@@ -829,9 +831,26 @@ export const programsAPI = {
   },
 
   create: async (program: any) => {
+    // Strict payload for programs (session_templates)
+    const payload = {
+      name: program.name,
+      description: program.description,
+      duration_minutes: program.duration ?? program.duration_minutes,
+      price: program.basePrice ?? program.price,
+      currency: program.currency ?? "EUR",
+      category_id: program.categoryId ?? program.category_id ?? null,
+      location_id: program.locationId ?? program.location_id ?? null,
+      instructor_id: program.instructorId ?? program.instructor_id ?? null,
+      capacity: program.capacity ?? null,
+      session_type: program.sessionType ?? program.session_type ?? "program",
+      is_active: program.status ? program.status === "active" : true,
+    };
+
+    console.log("Creating program with payload:", payload);
+
     const { data, error } = await supabase
       .from("session_templates")
-      .insert(program)
+      .insert(payload as any)
       .select()
       .single();
     if (error) throw error;
@@ -839,9 +858,28 @@ export const programsAPI = {
   },
 
   update: async (id: string, updates: any) => {
+    const mapped: any = {};
+    if (updates.name) mapped.name = updates.name;
+    if (updates.description) mapped.description = updates.description;
+    if (updates.duration ?? updates.duration_minutes)
+      mapped.duration_minutes = updates.duration ?? updates.duration_minutes;
+    if (updates.basePrice ?? updates.price)
+      mapped.price = updates.basePrice ?? updates.price;
+    if (updates.currency) mapped.currency = updates.currency;
+    if (updates.categoryId ?? updates.category_id)
+      mapped.category_id = updates.categoryId ?? updates.category_id;
+    if (updates.locationId ?? updates.location_id)
+      mapped.location_id = updates.locationId ?? updates.location_id;
+    if (updates.instructorId ?? updates.instructor_id)
+      mapped.instructor_id = updates.instructorId ?? updates.instructor_id;
+    if (updates.capacity !== undefined) mapped.capacity = updates.capacity;
+    if (updates.sessionType ?? updates.session_type)
+      mapped.session_type = updates.sessionType ?? updates.session_type;
+    if (updates.status) mapped.is_active = updates.status === "active";
+
     const { data, error } = await supabase
       .from("session_templates")
-      .update(updates)
+      .update(mapped)
       .eq("id", id)
       .select()
       .single();
