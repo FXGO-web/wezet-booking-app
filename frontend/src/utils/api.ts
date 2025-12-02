@@ -660,9 +660,12 @@ export const availabilityAPI = {
     ];
 
     // Filter for team members only (case-insensitive)
-    const filteredMembers = teamMembers.filter((m: any) =>
-      m.role && teamRoles.includes(m.role.toLowerCase())
-    );
+    const filteredMembers = teamMembers
+      .filter((m: any) => m.role && teamRoles.includes(m.role.toLowerCase()))
+      .map((m: any) => ({
+        ...m,
+        name: m.full_name || m.email, // Map full_name to name
+      }));
 
     return { members: filteredMembers };
   },
