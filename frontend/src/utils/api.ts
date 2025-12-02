@@ -89,39 +89,33 @@ export const teamMembersAPI = {
   },
 
   create: async (member: any) => {
-    // Map frontend fields to DB columns
-    const payload: any = {
+    // Strict payload mapping to avoid sending non-existent columns
+    const payload = {
       full_name: member.fullName || member.name || member.full_name,
       email: member.email,
-      role: member.role || "instructor", // Default to instructor if creating from team management
-      bio: member.bio,
-      avatar_url: member.avatarUrl || member.avatar_url,
-      // Phone is not in the schema yet, so we ignore it to prevent errors
+      role: member.role || "instructor",
+      bio: member.bio || null,
+      avatar_url: member.avatarUrl || member.avatar_url || null,
     };
 
-    // We need to use supabase.auth.admin.createUser to actually create a user with auth
-    // BUT we can't do that from the client side without service role.
-    // However, the user is trying to "Add Member" which implies creating a profile.
-    // If we just insert into profiles, it will fail because of foreign key constraint on 'id' (references auth.users).
-    // The correct flow for adding a team member usually involves inviting them via email.
-    // For now, if we are just creating a profile record, we need a valid auth ID.
-    // Since we can't generate a UUID that matches a real user without creating the user in Auth first,
-    // this "Add Member" feature on the frontend is likely incomplete.
-
-    // HOWEVER, the error reported is "Could not find the 'name' column".
-    // This means the insert is trying to put 'name' into 'profiles'.
-    // My fix below solves the column name mismatch.
-    // If the 'id' constraint fails next, that's a separate issue (backend logic needed).
-
-    // Let's try to insert what we can map, and let Supabase handle the rest.
-    // If 'id' is missing, it might fail.
+    // Note: This insert might fail if the 'id' (UUID) is not provided, 
+    // because 'profiles' table usually expects 'id' to match an auth.users 'id'.
+    // If we want to create a "placeholder" profile without a real user, 
+    // we might need to generate a random UUID, but that breaks the foreign key constraint 
+    // unless the FK is nullable or we create a user first.
+    // Given the constraints, this is the best we can do from the client side 
+    // without an Admin API call to create a user.
 
     const { data, error } = await supabase
       .from("profiles")
-      .insert(payload)
+      .insert(payload as any) // Cast to any to bypass strict typing if needed, though payload is clean
       .select()
       .single();
-    if (error) throw error;
+
+    if (error) {
+      console.error("Error creating team member:", error);
+      throw error;
+    }
     return data;
   },
 
