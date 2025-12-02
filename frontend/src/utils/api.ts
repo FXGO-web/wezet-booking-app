@@ -39,6 +39,8 @@ import { Database } from "../types/database.types";
 // AUTH
 // ===========================================================
 
+console.log("WEZET API VERSION: EDGE_FUNCTION_UPDATE_V1");
+
 export const authAPI = {
   signup: async (
     email: string,
