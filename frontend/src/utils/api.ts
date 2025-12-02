@@ -636,10 +636,26 @@ export const analyticsAPI = {
 
 export const availabilityAPI = {
   getTeamMembers: async () => {
-    const { teamMembers } = await teamMembersAPI.getAll({
-      role: "instructor",
-    });
-    return { members: teamMembers };
+    // Fetch all profiles first
+    const { teamMembers } = await teamMembersAPI.getAll({});
+
+    // Define valid team roles
+    const teamRoles = [
+      'admin',
+      'instructor',
+      'teacher',
+      'facilitator',
+      'team member',
+      'founder & ceo wezet',
+      'coach'
+    ];
+
+    // Filter for team members only (case-insensitive)
+    const filteredMembers = teamMembers.filter((m: any) =>
+      m.role && teamRoles.includes(m.role.toLowerCase())
+    );
+
+    return { members: filteredMembers };
   },
 
   get: async (teamMemberId: string, serviceId?: string) => {
