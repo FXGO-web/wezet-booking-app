@@ -14,10 +14,11 @@ import { Database } from "../types/database.types";
 type Service = Database['public']['Tables']['session_templates']['Row'];
 
 const CATEGORIES = [
-  { id: 'yoga', name: 'Yoga', icon: Activity },
-  { id: 'meditation', name: 'Meditation', icon: Heart },
-  { id: 'pilates', name: 'Pilates', icon: Zap },
-  { id: 'massage', name: 'Massage', icon: Coffee },
+  { id: 'Breathwork', name: 'Breathwork', icon: Activity },
+  { id: 'Bodywork', name: 'Bodywork', icon: Heart },
+  { id: 'Coaching', name: 'Coaching', icon: Zap },
+  { id: 'Education', name: 'Education', icon: Coffee },
+  { id: 'Retreats', name: 'Retreats', icon: Activity },
 ];
 
 export function ServicesCategories() {
@@ -262,7 +263,7 @@ export function ServicesCategories() {
             </Button>
             <Button onClick={handleAddClick}>
               <Plus className="mr-2 h-4 w-4" />
-              Add Session
+              Create Session
             </Button>
           </div>
         </div>
