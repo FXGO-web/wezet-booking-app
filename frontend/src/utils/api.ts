@@ -89,39 +89,28 @@ export const teamMembersAPI = {
   },
 
   create: async (member: any) => {
-    // Strict payload mapping to avoid sending non-existent columns
-    const payload = {
-      full_name: member.fullName || member.name || member.full_name,
-      email: member.email,
-      role: member.role || "instructor",
-      bio: member.bio || null,
-      avatar_url: member.avatarUrl || member.avatar_url || null,
-      phone: member.phone || null,
-      specialties: member.specialties || [],
-      status: member.status || "active",
-    };
-
-    console.log("Creating team member with payload:", payload);
-
-    // Note: This insert might fail if the 'id' (UUID) is not provided, 
-    // because 'profiles' table usually expects 'id' to match an auth.users 'id'.
-    // If we want to create a "placeholder" profile without a real user, 
-    // we might need to generate a random UUID, but that breaks the foreign key constraint 
-    // unless the FK is nullable or we create a user first.
-    // Given the constraints, this is the best we can do from the client side 
-    // without an Admin API call to create a user.
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .insert(payload as any) // Cast to any to bypass strict typing if needed, though payload is clean
-      .select()
-      .single();
+    // Use the Edge Function to create the user in auth.users and update the profile
+    const { data, error } = await supabase.functions.invoke("create_user", {
+      body: {
+        email: member.email,
+        password: "TempPassword123!", // You might want to generate this or let the user set it
+        fullName: member.fullName || member.name || member.full_name,
+        role: member.role || "instructor",
+        phone: member.phone || null,
+        bio: member.bio || null,
+        specialties: member.specialties || [],
+        status: member.status || "active",
+        avatarUrl: member.avatarUrl || member.avatar_url || null,
+      },
+    });
 
     if (error) {
       console.error("Error creating team member:", error);
       throw error;
     }
-    return data;
+
+    // The function returns { user: ... }, we want to return the profile-like object
+    return data.user;
   },
 
   update: async (id: string, updates: any) => {
