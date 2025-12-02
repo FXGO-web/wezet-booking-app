@@ -62,13 +62,14 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
   const [formData, setFormData] = useState({
     name: service?.name || "",
     description: service?.description || "",
-    duration: service?.duration || 60,
+    duration: service?.duration || service?.duration_minutes || 60,
     price: service?.price || 0,
     currency: sanitizeCurrency(service?.currency),
     category: sanitizeCategory(service?.category),
     status: sanitizeStatus(service?.status),
     teamMemberId:
       service?.teamMemberId ||
+      service?.instructor_id ||
       service?.owner_id ||
       service?.ownerId ||
       service?.created_by ||
@@ -81,13 +82,14 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     setFormData({
       name: service?.name || "",
       description: service?.description || "",
-      duration: service?.duration || 60,
+      duration: service?.duration || service?.duration_minutes || 60,
       price: service?.price || 0,
       currency: sanitizeCurrency(service?.currency),
       category: sanitizeCategory(service?.category),
       status: sanitizeStatus(service?.status),
       teamMemberId:
         service?.teamMemberId ||
+        service?.instructor_id ||
         service?.owner_id ||
         service?.ownerId ||
         service?.created_by ||
