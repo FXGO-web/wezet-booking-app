@@ -129,7 +129,7 @@ export const teamMembersAPI = {
     if (updates.specialties) mapped.specialties = updates.specialties;
     if (updates.status) mapped.status = updates.status;
 
-    console.log("Updating profile", id, "with payload:", mapped);
+    console.log("Using Direct DB Update for profile", id, "with payload:", mapped);
 
     const { data, error } = await supabase
       .from("profiles")
@@ -137,7 +137,11 @@ export const teamMembersAPI = {
       .eq("id", id)
       .select()
       .single();
-    if (error) throw error;
+
+    if (error) {
+      console.error("Direct DB Update failed:", error);
+      throw error;
+    }
     return data;
   },
 
