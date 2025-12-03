@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { format, parse } from "date-fns";
 import { useAuth } from "../hooks/useAuth";
 import { AuthPage } from "./AuthPage";
+import { useCurrency } from "../context/CurrencyContext";
 
 type BookingStep = 1 | 2 | 3;
 
@@ -44,6 +45,7 @@ interface BookingFlowProps {
 }
 
 export function BookingFlow({ preselection }: BookingFlowProps) {
+  const { convertAndFormat } = useCurrency();
   const [currentStep, setCurrentStep] = useState<BookingStep>(preselection ? 2 : 1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
