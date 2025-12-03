@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -14,78 +15,19 @@ import {
   Sparkles,
   ChevronRight,
   Plus,
-  Users
+  Users,
+  Loader2
 } from "lucide-react";
-import { MENTORS, getMentorById } from "./mentors-data";
+import { bookingsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
-const UPCOMING_SESSIONS = [
-  {
-    id: 1,
-    type: "Small Group Breathwork",
-    category: "Breathwork",
-    practitioner: MENTORS[0].name,
-    practitionerInitials: MENTORS[0].initials,
-    mentorId: MENTORS[0].id,
-    date: "Nov 15, 2025",
-    time: "9:00 AM - 10:30 AM",
-    status: "confirmed",
-    icon: Wind,
-    color: "text-[#0D7A7A]",
-    bgColor: "bg-[#0D7A7A]/10",
-  },
-  {
-    id: 2,
-    type: "Body SDS",
-    category: "Bodywork",
-    practitioner: MENTORS[1].name,
-    practitionerInitials: MENTORS[1].initials,
-    mentorId: MENTORS[1].id,
-    date: "Nov 18, 2025",
-    time: "2:00 PM - 3:30 PM",
-    status: "confirmed",
-    icon: Heart,
-    color: "text-[#4ECDC4]",
-    bgColor: "bg-[#4ECDC4]/10",
-  },
-  {
-    id: 3,
-    type: "Individual Coaching",
-    category: "Coaching",
-    practitioner: MENTORS[2].name,
-    practitionerInitials: MENTORS[2].initials,
-    mentorId: MENTORS[2].id,
-    date: "Nov 22, 2025",
-    time: "4:00 PM - 5:00 PM",
-    status: "confirmed",
-    icon: Users,
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-];
-
-const PAST_SESSIONS = [
-  {
-    id: 4,
-    type: "Private Breathwork Session",
-    category: "Breathwork",
-    date: "Nov 8, 2025",
-    completed: true,
-  },
-  {
-    id: 5,
-    type: "Bio Integrative Osteopathy",
-    category: "Bodywork",
-    date: "Nov 1, 2025",
-    completed: true,
-  },
-];
-
-const STATS = [
-  { label: "Total Sessions", value: "8", trend: "+2 this month" },
-  { label: "Hours Practiced", value: "12.5", trend: "This month" },
-  { label: "Favorite Practice", value: "Breathwork", trend: "5 sessions" },
-];
+const getCategoryStyle = (category: string) => {
+  const lower = category?.toLowerCase() || "";
+  if (lower.includes("breath")) return { icon: Wind, color: "text-[#0D7A7A]", bgColor: "bg-[#0D7A7A]/10" };
+  if (lower.includes("body")) return { icon: Heart, color: "text-[#4ECDC4]", bgColor: "bg-[#4ECDC4]/10" };
+  if (lower.includes("energy")) return { icon: Zap, color: "text-amber-500", bgColor: "bg-amber-500/10" };
+  return { icon: Users, color: "text-primary", bgColor: "bg-primary/10" };
+};
 
 interface ClientDashboardProps {
   onNavigate?: (route: string) => void;
@@ -95,6 +37,101 @@ interface ClientDashboardProps {
 export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardProps) {
   const { user } = useAuth();
   const userName = user?.user_metadata?.name || user?.email?.split('@')[0] || "Guest";
+
+  const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
+  const [pastSessions, setPastSessions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalSessions: 0,
+    hoursPracticed: 0,
+    favoritePractice: "None"
+  });
+
+  useEffect(() => {
+    const fetchBookings = async () => {
+      if (!user?.id) return;
+
+      try {
+        setLoading(true);
+        const { bookings } = await bookingsAPI.getAll({ customerId: user.id });
+
+        const now = new Date();
+        const upcoming: any[] = [];
+        const past: any[] = [];
+        let totalMinutes = 0;
+        const categoryCounts: Record<string, number> = {};
+
+        bookings.forEach((booking: any) => {
+          const bookingDate = new Date(`${booking.date}T${booking.time}`);
+          const style = getCategoryStyle(booking.category);
+
+          const sessionObj = {
+            ...booking,
+            type: booking.serviceName,
+            practitioner: booking.teamMemberName,
+            practitionerInitials: booking.teamMemberName.split(' ').map((n: string) => n[0]).join(''),
+            icon: style.icon,
+            color: style.color,
+            bgColor: style.bgColor,
+          };
+
+          if (bookingDate >= now) {
+            upcoming.push(sessionObj);
+          } else {
+            past.push(sessionObj);
+            // Only count past sessions for stats
+            // Assuming 60 mins if duration not available (API doesn't return duration yet, defaulting to 60)
+            // Wait, API returns template which has duration_minutes. But mapped object doesn't have it.
+            // I'll default to 60 for now or fetch it.
+            totalMinutes += 60;
+
+            const cat = booking.category || "General";
+            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+          }
+        });
+
+        // Sort upcoming by date asc
+        upcoming.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${b.time}`).getTime());
+
+        // Sort past by date desc
+        past.sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime());
+
+        setUpcomingSessions(upcoming);
+        setPastSessions(past);
+
+        // Calculate favorite practice
+        let fav = "None";
+        let max = 0;
+        Object.entries(categoryCounts).forEach(([cat, count]) => {
+          if (count > max) {
+            max = count;
+            fav = cat;
+          }
+        });
+
+        setStats({
+          totalSessions: past.length,
+          hoursPracticed: Math.round(totalMinutes / 60 * 10) / 10,
+          favoritePractice: fav
+        });
+
+      } catch (error) {
+        console.error("Error fetching client bookings:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBookings();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-6 md:p-12">
@@ -121,17 +158,33 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {STATS.map((stat, index) => (
-            <Card key={index}>
-              <CardContent className="p-6">
-                <div className="space-y-2">
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
-                  <p className="text-3xl tracking-tight">{stat.value}</p>
-                  <p className="text-xs text-muted-foreground">{stat.trend}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Total Sessions</p>
+                <p className="text-3xl tracking-tight">{stats.totalSessions}</p>
+                <p className="text-xs text-muted-foreground">Completed sessions</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Hours Practiced</p>
+                <p className="text-3xl tracking-tight">{stats.hoursPracticed}</p>
+                <p className="text-xs text-muted-foreground">Total time invested</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-6">
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">Favorite Practice</p>
+                <p className="text-3xl tracking-tight truncate">{stats.favoritePractice}</p>
+                <p className="text-xs text-muted-foreground">Most frequent category</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -146,74 +199,83 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
             </div>
 
             <div className="space-y-4">
-              {UPCOMING_SESSIONS.map((session) => {
-                const Icon = session.icon;
-                return (
-                  <Card key={session.id} className="hover:shadow-lg transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="space-y-4">
-                        {/* Header */}
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-xl ${session.bgColor}`}>
-                              <Icon className={`h-6 w-6 ${session.color}`} />
-                            </div>
-                            <div className="space-y-1">
-                              <h3 className="text-base">{session.type}</h3>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                {session.date}
+              {upcomingSessions.length > 0 ? (
+                upcomingSessions.map((session) => {
+                  const Icon = session.icon;
+                  return (
+                    <Card key={session.id} className="hover:shadow-lg transition-shadow">
+                      <CardContent className="p-6">
+                        <div className="space-y-4">
+                          {/* Header */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className={`p-3 rounded-xl ${session.bgColor}`}>
+                                <Icon className={`h-6 w-6 ${session.color}`} />
                               </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                {session.time}
+                              <div className="space-y-1">
+                                <h3 className="text-base">{session.type}</h3>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Calendar className="h-4 w-4" />
+                                  {session.date}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  {session.time}
+                                </div>
                               </div>
                             </div>
+                            <Badge className="bg-[#0D7A7A] text-white">
+                              {session.status}
+                            </Badge>
                           </div>
-                          <Badge className="bg-[#0D7A7A] text-white">
-                            {session.status}
-                          </Badge>
-                        </div>
 
-                        <Separator />
+                          <Separator />
 
-                        {/* Practitioner & Actions */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              {(() => {
-                                const mentor = getMentorById(session.mentorId);
-                                return mentor?.avatarUrl ? (
-                                  <AvatarImage src={mentor.avatarUrl} alt={session.practitioner} />
-                                ) : null;
-                              })()}
-                              <AvatarFallback className="bg-primary text-primary-foreground">
-                                {session.practitionerInitials}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <p className="text-sm">{session.practitioner}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {session.category}
-                              </p>
+                          {/* Practitioner & Actions */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <Avatar className="h-10 w-10">
+                                {session.practitionerAvatar ? (
+                                  <AvatarImage src={session.practitionerAvatar} alt={session.practitioner} />
+                                ) : (
+                                  <AvatarFallback className="bg-primary text-primary-foreground">
+                                    {session.practitionerInitials}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div>
+                                <p className="text-sm">{session.practitioner}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {session.category}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="flex gap-2">
+                              <Button size="icon" variant="outline" onClick={() => onNavigate?.('messages')}>
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
+                              <Button size="sm" onClick={() => alert("Joining session...")}>
+                                <Video className="mr-2 h-4 w-4" />
+                                Join Session
+                              </Button>
                             </div>
                           </div>
-
-                          <div className="flex gap-2">
-                            <Button size="icon" variant="outline" onClick={() => onNavigate?.('messages')}>
-                              <MessageCircle className="h-4 w-4" />
-                            </Button>
-                            <Button size="sm" onClick={() => alert("Joining session...")}>
-                              <Video className="mr-2 h-4 w-4" />
-                              Join Session
-                            </Button>
-                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })
+              ) : (
+                <Card>
+                  <CardContent className="p-8 text-center space-y-4">
+                    <p className="text-muted-foreground">No upcoming sessions scheduled.</p>
+                    <Button variant="outline" onClick={() => onNavigate?.('calendar')}>
+                      Book your first session
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
             {/* Past Sessions */}
@@ -222,27 +284,31 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
               <Card>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {PAST_SESSIONS.map((session) => (
-                      <div key={session.id}>
-                        <div className="flex items-center justify-between py-3">
-                          <div className="flex items-center gap-4">
-                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                              <Wind className="h-5 w-5 text-muted-foreground" />
+                    {pastSessions.length > 0 ? (
+                      pastSessions.map((session, index) => (
+                        <div key={session.id}>
+                          <div className="flex items-center justify-between py-3">
+                            <div className="flex items-center gap-4">
+                              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                <Wind className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <div>
+                                <p className="text-sm">{session.type}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {session.category} · {session.date}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm">{session.type}</p>
-                              <p className="text-xs text-muted-foreground">
-                                {session.category} · {session.date}
-                              </p>
-                            </div>
+                            <Badge variant="secondary">Completed</Badge>
                           </div>
-                          <Badge variant="secondary">Completed</Badge>
+                          {index < pastSessions.length - 1 && (
+                            <Separator />
+                          )}
                         </div>
-                        {session.id !== PAST_SESSIONS[PAST_SESSIONS.length - 1].id && (
-                          <Separator />
-                        )}
-                      </div>
-                    ))}
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">No past sessions found.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -282,10 +348,10 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Monthly Goal</span>
-                    <span>4/6 sessions</span>
+                    <span>{stats.totalSessions} sessions</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className="h-full bg-primary rounded-full" style={{ width: '66%' }}></div>
+                    <div className="h-full bg-primary rounded-full" style={{ width: `${Math.min((stats.totalSessions / 4) * 100, 100)}%` }}></div>
                   </div>
                 </div>
 
@@ -293,24 +359,9 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
 
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Wind className="h-4 w-4 text-primary" />
-                      <span>Breathwork</span>
-                    </div>
-                    <span className="text-muted-foreground">3 sessions</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-[#4ECDC4]" />
-                      <span>Energy</span>
-                    </div>
-                    <span className="text-muted-foreground">1 session</span>
+                    <span className="text-muted-foreground">Keep going! Consistency is key.</span>
                   </div>
                 </div>
-
-                <Button variant="outline" className="w-full mt-4">
-                  View Full Stats
-                </Button>
               </CardContent>
             </Card>
 

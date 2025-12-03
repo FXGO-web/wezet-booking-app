@@ -359,6 +359,7 @@ export const bookingsAPI = {
     status?: string;
     teamMemberId?: string;
     serviceId?: string;
+    customerId?: string;
   }) => {
     let query = supabase
       .from("bookings")
@@ -370,8 +371,8 @@ export const bookingsAPI = {
           id,
           start_time,
           end_time,
-          instructor:instructor_id ( id, full_name ),
-          template:session_template_id ( id, name, price, currency, duration_minutes ),
+          instructor:instructor_id ( id, full_name, avatar_url ),
+          template:session_template_id ( id, name, price, currency, duration_minutes, category:category_id(name) ),
           location:location_id ( id, name )
         )
       `
@@ -382,6 +383,8 @@ export const bookingsAPI = {
       query = query.eq("session.instructor_id", filters.teamMemberId);
     if (filters?.serviceId)
       query = query.eq("session.session_template_id", filters.serviceId);
+    if (filters?.customerId)
+      query = query.eq("customer_id", filters.customerId);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -397,8 +400,11 @@ export const bookingsAPI = {
           clientName: b.customer?.full_name ?? "Unknown client",
           clientEmail: b.customer?.email ?? "",
           serviceName: b.session?.template?.name ?? "Unknown service",
+          category: b.session?.template?.category?.name ?? "General",
           teamMemberName:
             b.session?.instructor?.full_name ?? "Unknown instructor",
+          mentorId: b.session?.instructor?.id,
+          practitionerAvatar: b.session?.instructor?.avatar_url,
           date: start ? start.toISOString().slice(0, 10) : "",
           time: start
             ? start.toLocaleTimeString([], {
