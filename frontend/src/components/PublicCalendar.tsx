@@ -54,7 +54,7 @@ interface PublicCalendarProps {
 export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct }: PublicCalendarProps) {
   const { convertAndFormat } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
@@ -485,13 +485,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
               </CardContent>
             </Card>
 
-            {/* Available Services for Selected Day */}
+            {/* Available Services for Selected Day or Upcoming List */}
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">
-                  {selectedDay ? `${monthName} ${selectedDay}, ${year}` : "Select a Date"}
+                  {selectedDay ? `${monthName} ${selectedDay}, ${year}` : "Upcoming Sessions"}
                 </CardTitle>
-                <CardDescription>Available sessions</CardDescription>
+                <CardDescription>
+                  {selectedDay ? "Available sessions for this date" : `All available sessions in ${monthName}`}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
@@ -499,8 +501,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {selectedDay ? (
+                      // Single Day View
                       getDaySlots(selectedDay).length > 0 ? (
                         getDaySlots(selectedDay).map((slot, slotIndex) => (
                           <div key={slotIndex} className="space-y-2">
@@ -511,7 +514,6 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                 {slot.endTime ? ` - ${slot.endTime}` : ""}
                               </span>
                             </div>
-
 
                             {slot.available && slot.services && slot.services.length > 0 ? (
                               <div className="space-y-2 pl-6">
@@ -569,7 +571,87 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                         </div>
                       )
                     ) : (
-                      <div className="text-sm text-muted-foreground">Select a date to view sessions</div>
+                      // All Upcoming Sessions View
+                      getUpcomingSlots().length > 0 ? (
+                        getUpcomingSlots().map(({ day, slot }, index, array) => {
+                          const showDateHeader = index === 0 || array[index - 1].day !== day;
+                          return (
+                            <div key={`${day}-${slot.time}-${index}`} className="space-y-2">
+                              {showDateHeader && (
+                                <div className="flex items-center gap-2 pb-2 pt-2 first:pt-0">
+                                  <Calendar className="h-4 w-4 text-primary" />
+                                  <h3 className="text-sm font-medium text-foreground">
+                                    {monthName} {day}, {year}
+                                  </h3>
+                                </div>
+                              )}
+
+                              <div className="pl-6 space-y-2">
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
+                                  <Clock className="h-3 w-3" />
+                                  <span>
+                                    {slot.time}
+                                    {slot.endTime ? ` - ${slot.endTime}` : ""}
+                                  </span>
+                                </div>
+
+                                {slot.available && slot.services && slot.services.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {slot.services.map((service: Service) => (
+                                      <div key={service.id} className="space-y-2">
+                                        {service.availableWith.map((member: TeamMember) => (
+                                          <button
+                                            key={`${service.id}-${member.id}`}
+                                            onClick={() => handleServiceSlotClick(slot, service, member, day)}
+                                            className="w-full p-3 rounded-xl bg-card border hover:border-primary hover:shadow-md transition-all text-left group"
+                                          >
+                                            <div className="space-y-2">
+                                              <div className="flex items-start justify-between gap-2">
+                                                <div className="flex-1 min-w-0">
+                                                  <div className="flex items-center gap-2">
+                                                    <p className="text-sm font-medium truncate">{service.name}</p>
+                                                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">
+                                                      {service.category}
+                                                    </Badge>
+                                                  </div>
+                                                  <div className="flex items-center gap-2 mt-1.5">
+                                                    <Avatar className="h-4 w-4">
+                                                      {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+                                                      <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
+                                                        {member.name.split(' ').map(n => n[0]).join('')}
+                                                      </AvatarFallback>
+                                                    </Avatar>
+                                                    <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                                  </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1 shrink-0">
+                                                  <span className="text-sm font-medium">
+                                                    {normalizePrice(service) !== null
+                                                      ? convertAndFormat(
+                                                        normalizePrice(service) as number,
+                                                        service.currency || "EUR"
+                                                      )
+                                                      : "Price varies"}
+                                                  </span>
+                                                  <ArrowRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          No upcoming sessions found for this month.
+                        </div>
+                      )
                     )}
                   </div>
                 )}
