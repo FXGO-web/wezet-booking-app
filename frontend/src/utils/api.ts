@@ -969,7 +969,7 @@ export const programsAPI = {
       location_id: program.locationId || program.location_id || null,
       instructor_id: program.instructorId || program.instructor_id || null,
       capacity: program.capacity ?? null,
-      session_type: program.sessionType ?? program.session_type ?? "program",
+      session_type: program.sessionType ?? program.session_type ?? "class_group",
       is_active: program.status ? program.status === "active" : true,
     };
 
