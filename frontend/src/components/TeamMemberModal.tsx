@@ -66,7 +66,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
   useEffect(() => {
     if (member) {
       setFormData({
-        name: member.name || "",
+        name: member.name || member.full_name || "",
         email: member.email || "",
         phone: member.phone || "",
         role: member.role || "Teacher",
@@ -117,10 +117,10 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
 
       if (member) {
         // Update existing member
-        await teamMembersAPI.update(member.id, formData, accessToken);
+        await teamMembersAPI.update(member.id, formData);
       } else {
         // Create new member
-        await teamMembersAPI.create(formData, accessToken);
+        await teamMembersAPI.create(formData);
       }
 
       onSuccess();
@@ -188,7 +188,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
 
               <div className="space-y-2">
                 <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
+                <Select value={formData.role} onValueChange={(value: string) => setFormData({ ...formData, role: value })}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -252,7 +252,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
             {/* Status */}
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+              <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>

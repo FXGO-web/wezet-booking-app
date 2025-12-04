@@ -230,6 +230,8 @@ export function TeamManagement() {
 
         return {
           ...member,
+          name: member.full_name || member.name,
+          avatarUrl: member.avatar_url || member.avatarUrl,
           services: memberServices,
           status,
         };
@@ -268,7 +270,7 @@ export function TeamManagement() {
     if (!confirmDelete) return;
 
     try {
-      await teamMembersAPI.delete(member.id, accessToken);
+      await teamMembersAPI.delete(member.id);
       toast.success("Team member deleted");
       fetchTeamMembers();
     } catch (error) {
