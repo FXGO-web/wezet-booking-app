@@ -472,13 +472,9 @@ export const bookingsAPI = {
       customer_id: booking.customerId,
       session_id: booking.sessionId, // Note: bookings table refers to sessions, not templates directly usually? Wait, schema has session_id.
       status: booking.status ?? "pending",
-      total_price: booking.price ?? 0, // Schema has total_price, not price
+      price: booking.price ?? 0,
       currency: booking.currency ?? "EUR",
       notes: booking.notes ?? null,
-      instructor_id: booking.instructorId ?? null,
-      session_template_id: booking.sessionTemplateId ?? null,
-      start_time: booking.startTime, // Schema requires start_time
-      end_time: booking.endTime, // Schema requires end_time
     };
 
     const { data, error } = await supabase
