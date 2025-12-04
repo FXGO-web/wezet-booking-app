@@ -68,6 +68,33 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
         fetchCategories();
     }, []);
 
+    useEffect(() => {
+        if (isOpen) {
+            const newFormData = {
+                name: program?.name || program?.title || "",
+                description: program?.description || "",
+                location: program?.location || "",
+                startDate: program?.startDate || "",
+                endDate: program?.endDate || "",
+                price: program?.price || 0,
+                currency: program?.currency || "EUR",
+                status: program?.status || "draft",
+                duration_minutes: program?.duration_minutes || 60,
+                categoryId: program?.category_id || program?.categoryId || "",
+            };
+
+            if (!newFormData.categoryId && categories.length > 0) {
+                const defaultCat = categories.find((c: any) => c.name === "Retreats") ||
+                    categories.find((c: any) => c.name === "Education") ||
+                    categories[0];
+                if (defaultCat) {
+                    newFormData.categoryId = defaultCat.id;
+                }
+            }
+            setFormData(newFormData);
+        }
+    }, [isOpen, program, categories]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);

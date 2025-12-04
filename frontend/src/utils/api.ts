@@ -964,7 +964,7 @@ export const programsAPI = {
   create: async (program: any) => {
     // Strict payload for programs (session_templates)
     const payload = {
-      name: program.name,
+      name: program.name || "",
       description: program.description,
       duration_minutes: program.duration ?? program.duration_minutes,
       price: program.basePrice ?? program.price,
