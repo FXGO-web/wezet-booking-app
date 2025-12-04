@@ -93,7 +93,7 @@ export function ProgramsRetreats({ onBack }: ProgramsRetreatsProps) {
                   <CardTitle className="flex items-start justify-between">
                     <span>{program.name}</span>
                     <span className="text-sm font-normal text-muted-foreground bg-secondary px-2 py-1 rounded">
-                      {program.status || 'Draft'}
+                      {program.is_active ? 'Published' : 'Draft'}
                     </span>
                   </CardTitle>
                 </CardHeader>
@@ -102,13 +102,13 @@ export function ProgramsRetreats({ onBack }: ProgramsRetreatsProps) {
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span>
-                        {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'}
-                        {program.endDate ? ` - ${new Date(program.endDate).toLocaleDateString()}` : ''}
+                        {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
+                        {program.end_date ? ` - ${new Date(program.end_date).toLocaleDateString()}` : ''}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      <span>{program.location || 'Location TBD'}</span>
+                      <span>{typeof program.location === 'object' ? program.location?.name : (program.location || 'Location TBD')}</span>
                     </div>
                   </div>
                 </CardContent>
