@@ -91,7 +91,7 @@ export function ProgramsRetreats({ onBack }: ProgramsRetreatsProps) {
                     <MapPin className="h-12 w-12 text-muted-foreground" />
                   </div>
                   <CardTitle className="flex items-start justify-between">
-                    <span>{program.title}</span>
+                    <span>{program.name}</span>
                     <span className="text-sm font-normal text-muted-foreground bg-secondary px-2 py-1 rounded">
                       {program.status || 'Draft'}
                     </span>

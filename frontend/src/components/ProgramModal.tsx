@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -19,7 +19,7 @@ import {
     SelectValue,
 } from "./ui/select";
 import { Loader2 } from "lucide-react";
-import { programsAPI } from "../utils/api";
+import { programsAPI, categoriesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface ProgramModalProps {
@@ -33,7 +33,7 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
     const { getAccessToken } = useAuth();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
-        title: program?.title || "",
+        name: program?.name || program?.title || "",
         description: program?.description || "",
         location: program?.location || "",
         startDate: program?.startDate || "",
@@ -41,7 +41,32 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
         price: program?.price || 0,
         currency: program?.currency || "EUR",
         status: program?.status || "draft",
+        duration_minutes: program?.duration_minutes || 60, // Default duration
+        categoryId: program?.category_id || program?.categoryId || "",
     });
+    const [categories, setCategories] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const { categories } = await categoriesAPI.getAll({ appliesTo: 'program' });
+                setCategories(categories);
+                // Set default category if none selected and categories exist
+                if (!formData.categoryId && categories.length > 0) {
+                    // Prefer "Retreats" or "Education"
+                    const defaultCat = categories.find((c: any) => c.name === "Retreats") ||
+                        categories.find((c: any) => c.name === "Education") ||
+                        categories[0];
+                    if (defaultCat) {
+                        setFormData(prev => ({ ...prev, categoryId: defaultCat.id }));
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch categories:", error);
+            }
+        };
+        fetchCategories();
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -55,9 +80,9 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
             }
 
             if (program) {
-                await programsAPI.update(program.id, formData, accessToken);
+                await programsAPI.update(program.id, formData);
             } else {
-                await programsAPI.create(formData, accessToken);
+                await programsAPI.create(formData);
             }
 
             onSuccess();
@@ -86,11 +111,11 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
                     <div className="space-y-4">
                         {/* Title */}
                         <div className="space-y-2">
-                            <Label htmlFor="title">Program Title *</Label>
+                            <Label htmlFor="name">Program Title *</Label>
                             <Input
-                                id="title"
-                                value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                id="name"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                 placeholder="Bali Wellness Retreat"
                                 required
                             />
@@ -118,6 +143,26 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
                                 placeholder="Ubud, Bali"
                                 required
                             />
+                        </div>
+
+                        {/* Category */}
+                        <div className="space-y-2">
+                            <Label htmlFor="category">Category *</Label>
+                            <Select
+                                value={formData.categoryId}
+                                onValueChange={(value: string) => setFormData({ ...formData, categoryId: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select category" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((category) => (
+                                        <SelectItem key={category.id} value={category.id}>
+                                            {category.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         {/* Dates */}

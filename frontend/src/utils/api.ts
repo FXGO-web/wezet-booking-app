@@ -351,6 +351,24 @@ export const locationsAPI = {
 };
 
 // ===========================================================
+// CATEGORIES
+// ===========================================================
+
+export const categoriesAPI = {
+  getAll: async (filters?: { appliesTo?: string }) => {
+    let query = supabase.from("categories").select("*").order("name");
+
+    if (filters?.appliesTo) {
+      query = query.or(`applies_to.eq.${filters.appliesTo},applies_to.eq.all`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return { categories: data ?? [] };
+  },
+};
+
+// ===========================================================
 // BOOKINGS
 // ===========================================================
 
