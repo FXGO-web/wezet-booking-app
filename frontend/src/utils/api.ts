@@ -970,7 +970,9 @@ export const programsAPI = {
       instructor_id: program.instructorId || program.instructor_id || null,
       capacity: program.capacity ?? null,
       session_type: program.sessionType ?? program.session_type ?? "class_group",
-      is_active: program.status ? program.status === "active" : true,
+      is_active: program.status ? program.status === "published" : true,
+      start_date: program.startDate || null,
+      end_date: program.endDate || null,
     };
 
     console.log("Creating program with payload:", payload);
@@ -1002,7 +1004,9 @@ export const programsAPI = {
     if (updates.capacity !== undefined) mapped.capacity = updates.capacity;
     if (updates.sessionType ?? updates.session_type)
       mapped.session_type = updates.sessionType ?? updates.session_type;
-    if (updates.status) mapped.is_active = updates.status === "active";
+    if (updates.status) mapped.is_active = updates.status === "published";
+    if (updates.startDate) mapped.start_date = updates.startDate;
+    if (updates.endDate) mapped.end_date = updates.endDate;
 
     const { data, error } = await supabase
       .from("session_templates")
