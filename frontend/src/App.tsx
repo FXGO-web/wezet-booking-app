@@ -137,9 +137,7 @@ function AppContent() {
             </Button>
           ) : (
             <>
-              <span className="text-xl font-bold tracking-tight">
-                WEZET
-              </span>
+              <img src="/logo.png" alt="Wezet Logo" className="h-8 w-auto" />
               {user && (
                 <Badge variant="secondary" className="text-xs">
                   {userBadgeLabel}
