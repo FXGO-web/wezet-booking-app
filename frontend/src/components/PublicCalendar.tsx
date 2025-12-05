@@ -91,6 +91,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         const response = await availabilityAPI.getAvailability(year, month);
         const rawSlots = response?.slots || [];
         const members = response?.teamMembers || [];
+        console.log("DEBUG: Fetched availability:", { year, month, rawSlots, members });
         setTeamMembers(members);
 
         let currentAvailability: Record<number, any> = {};
@@ -708,9 +709,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                       <MapPin className="h-10 w-10 text-muted-foreground" />
                     </div>
                     <CardTitle className="flex items-start justify-between text-lg">
-                      <span>{program.title}</span>
+                      <span>{program.name}</span>
                       <Badge variant="secondary" className="font-normal">
-                        {program.status || 'Open'}
+                        {program.is_active ? 'Published' : 'Draft'}
                       </Badge>
                     </CardTitle>
                   </CardHeader>
@@ -719,13 +720,13 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4" />
                         <span>
-                          {program.startDate ? new Date(program.startDate).toLocaleDateString() : 'TBD'}
-                          {program.endDate ? ` - ${new Date(program.endDate).toLocaleDateString()}` : ''}
+                          {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
+                          {program.end_date ? ` - ${new Date(program.end_date).toLocaleDateString()}` : ''}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        <span>{program.location || 'Location TBD'}</span>
+                        <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-foreground font-medium">
                         <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
