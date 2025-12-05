@@ -176,16 +176,16 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       };
 
       if (service) {
-        await servicesAPI.update(service.id, payload, accessToken);
+        await servicesAPI.update(service.id, payload);
       } else {
-        await servicesAPI.create(payload, accessToken);
+        await servicesAPI.create(payload);
       }
 
       onSuccess();
       onClose();
-    } catch (error) {
-      console.error("Error saving service:", error);
-      alert("Failed to save service. Please try again.");
+    } catch (error: any) {
+      console.error("Error saving service:", JSON.stringify(error, null, 2));
+      alert(`Failed to save service: ${error.message || "Unknown error"}`);
     } finally {
       setLoading(false);
     }
@@ -204,7 +204,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       const accessToken = await getAccessToken();
       if (!accessToken) return;
 
-      await servicesAPI.delete(service.id, accessToken);
+      await servicesAPI.delete(service.id);
       onSuccess();
       onClose();
     } catch (error) {
@@ -334,12 +334,14 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
                   id="priceEur"
                   type="number"
                   value={formData.fixedPrices?.EUR ?? formData.price}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value) || 0;
                     setFormData({
                       ...formData,
-                      fixedPrices: { ...(formData.fixedPrices || {}), EUR: parseFloat(e.target.value) || 0 }
-                    })
-                  }
+                      price: val, // Sync base price with EUR
+                      fixedPrices: { ...(formData.fixedPrices || {}), EUR: val }
+                    });
+                  }}
                   placeholder="100"
                   required
                   min="0"
