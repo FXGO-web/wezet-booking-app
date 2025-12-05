@@ -401,7 +401,71 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           </p>
         </div>
 
-        {/* 1. Available Sessions (Calendar) */}
+        {/* 1. Programs Section */}
+        <div className="space-y-6">
+          <div className="space-y-2">
+            <h2>Programs & Retreats</h2>
+            <p className="text-muted-foreground">
+              Join our transformative multi-day experiences
+            </p>
+          </div>
+
+          {loadingPrograms ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : programs.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {programs.map((program) => (
+                <Card
+                  key={program.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer group"
+                  onClick={() => onNavigateToProgram && onNavigateToProgram(program.id)}
+                >
+                  <CardHeader className="pb-4">
+                    <div className="h-40 w-full bg-gradient-to-br from-primary/20 via-primary/5 to-transparent rounded-lg mb-4 flex items-center justify-center group-hover:from-primary/30 group-hover:via-primary/10 transition-all relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                      <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -ml-16 -mb-16"></div>
+                      <span className="text-2xl font-bold text-primary/80 uppercase tracking-wider text-center px-4 drop-shadow-sm">
+                        {program.name.split(' ').slice(0, 2).join(' ')}
+                      </span>
+                    </div>
+                    <CardTitle className="flex items-start justify-between text-lg">
+                      <span>{program.name}</span>
+                      <Badge variant="secondary" className="font-normal">
+                        {program.is_active ? 'Published' : 'Draft'}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
+                          {program.end_date ? ` - ${new Date(program.end_date).toLocaleDateString()}` : ''}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-foreground font-medium">
+                        <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+              No programs available at the moment.
+            </div>
+          )}
+        </div>
+
+        {/* 2. Available Sessions (Calendar) */}
         <div className="space-y-6">
           <div className="space-y-2">
             <h2>Available Sessions</h2>
@@ -688,66 +752,6 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
               </div>
             </CardContent>
           </Card>
-        </div>
-
-        {/* 2. Programs Section */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2>Programs & Retreats</h2>
-            <p className="text-muted-foreground">
-              Join our transformative multi-day experiences
-            </p>
-          </div>
-
-          {loadingPrograms ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : programs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programs.map((program) => (
-                <Card
-                  key={program.id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer group"
-                  onClick={() => onNavigateToProgram && onNavigateToProgram(program.id)}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="h-40 w-full bg-muted rounded-lg mb-4 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                      <MapPin className="h-10 w-10 text-muted-foreground" />
-                    </div>
-                    <CardTitle className="flex items-start justify-between text-lg">
-                      <span>{program.name}</span>
-                      <Badge variant="secondary" className="font-normal">
-                        {program.is_active ? 'Published' : 'Draft'}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
-                          {program.end_date ? ` - ${new Date(program.end_date).toLocaleDateString()}` : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-foreground font-medium">
-                        <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-              No programs available at the moment.
-            </div>
-          )}
         </div>
 
         {/* 3. Products Section */}
