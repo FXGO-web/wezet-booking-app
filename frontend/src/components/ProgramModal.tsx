@@ -43,6 +43,7 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
         status: program?.status || "draft",
         duration_minutes: program?.duration_minutes || 60, // Default duration
         categoryId: program?.category_id || program?.categoryId || "",
+        fixedPrices: program?.fixed_prices || program?.fixedPrices || { EUR: program?.price || 0, DKK: 0 },
     });
     const [categories, setCategories] = useState<any[]>([]);
 
@@ -81,6 +82,7 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
                 status: program?.status || "draft",
                 duration_minutes: program?.duration_minutes || 60,
                 categoryId: program?.category_id || program?.categoryId || "",
+                fixedPrices: program?.fixed_prices || program?.fixedPrices || { EUR: program?.price || 0, DKK: 0 },
             };
 
             if (!newFormData.categoryId && categories.length > 0) {
@@ -216,16 +218,19 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
                             </div>
                         </div>
 
-                        {/* Price and Currency */}
+                        {/* Price (EUR & DKK) */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="price">Price *</Label>
+                                <Label htmlFor="priceEur">Price (EUR) *</Label>
                                 <Input
-                                    id="price"
+                                    id="priceEur"
                                     type="number"
-                                    value={formData.price}
+                                    value={(formData as any).fixedPrices?.EUR ?? formData.price}
                                     onChange={(e) =>
-                                        setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                                        setFormData({
+                                            ...formData,
+                                            fixedPrices: { ...((formData as any).fixedPrices || {}), EUR: parseFloat(e.target.value) || 0 }
+                                        } as any)
                                     }
                                     placeholder="1500"
                                     required
@@ -235,20 +240,22 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="currency">Currency</Label>
-                                <Select
-                                    value={formData.currency}
-                                    onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="EUR">EUR (€)</SelectItem>
-                                        <SelectItem value="DKK">DKK (kr)</SelectItem>
-                                        <SelectItem value="USD">USD ($)</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="priceDkk">Price (DKK) *</Label>
+                                <Input
+                                    id="priceDkk"
+                                    type="number"
+                                    value={(formData as any).fixedPrices?.DKK ?? 0}
+                                    onChange={(e) =>
+                                        setFormData({
+                                            ...formData,
+                                            fixedPrices: { ...((formData as any).fixedPrices || {}), DKK: parseFloat(e.target.value) || 0 }
+                                        } as any)
+                                    }
+                                    placeholder="11000"
+                                    required
+                                    min="0"
+                                    step="0.01"
+                                />
                             </div>
                         </div>
 

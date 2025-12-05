@@ -68,10 +68,11 @@ export const authAPI = {
 // ===========================================================
 
 export const teamMembersAPI = {
-  getAll: async (filters?: { role?: string; search?: string }) => {
+  getAll: async (filters?: { role?: string; search?: string; status?: string }) => {
     let query = supabase.from("profiles").select("*");
 
     if (filters?.role) query = query.eq("role", filters.role);
+    if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
 
     const { data, error } = await query;
@@ -236,6 +237,7 @@ export const servicesAPI = {
       session_type:
         service.sessionType ?? service.session_type ?? "class_group",
       is_active: service.status ? service.status === "active" : true,
+      fixed_prices: service.fixedPrices || service.fixed_prices || null,
     };
 
     const { data, error } = await supabase
@@ -275,7 +277,12 @@ export const servicesAPI = {
     if (updates.sessionType ?? updates.session_type)
       mapped.session_type =
         updates.sessionType ?? updates.session_type;
+    if (updates.sessionType ?? updates.session_type)
+      mapped.session_type =
+        updates.sessionType ?? updates.session_type;
     if (updates.status) mapped.is_active = updates.status === "active";
+    if (updates.fixedPrices || updates.fixed_prices)
+      mapped.fixed_prices = updates.fixedPrices || updates.fixed_prices;
 
     console.log("Mapped service update payload:", mapped);
 
@@ -509,9 +516,80 @@ export const bookingsAPI = {
 // ===========================================================
 
 export const digitalContentAPI = {
-  getAll: async () => ({ content: [] }),
-  create: async () => ({}),
-  update: async () => ({}),
+  getAll: async (filters?: { search?: string }) => {
+    let query = supabase.from("products").select("*").order("created_at", { ascending: false });
+
+    if (filters?.search) query = query.ilike("title", `%${filters.search}%`);
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching products:", error);
+      // Return empty if table doesn't exist yet to avoid crashing app
+      return { content: [] };
+    }
+    return { content: data ?? [] };
+  },
+
+  getById: async (id: string) => {
+    const { data, error } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  create: async (product: any) => {
+    const payload = {
+      title: product.title,
+      description: product.description,
+      type: product.type || "video_course",
+      fixed_prices: product.fixedPrices || { EUR: product.price || 0, DKK: 0 },
+      item_count: product.itemCount || 1,
+      status: product.status || "active",
+      image_url: product.imageUrl || null,
+    };
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert(payload as any)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  update: async (id: string, updates: any) => {
+    const mapped: any = {};
+    if (updates.title) mapped.title = updates.title;
+    if (updates.description) mapped.description = updates.description;
+    if (updates.type) mapped.type = updates.type;
+    if (updates.fixedPrices) mapped.fixed_prices = updates.fixedPrices;
+    if (updates.itemCount) mapped.item_count = updates.itemCount;
+    if (updates.status) mapped.status = updates.status;
+    if (updates.imageUrl) mapped.image_url = updates.imageUrl;
+
+    const { data, error } = await supabase
+      .from("products")
+      .update(mapped)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  delete: async (id: string) => {
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+    return { success: true };
+  }
 };
 
 export const productsAPI = digitalContentAPI;
@@ -973,6 +1051,7 @@ export const programsAPI = {
       is_active: program.status ? program.status === "published" : true,
       start_date: program.startDate || null,
       end_date: program.endDate || null,
+      fixed_prices: program.fixedPrices || program.fixed_prices || null,
     };
 
     console.log("Creating program with payload:", payload);
@@ -1007,6 +1086,8 @@ export const programsAPI = {
     if (updates.status) mapped.is_active = updates.status === "published";
     if (updates.startDate) mapped.start_date = updates.startDate;
     if (updates.endDate) mapped.end_date = updates.endDate;
+    if (updates.fixedPrices || updates.fixed_prices)
+      mapped.fixed_prices = updates.fixedPrices || updates.fixed_prices;
 
     const { data, error } = await supabase
       .from("session_templates")

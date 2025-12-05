@@ -22,6 +22,7 @@ interface Service {
   currency: string;
   category: string;
   availableWith: TeamMember[];
+  fixedPrices?: Record<string, number> | null;
 }
 
 interface TimeSlot {
@@ -52,7 +53,7 @@ interface PublicCalendarProps {
 }
 
 export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct }: PublicCalendarProps) {
-  const { convertAndFormat } = useCurrency();
+  const { convertAndFormat, formatFixedPrice } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
@@ -98,7 +99,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
         rawSlots.forEach((slot: any) => {
           const slotDate = new Date(slot.date);
-          // Ensure we are in the correct month (edge function should handle this, but safety check)
+          // Ensure we are in the correct month
           if (slotDate.getMonth() + 1 !== month || slotDate.getFullYear() !== year) return;
 
           const day = slotDate.getDate();
@@ -113,14 +114,12 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
           // Find applicable services
           let applicableServices: any[] = [];
-          let isGenericSlot = false;
 
           if (slot.template_id) {
             const s = allServices.find(s => String(s.id) === String(slot.template_id));
             if (s) applicableServices.push(s);
           } else {
             // Generic slot: find all services for this instructor
-            isGenericSlot = true;
             applicableServices = allServices.filter(s =>
               String(s.instructor?.id) === String(slot.instructor_id) ||
               String(s.instructor_id) === String(slot.instructor_id)
@@ -178,7 +177,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 basePrice: serviceDetails.price ?? serviceDetails.basePrice,
                 currency: serviceDetails.currency || "EUR",
                 category: typeof serviceDetails.category === 'object' ? serviceDetails.category?.name : (serviceDetails.category || "General"),
-                availableWith: []
+                availableWith: [],
+                fixedPrices: serviceDetails.fixed_prices || serviceDetails.fixedPrices || null
               }
               : {
                 id: `generic-${day}-${time}`,
@@ -187,7 +187,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 basePrice: null,
                 currency: "EUR",
                 category: "General",
-                availableWith: []
+                availableWith: [],
+                fixedPrices: null
               };
 
             // Deduplication Logic:
@@ -225,7 +226,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     };
 
     fetchAvailability();
-  }, [currentDate, allServices]); // Add allServices dependency
+  }, [currentDate, allServices]);
 
   // Fetch Programs
   useEffect(() => {
@@ -449,7 +450,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                         <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
                       </div>
                       <div className="flex items-center gap-2 text-foreground font-medium">
-                        <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
+                        <span>{formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -471,8 +472,6 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
               Select a date and time to book a session
             </p>
           </div>
-
-          {/* No Data Warning - REMOVED */}
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Calendar */}
@@ -617,7 +616,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                             <div className="flex flex-col items-end gap-1 shrink-0">
                                               <span className="text-sm">
                                                 {normalizePrice(service) !== null
-                                                  ? convertAndFormat(
+                                                  ? formatFixedPrice(
+                                                    service.fixedPrices || null,
                                                     normalizePrice(service) as number,
                                                     service.currency || "EUR"
                                                   )
@@ -697,7 +697,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                                 <div className="flex flex-col items-end gap-1 shrink-0">
                                                   <span className="text-sm font-medium">
                                                     {normalizePrice(service) !== null
-                                                      ? convertAndFormat(
+                                                      ? formatFixedPrice(
+                                                        service.fixedPrices || null,
                                                         normalizePrice(service) as number,
                                                         service.currency || "EUR"
                                                       )
@@ -796,7 +797,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                       <p className="line-clamp-2">{product.description || 'No description'}</p>
                       <div className="flex items-center gap-2 pt-2">
                         <span className="font-medium text-foreground">
-                          {convertAndFormat(product.price || 0, product.currency || "EUR")}
+                          {formatFixedPrice(product.fixed_prices || product.fixedPrices, product.price || 0, product.currency || "EUR")}
                         </span>
                         <span>•</span>
                         <span>{product.itemCount || 0} Items</span>

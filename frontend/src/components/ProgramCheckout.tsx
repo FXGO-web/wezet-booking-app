@@ -6,6 +6,7 @@ import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
 import { Loader2, ArrowLeft, Calendar, MapPin, CheckCircle2, CreditCard, Clock, User } from "lucide-react";
 import { programsAPI, bookingsAPI } from "../utils/api";
+import { supabase } from "../utils/supabase/client";
 import { useCurrency } from "../context/CurrencyContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -18,7 +19,7 @@ interface ProgramCheckoutProps {
 }
 
 export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
-    const { convertAndFormat } = useCurrency();
+    const { convertAndFormat, formatFixedPrice } = useCurrency();
     const { user, getAccessToken } = useAuth();
 
     const [loading, setLoading] = useState(true);
@@ -43,6 +44,18 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
             loadProgram(programId);
         }
     }, [programId]);
+
+    // Handle return from Stripe
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get("success") === "true") {
+            setStep("confirmation");
+            toast.success("Payment successful! You are booked.");
+        }
+        if (params.get("canceled") === "true") {
+            toast.error("Payment was cancelled.");
+        }
+    }, []);
 
     // Pre-fill user data if logged in
     useEffect(() => {
@@ -73,50 +86,61 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
     };
 
     const handleSubmit = async () => {
-        // Require auth? Or allow guest checkout? 
-        // BookingFlow allows guest but checks auth in Step 1. 
-        // Here we are straight to checkout. Let's allow guest for now or prompt auth if needed.
-        // For now, simple form submission.
-
         if (!program) return;
 
         setSubmitting(true);
         try {
-            // NOTE: We are creating a booking. Be aware that the backend might require a session_id.
-            // Since programs are session_templates, we might currently lack a direct 'session' instance.
-            // Does bookingsAPI handle this?
-            // For now, we mimic BookingFlow's data structure. 
-            // Ideally, the backend should handle creating a session or finding one for the program.
-
+            // 1. Create Booking in Pending Status
             const bookingData = {
                 serviceId: program.id,
                 serviceName: program.name,
                 serviceDescription: program.description,
                 teamMemberId: program.instructor_id,
-                date: program.start_date ? `${program.start_date}T09:00:00` : new Date().toISOString(), // Default to start date
-                time: "09:00", // Default time
+                date: program.start_date ? `${program.start_date}T09:00:00` : new Date().toISOString(),
+                time: "09:00",
                 clientName: formData.name,
                 clientEmail: formData.email,
                 clientPhone: formData.phone,
                 notes: formData.notes,
                 price: program.price || 0,
                 currency: program.currency || 'EUR',
-                status: 'pending', // Programs might need approval or manual confirmation
-                // We are NOT sending sessionId here because we don't have one.
-                // If the backend fails, we need to fix the backend.
+                status: 'pending',
             };
 
-            // We'll try to use bookingsAPI.create. 
-            // If it fails due to missing sessionId, we know where to look.
-            await bookingsAPI.create(bookingData);
+            const booking: any = await bookingsAPI.create(bookingData);
 
-            setStep("confirmation");
-            toast.success("Booking request submitted!");
+            // 2. Create Stripe Checkout Session
+            // Use fixed price if available for the currency, otherwise base price
+            // Warning: frontend validation logic should match backend/program logic
+            const finalPrice = program.fixed_prices?.[program.currency] || program.price || 0;
+
+            const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout', {
+                body: {
+                    price: finalPrice,
+                    currency: program.currency || 'EUR',
+                    description: `Booking: ${program.name}`,
+                    booking_id: booking.id,
+                    return_url: window.location.href, // Returns to this page
+                    customer_email: formData.email,
+                }
+            });
+
+            if (checkoutError) {
+                console.error("Stripe Checkout Error:", checkoutError);
+                throw new Error("Failed to initialize payment");
+            }
+
+            if (checkoutData?.url) {
+                // Redirect to Stripe
+                window.location.href = checkoutData.url;
+            } else {
+                throw new Error("No checkout URL returned from payment server");
+            }
+
         } catch (error) {
             console.error("Error submitting booking:", error);
-            toast.error("Failed to submit booking. Please try again.");
-        } finally {
-            setSubmitting(false);
+            toast.error("Failed to submit booking. please try again.");
+            setSubmitting(false); // Only stop loading if error, otherwise we are redirecting
         }
     };
 
@@ -312,7 +336,7 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                                     Processing...
                                 </>
                             ) : (
-                                `Pay ${convertAndFormat(program.price || 0, program.currency || "EUR")}`
+                                `Pay ${formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}`
                             )}
                         </Button>
                     </div>

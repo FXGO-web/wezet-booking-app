@@ -41,11 +41,12 @@ interface BookingFlowProps {
     preselectedServicePrice?: number;
     preselectedCurrency?: string;
     preselectedDuration?: number;
+    preselectedFixedPrices?: Record<string, number> | null;
   } | null;
 }
 
 export function BookingFlow({ preselection }: BookingFlowProps) {
-  const { convertAndFormat } = useCurrency();
+  const { convertAndFormat, formatFixedPrice } = useCurrency();
   const [currentStep, setCurrentStep] = useState<BookingStep>(preselection ? 2 : 1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -63,6 +64,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     price?: number | null;
     currency?: string;
     duration?: number;
+    fixedPrices?: Record<string, number> | null;
   } | null>(preselection
     ? {
       id: preselection.preselectedService,
@@ -71,6 +73,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       price: preselection.preselectedServicePrice ?? null,
       currency: preselection.preselectedCurrency,
       duration: preselection.preselectedDuration,
+      fixedPrices: preselection.preselectedFixedPrices,
     }
     : null);
 
@@ -141,6 +144,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         price: preselection.preselectedServicePrice ?? null,
         currency: preselection.preselectedCurrency,
         duration: preselection.preselectedDuration,
+        fixedPrices: preselection.preselectedFixedPrices,
       });
 
       // If we have all required data (service, team member, date, time), skip to step 2
@@ -280,8 +284,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         status: 'confirmed',
       };
 
-      const bookingRes = await bookingsAPI.create(bookingData, getAccessToken() || '');
-      setCreatedBooking(bookingRes.booking);
+      const bookingRes = await bookingsAPI.create(bookingData);
+      setCreatedBooking(bookingRes);
       toast.success("Booking confirmed!");
       setCurrentStep(3);
     } catch (error) {
@@ -432,7 +436,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-lg text-foreground">
-                              {service.basePrice ? convertAndFormat(service.basePrice, service.currency || 'EUR') : 'Price varies'}
+                              {service.basePrice ? formatFixedPrice(service.fixed_prices || service.fixedPrices, service.basePrice, service.currency || 'EUR') : 'Price varies'}
                             </span>
                           </div>
                         </div>
@@ -568,7 +572,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                           <>
                             <span>•</span>
                             <span className="text-foreground font-medium">
-                              {displayService?.currency || selectedServiceData?.currency || "EUR"} {selectedPrice}
+                              {formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || "EUR")}
                             </span>
                           </>
                         )}
@@ -715,7 +719,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         <div className="text-sm text-muted-foreground">Amount</div>
                         <div className="text-lg font-semibold">
                           {selectedPrice !== null
-                            ? convertAndFormat(selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
+                            ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
                             : '—'}
                         </div>
                       </div>

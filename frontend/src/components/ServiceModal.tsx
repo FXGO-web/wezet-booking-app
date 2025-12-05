@@ -65,6 +65,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     duration: service?.duration || service?.duration_minutes || 60,
     price: service?.price || 0,
     currency: sanitizeCurrency(service?.currency),
+    fixedPrices: service?.fixed_prices || service?.fixedPrices || { EUR: service?.price || 0, DKK: 0 },
     category: sanitizeCategory(service?.category),
     status: sanitizeStatus(service?.status),
     teamMemberId:
@@ -85,6 +86,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       duration: service?.duration || service?.duration_minutes || 60,
       price: service?.price || 0,
       currency: sanitizeCurrency(service?.currency),
+      fixedPrices: service?.fixed_prices || service?.fixedPrices || { EUR: service?.price || 0, DKK: 0 },
       category: sanitizeCategory(service?.category),
       status: sanitizeStatus(service?.status),
       teamMemberId:
@@ -146,11 +148,11 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       }
 
       if (
-        formData.price === null ||
-        formData.price === undefined ||
-        Number.isNaN(Number(formData.price))
+        formData.fixedPrices?.EUR === undefined ||
+        formData.fixedPrices?.EUR === null ||
+        Number.isNaN(Number(formData.fixedPrices?.EUR))
       ) {
-        alert("Please set a valid price (0 for free).");
+        alert("Please set a valid EUR price (0 for free).");
         setLoading(false);
         return;
       }
@@ -327,15 +329,18 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price">Price *</Label>
+                <Label htmlFor="priceEur">Price (EUR) *</Label>
                 <Input
-                  id="price"
+                  id="priceEur"
                   type="number"
-                  value={formData.price}
+                  value={formData.fixedPrices?.EUR ?? formData.price}
                   onChange={(e) =>
-                    setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })
+                    setFormData({
+                      ...formData,
+                      fixedPrices: { ...(formData.fixedPrices || {}), EUR: parseFloat(e.target.value) || 0 }
+                    })
                   }
-                  placeholder="150"
+                  placeholder="100"
                   required
                   min="0"
                   step="0.01"
@@ -343,19 +348,22 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="currency">Currency</Label>
-                <Select
-                  value={formData.currency || ""}
-                  onValueChange={(value: string) => setFormData({ ...formData, currency: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select currency" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EUR">EUR (€)</SelectItem>
-                    <SelectItem value="DKK">DKK (kr)</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="priceDkk">Price (DKK) *</Label>
+                <Input
+                  id="priceDkk"
+                  type="number"
+                  value={formData.fixedPrices?.DKK ?? 0}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      fixedPrices: { ...(formData.fixedPrices || {}), DKK: parseFloat(e.target.value) || 0 }
+                    })
+                  }
+                  placeholder="750"
+                  required
+                  min="0"
+                  step="0.01"
+                />
               </div>
             </div>
 

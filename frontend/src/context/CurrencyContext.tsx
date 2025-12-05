@@ -5,6 +5,7 @@ interface CurrencyContextType {
     currency: string;
     setCurrency: (code: string) => void;
     convertAndFormat: (amount: number, fromCurrency?: string) => string;
+    formatFixedPrice: (fixedPrices: Record<string, number> | null, defaultPrice?: number, defaultCurrency?: string) => string;
     rates: Currency[];
     isLoading: boolean;
 }
@@ -55,8 +56,36 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         return formatCurrency(converted, currency, rates);
     };
 
+    /**
+     * Resolves the price based on current currency and available fixed prices.
+     * @param fixedPrices Map of currency code to price (e.g., { "EUR": 100, "DKK": 750 })
+     * @param defaultPrice Fallback price (legacy)
+     * @param defaultCurrency Fallback currency (legacy)
+     */
+    const formatFixedPrice = (fixedPrices: Record<string, number> | null, defaultPrice?: number, defaultCurrency: string = 'EUR') => {
+        // 1. Try to find exact match for current currency
+        if (fixedPrices && fixedPrices[currency] !== undefined) {
+            return formatCurrency(fixedPrices[currency], currency, rates);
+        }
+
+        // 2. If no exact match, try to convert from valid fixed price (e.g. if we have EUR but user wants USD)
+        // Prefer EUR as base if available
+        if (fixedPrices && fixedPrices['EUR'] !== undefined) {
+            const converted = convertCurrency(fixedPrices['EUR'], 'EUR', currency, rates);
+            return formatCurrency(converted, currency, rates);
+        }
+
+        // 3. Fallback to legacy single price
+        if (defaultPrice !== undefined) {
+            const converted = convertCurrency(defaultPrice, defaultCurrency, currency, rates);
+            return formatCurrency(converted, currency, rates);
+        }
+
+        return formatCurrency(0, currency, rates);
+    };
+
     return (
-        <CurrencyContext.Provider value={{ currency, setCurrency, convertAndFormat, rates, isLoading }}>
+        <CurrencyContext.Provider value={{ currency, setCurrency, convertAndFormat, formatFixedPrice, rates, isLoading }}>
             {children}
         </CurrencyContext.Provider>
     );
