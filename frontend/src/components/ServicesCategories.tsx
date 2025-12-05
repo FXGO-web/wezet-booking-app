@@ -6,7 +6,7 @@ import { Card, CardContent } from "./ui/card";
 import { Edit, Trash2, Plus, Download, Loader2, Activity, Heart, Zap, Coffee } from "lucide-react";
 import { toast } from "sonner";
 import { ServiceModal } from "./ServiceModal";
-import { AdvancedFilters } from "./AdvancedFilters";
+import { AdvancedFilters, FilterConfig } from "./AdvancedFilters";
 import { SortableTable } from "./SortableTable";
 import { sessionsAPI } from "../utils/api";
 import { Database } from "../types/database.types";
@@ -70,9 +70,9 @@ export function ServicesCategories() {
       key: 'category',
       label: 'Category',
       sortable: true,
-      render: (value: string) => (
+      render: (value: any) => (
         <Badge variant="outline" className="capitalize">
-          {value || 'Uncategorized'}
+          {typeof value === 'object' && value !== null ? value.name : value || 'Uncategorized'}
         </Badge>
       ),
     },
@@ -207,9 +207,9 @@ export function ServicesCategories() {
   });
 
   // Filter config for AdvancedFilters
-  const filterConfig = [
+  const filterConfig: FilterConfig[] = [
     {
-      id: 'category',
+      key: 'category',
       label: 'Category',
       type: 'select',
       options: [
@@ -218,7 +218,7 @@ export function ServicesCategories() {
       ]
     },
     {
-      id: 'status',
+      key: 'status',
       label: 'Status',
       type: 'select',
       options: [
@@ -228,13 +228,13 @@ export function ServicesCategories() {
       ]
     },
     {
-      id: 'minPrice',
+      key: 'minPrice',
       label: 'Min Price',
       type: 'number',
       placeholder: '0'
     },
     {
-      id: 'maxPrice',
+      key: 'maxPrice',
       label: 'Max Price',
       type: 'number',
       placeholder: '1000'
