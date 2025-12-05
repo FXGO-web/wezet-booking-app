@@ -36,7 +36,18 @@ Deno.serve(async (req) => {
     );
 
     if (event.type === "checkout.session.completed") {
-        const session = event.data.object;
+        let session = event.data.object;
+
+        // Retrieve full session to ensure we have metadata (handles "Thin" payloads)
+        try {
+            if (session.id) {
+                session = await stripe.checkout.sessions.retrieve(session.id);
+            }
+        } catch (e) {
+            console.error("Error retrieving full session from Stripe:", e);
+            // Continue with payload session if retrieval fails, though it might lack metadata
+        }
+
         const bookingId = session.metadata?.booking_id;
 
         if (bookingId) {
