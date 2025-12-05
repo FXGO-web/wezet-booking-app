@@ -14,6 +14,7 @@ import { DigitalContentLibrary } from "./components/DigitalContentLibrary";
 import { ContentViewer } from "./components/ContentViewer";
 import { OnDemandProductDetail } from "./components/OnDemandProductDetail";
 import { RetreatDetail } from "./components/RetreatDetail";
+import { ProgramCheckout } from "./components/ProgramCheckout";
 import { WordPressCalendarWidget } from "./components/WordPressCalendarWidget";
 import { TeamManagement } from "./components/TeamManagement";
 import { TeamMemberDetail } from "./components/TeamMemberDetail";
@@ -80,6 +81,7 @@ function AppContent() {
     useState(false);
   const [bookingPreselection, setBookingPreselection] =
     useState<any>(null);
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
   const [returnView, setReturnView] = useState<string | null>(
     null,
   );
@@ -269,7 +271,9 @@ function AppContent() {
           }}
           onNavigateToProgram={(programId) => {
             console.log("Navigating to program:", programId);
-            setActiveView("retreat-detail");
+            setSelectedProgramId(programId);
+            setReturnView("calendar");
+            setActiveView("program-checkout");
           }}
           onNavigateToProduct={(productId) => {
             console.log("Navigating to product:", productId);
@@ -411,6 +415,24 @@ function AppContent() {
       <div>
         <HeaderBar onBack={() => setActiveView("home")} />
         <RetreatDetail />
+      </div>
+    );
+  }
+
+  if (activeView === "program-checkout") {
+    return (
+      <div>
+        <HeaderBar onBack={() => {
+          setActiveView(returnView || "home");
+          setSelectedProgramId(null);
+        }} />
+        <ProgramCheckout
+          programId={selectedProgramId}
+          onBack={() => {
+            setActiveView(returnView || "home");
+            setSelectedProgramId(null);
+          }}
+        />
       </div>
     );
   }
