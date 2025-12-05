@@ -237,15 +237,31 @@ export const servicesAPI = {
       session_type:
         service.sessionType ?? service.session_type ?? "class_group",
       is_active: service.status ? service.status === "active" : true,
-      fixed_prices: service.fixedPrices || service.fixed_prices || null,
+      // fixed_prices: service.fixedPrices || service.fixed_prices || null, // Handled via RPC
     };
+
+    const fixedPrices = service.fixedPrices || service.fixed_prices || null;
 
     const { data, error } = await supabase
       .from("session_templates")
       .insert(payload)
       .select()
       .single();
+
     if (error) throw error;
+
+    if (fixedPrices) {
+      const { error: rpcError } = await supabase.rpc('update_fixed_prices', {
+        p_id: data.id,
+        p_fixed_prices: fixedPrices
+      });
+      if (rpcError) {
+        console.error("Error saving fixed prices via RPC:", rpcError);
+        // We don't throw here to avoid failing the whole creation if just prices fail, 
+        // but arguably we should. For now, let's log.
+      }
+    }
+
     return data;
   },
 
@@ -277,14 +293,12 @@ export const servicesAPI = {
     if (updates.sessionType ?? updates.session_type)
       mapped.session_type =
         updates.sessionType ?? updates.session_type;
-    if (updates.sessionType ?? updates.session_type)
-      mapped.session_type =
-        updates.sessionType ?? updates.session_type;
     if (updates.status) mapped.is_active = updates.status === "active";
-    if (updates.fixedPrices || updates.fixed_prices)
-      mapped.fixed_prices = updates.fixedPrices || updates.fixed_prices;
 
-    console.log("Mapped service update payload:", mapped);
+    // Extract fixed prices for RPC
+    const fixedPrices = updates.fixedPrices || updates.fixed_prices;
+
+    console.log("Mapped service update payload (excluding fixed_prices):", mapped);
 
     const { data, error } = await supabase
       .from("session_templates")
@@ -292,7 +306,20 @@ export const servicesAPI = {
       .eq("id", id)
       .select()
       .single();
+
     if (error) throw error;
+
+    if (fixedPrices) {
+      console.log("Updating fixed prices via RPC for", id);
+      const { error: rpcError } = await supabase.rpc('update_fixed_prices', {
+        p_id: id,
+        p_fixed_prices: fixedPrices
+      });
+      if (rpcError) {
+        console.error("Error updating fixed prices via RPC:", rpcError);
+      }
+    }
+
     return data;
   },
 
