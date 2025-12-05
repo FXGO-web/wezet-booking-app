@@ -229,6 +229,35 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           <CurrencySelector />
         </div>
 
+        {/* Quick Actions */}
+        <div>
+          <h2 className="mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {navigationCards.map((card) => (
+              <button
+                key={card.title}
+                className="group text-left p-6 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
+                onClick={() => handleNavigate(card.route)}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-3 flex-1">
+                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <card.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-base">{card.title}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        {card.description}
+                      </p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {stats.map((stat) => (
@@ -260,35 +289,6 @@ export function AdminDashboard({ onNavigate }: AdminDashboardProps) {
               </CardContent>
             </Card>
           ))}
-        </div>
-
-        {/* Navigation Cards */}
-        <div>
-          <h2 className="mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {navigationCards.map((card) => (
-              <button
-                key={card.title}
-                className="group text-left p-6 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-                onClick={() => handleNavigate(card.route)}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-3 flex-1">
-                    <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                      <card.icon className="h-5 w-5 text-primary" />
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-base">{card.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {card.description}
-                      </p>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 ml-2" />
-                </div>
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Recent Bookings */}
