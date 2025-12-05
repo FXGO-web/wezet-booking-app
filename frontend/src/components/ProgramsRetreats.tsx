@@ -108,7 +108,7 @@ export function ProgramsRetreats({ onBack }: ProgramsRetreatsProps) {
                     </div>
                     <div className="flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
-                      <span>{typeof program.location === 'object' ? program.location?.name : (program.location || 'Location TBD')}</span>
+                      <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
                     </div>
                   </div>
                 </CardContent>

@@ -35,7 +35,7 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
     const [formData, setFormData] = useState({
         name: program?.name || program?.title || "",
         description: program?.description || "",
-        location: typeof program?.location === 'object' ? program.location.name : (program?.location || ""),
+        location: (program?.location && typeof program.location === 'object') ? program.location.name : (program?.location || ""),
         startDate: program?.startDate || program?.start_date || "",
         endDate: program?.endDate || program?.end_date || "",
         price: program?.price || 0,
@@ -73,7 +73,7 @@ export function ProgramModal({ isOpen, onClose, onSuccess, program }: ProgramMod
             const newFormData = {
                 name: program?.name || program?.title || "",
                 description: program?.description || "",
-                location: typeof program?.location === 'object' ? program.location.name : (program?.location || ""),
+                location: (program?.location && typeof program.location === 'object') ? program.location.name : (program?.location || ""),
                 startDate: program?.startDate || program?.start_date || "",
                 endDate: program?.endDate || program?.end_date || "",
                 price: program?.price || 0,
