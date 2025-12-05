@@ -423,8 +423,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                   onClick={() => onNavigateToProgram && onNavigateToProgram(program.id)}
                 >
                   <CardHeader className="pb-4">
-                    <div className="h-40 w-full bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg mb-4 flex items-center justify-center group-hover:from-primary/10 group-hover:to-primary/20 transition-all">
-                      <span className="text-xl font-semibold text-primary uppercase tracking-widest px-4 text-center truncate">
+                    <div className="h-32 w-full bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg mb-4 flex items-center justify-center group-hover:from-primary/10 group-hover:to-primary/20 transition-all px-4">
+                      <span className="text-base md:text-lg font-semibold text-primary uppercase tracking-widest text-center line-clamp-2 break-words">
                         {program.name.split(' ').slice(0, 2).join(' ')}
                       </span>
                     </div>
