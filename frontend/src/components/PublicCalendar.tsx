@@ -133,9 +133,16 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             applicableServices.push(null); // Marker for fallback
           }
 
-          // Find member
-          const member = members.find((m: any) => String(m.id) === String(slot.instructor_id));
-          if (!member) return;
+          // Find member or use fallback
+          let member = members.find((m: any) => String(m.id) === String(slot.instructor_id));
+          if (!member) {
+            console.warn(`Member not found for slot instructor_id: ${slot.instructor_id}`);
+            member = {
+              id: slot.instructor_id,
+              name: "Instructor",
+              avatarUrl: null
+            };
+          }
 
           // Process each applicable service
           applicableServices.forEach(serviceDetails => {
