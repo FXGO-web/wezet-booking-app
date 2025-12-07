@@ -27,6 +27,7 @@ export function AuthPage() {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
+  const [activeTab, setActiveTab] = useState("signin");
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,8 +188,6 @@ export function AuthPage() {
     );
   }
 
-  const [activeTab, setActiveTab] = useState("signin");
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-background flex items-center justify-center p-6">
       <div className="w-full max-w-md space-y-8">
@@ -217,8 +216,8 @@ export function AuthPage() {
                 <button
                   onClick={() => setActiveTab("signin")}
                   className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === "signin"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
                     }`}
                 >
                   Sign In
@@ -226,8 +225,8 @@ export function AuthPage() {
                 <button
                   onClick={() => setActiveTab("signup")}
                   className={`inline-flex items-center justify-center whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 ${activeTab === "signup"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:bg-background/50 hover:text-foreground"
                     }`}
                 >
                   Sign Up
