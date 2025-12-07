@@ -8,11 +8,11 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Loader2, Lock, Mail, User, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
-export function AuthPage() {
+export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "update-password" }) {
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSent, setResetSent] = useState(false);
-  const { signIn, signUp, resetPassword } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword } = useAuth();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +27,11 @@ export function AuthPage() {
   const [signUpEmail, setSignUpEmail] = useState('');
   const [signUpPassword, setSignUpPassword] = useState('');
   const [signUpConfirmPassword, setSignUpConfirmPassword] = useState('');
-  const [activeTab, setActiveTab] = useState("signin");
+  const [activeTab, setActiveTab] = useState(mode === "update-password" ? "update-password" : "signin");
+
+  // Update Password Form
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,6 +100,44 @@ export function AuthPage() {
         setError(error.message || 'Failed to sign up');
       } else {
         setSuccess('Account created successfully! You are now logged in.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    if (newPassword !== confirmNewPassword) {
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError('Password must be at least 6 characters');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const { error } = await updatePassword(newPassword);
+      if (error) {
+        setError(error.message || 'Failed to update password');
+      } else {
+        setSuccess('Password updated successfully! You can now sign in with your new password.');
+        setTimeout(() => {
+          setActiveTab('signin');
+          setNewPassword('');
+          setConfirmNewPassword('');
+          setSuccess(null);
+        }, 2000);
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
@@ -382,6 +424,69 @@ export function AuthPage() {
                   <p className="text-xs text-center text-muted-foreground">
                     By signing up, you agree to our Terms of Service and Privacy Policy
                   </p>
+                </div>
+              )}
+
+              {/* Update Password Tab */}
+              {activeTab === "update-password" && (
+                <div className="space-y-4">
+                  <div className="text-center mb-6">
+                    <h3 className="text-lg font-medium">Create New Password</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Please enter your new password below.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleUpdatePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">New Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="new-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-new-password">Confirm Password</Label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          id="confirm-new-password"
+                          type="password"
+                          placeholder="••••••••"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                          className="pl-10"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    {error && (
+                      <Alert variant="destructive">
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    {success && (
+                      <Alert className="border-green-200 bg-green-50 text-green-800">
+                        <AlertDescription>{success}</AlertDescription>
+                      </Alert>
+                    )}
+
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Update Password
+                    </Button>
+                  </form>
                 </div>
               )}
             </div>

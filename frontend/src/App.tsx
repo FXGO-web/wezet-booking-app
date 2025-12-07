@@ -598,6 +598,15 @@ function AppContent() {
     );
   }
 
+  if (activeView === "update-password") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("home")} />
+        <AuthPage mode="update-password" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <HeaderBar />

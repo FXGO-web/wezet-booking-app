@@ -12,6 +12,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   getAccessToken: () => string | null;
   resetPassword: (email: string) => Promise<{ error: any }>;
+  updatePassword: (password: string) => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -125,7 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // because we need to set user_metadata which requires admin privileges
 
     try {
-      await authAPI.signup(email, password, name, role);
+      await authAPI.signup(email, password, name, role as "admin" | "instructor" | "client");
 
       // After signup, sign them in
       return await signIn(email, password);
@@ -153,8 +154,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     getAccessToken,
     resetPassword: async (email: string) => {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${window.location.origin}/?view=update-password`,
       });
+      return { error };
+    },
+    updatePassword: async (password: string) => {
+      const { error } = await supabase.auth.updateUser({ password });
       return { error };
     },
   };
