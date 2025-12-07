@@ -7,13 +7,39 @@ const corsHeaders = {
 }
 
 // WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
-const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+// WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
+let STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+
+// Initialize Supabase Client to fetch settings if needed
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 if (!STRIPE_SECRET_KEY) {
-    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+    console.log("STRIPE_SECRET_KEY not found in env, attempting to fetch from database...");
+    try {
+        const supabase = createClient(
+            Deno.env.get("SUPABASE_URL") ?? "",
+            Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+        );
+        const { data, error } = await supabase.from("platform_settings").select("stripe_secret_key").single();
+        if (data && data.stripe_secret_key) {
+            STRIPE_SECRET_KEY = data.stripe_secret_key;
+            console.log("STRIPE_SECRET_KEY fetched from database.");
+        } else {
+            console.error("Failed to fetch STRIPE_SECRET_KEY from database:", error);
+        }
+    } catch (err) {
+        console.error("Error connecting to Supabase for settings:", err);
+    }
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
+if (!STRIPE_SECRET_KEY) {
+    // We can't throw here immediately because we are outside the serve handler in global scope, 
+    // but for Edge Functions it's better to fail fast or handle inside the request.
+    // However, top-level await is supported.
+    console.error("Missing STRIPE_SECRET_KEY environment variable and database fallback failed.");
+}
+
+const stripe = new Stripe(STRIPE_SECRET_KEY || "", {
     apiVersion: '2023-10-16',
     httpClient: Stripe.createFetchHttpClient(),
 });

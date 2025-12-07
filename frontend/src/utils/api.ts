@@ -688,6 +688,7 @@ export const settingsAPI = {
       requireApproval: s.require_approval,
       stripePublic: s.stripe_public_key,
       stripeSecret: s.stripe_secret_key,
+      stripeWebhookSecret: s.stripe_webhook_secret,
       testMode: s.stripe_test_mode,
       bookingConfirm: s.email_template_confirmation,
       bookingReminder: s.email_template_reminder,
@@ -722,6 +723,7 @@ export const settingsAPI = {
     // Payment
     if (settings.stripePublic) mapped.stripe_public_key = settings.stripePublic;
     if (settings.stripeSecret) mapped.stripe_secret_key = settings.stripeSecret;
+    if (settings.stripeWebhookSecret) mapped.stripe_webhook_secret = settings.stripeWebhookSecret;
     if (settings.testMode !== undefined) mapped.stripe_test_mode = settings.testMode;
 
     // Email Templates

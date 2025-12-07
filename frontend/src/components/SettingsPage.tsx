@@ -43,6 +43,7 @@ export function SettingsPage() {
   // Payment Integration
   const [stripePublic, setStripePublic] = useState("");
   const [stripeSecret, setStripeSecret] = useState("");
+  const [stripeWebhookSecret, setStripeWebhookSecret] = useState("");
   const [testMode, setTestMode] = useState(true);
 
   // Email Templates
@@ -104,6 +105,7 @@ export function SettingsPage() {
         // Payment
         setStripePublic(settings.stripePublic || "");
         setStripeSecret(settings.stripeSecret || "");
+        setStripeWebhookSecret(settings.stripeWebhookSecret || "");
         setTestMode(settings.testMode ?? true);
 
         // Email Templates
@@ -173,6 +175,7 @@ export function SettingsPage() {
     saveSettings("Payment Settings", {
       stripePublic,
       stripeSecret,
+      stripeWebhookSecret,
       testMode,
     });
 
@@ -214,7 +217,7 @@ export function SettingsPage() {
   // -------------------------
   return (
     // TODO: UI unchanged (keeping your full layout intact)
-    <div className="min-h-screen bg-background py-12">
+    <div className="min-h-screen bg-background py-12" >
       <div className="max-w-4xl mx-auto px-6 space-y-8">
         <div className="flex items-center gap-3 mb-8">
           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -407,6 +410,16 @@ export function SettingsPage() {
                 type="password"
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="stripeWebhookSecret">Stripe Webhook Signing Secret (whsec_...)</Label>
+              <Input
+                id="stripeWebhookSecret"
+                value={stripeWebhookSecret}
+                onChange={(e) => setStripeWebhookSecret(e.target.value)}
+                type="password"
+                placeholder="whsec_..."
+              />
+            </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="testMode">Test Mode</Label>
               <Switch
@@ -564,6 +577,6 @@ export function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </div >
   );
 }
