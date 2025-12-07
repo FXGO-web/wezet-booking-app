@@ -790,6 +790,11 @@ export const availabilityAPI = {
     const filteredMembers = teamMembers
       .filter((m: any) => {
         if (!m.role) return false;
+
+        // Explicitly allow specific emails (case-insensitive)
+        const email = (m.email || '').toLowerCase();
+        if (email.includes('hanna@wezet.xyz')) return true;
+
         const r = m.role.toLowerCase();
         // Always include admins and instructors
         if (r === 'admin' || r === 'instructor' || r === 'teacher') return true;
@@ -800,6 +805,9 @@ export const availabilityAPI = {
         ...m,
         name: m.full_name || m.email, // Map full_name to name
       }));
+
+    console.log("Team Members loaded:", filteredMembers.length, filteredMembers);
+    return { members: filteredMembers };
 
     return { members: filteredMembers };
   },
