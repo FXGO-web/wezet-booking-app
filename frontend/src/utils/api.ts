@@ -237,8 +237,10 @@ export const servicesAPI = {
       session_type:
         service.sessionType ?? service.session_type ?? "class_group",
       is_active: service.status ? service.status === "active" : true,
-      fixed_prices: service.fixedPrices || service.fixed_prices || null,
+      // fixed_prices: service.fixedPrices || service.fixed_prices || null, // REMOVED to avoid PGRST204
     };
+
+    const fixedPrices = service.fixedPrices || service.fixed_prices || null;
 
     const { data, error } = await supabase
       .from("session_templates")
@@ -247,6 +249,18 @@ export const servicesAPI = {
       .single();
 
     if (error) throw error;
+
+    if (fixedPrices) {
+      // Use V2 RPC to bypass cache issues
+      const { error: rpcError } = await supabase.rpc('update_session_prices_v2', {
+        p_id: data.id,
+        p_fixed_prices: fixedPrices
+      });
+      if (rpcError) {
+        console.error("Error saving fixed prices via RPC v2:", rpcError);
+      }
+    }
+
     return data;
   },
 
@@ -280,12 +294,10 @@ export const servicesAPI = {
         updates.sessionType ?? updates.session_type;
     if (updates.status) mapped.is_active = updates.status === "active";
 
-    // Include fixed_prices in direct update
-    if (updates.fixedPrices || updates.fixed_prices) {
-      mapped.fixed_prices = updates.fixedPrices || updates.fixed_prices;
-    }
+    // Extract fixed prices for RPC
+    const fixedPrices = updates.fixedPrices || updates.fixed_prices;
 
-    console.log("Mapped service update payload:", mapped);
+    console.log("Mapped service update payload (excluding fixed_prices):", mapped);
 
     const { data, error } = await supabase
       .from("session_templates")
@@ -295,6 +307,18 @@ export const servicesAPI = {
       .single();
 
     if (error) throw error;
+
+    if (fixedPrices) {
+      console.log("Updating fixed prices via RPC v2 for", id);
+      const { error: rpcError } = await supabase.rpc('update_session_prices_v2', {
+        p_id: id,
+        p_fixed_prices: fixedPrices
+      });
+      if (rpcError) {
+        console.error("Error updating fixed prices via RPC v2:", rpcError);
+      }
+    }
+
     return data;
   },
 
