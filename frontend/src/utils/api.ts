@@ -786,8 +786,16 @@ export const availabilityAPI = {
     ];
 
     // Filter for team members only (case-insensitive)
+    // Relaxed filter: Allow admins, instructors, and explicit team roles
     const filteredMembers = teamMembers
-      .filter((m: any) => m.role && teamRoles.includes(m.role.toLowerCase()))
+      .filter((m: any) => {
+        if (!m.role) return false;
+        const r = m.role.toLowerCase();
+        // Always include admins and instructors
+        if (r === 'admin' || r === 'instructor' || r === 'teacher') return true;
+        // Include other team-like roles
+        return teamRoles.includes(r);
+      })
       .map((m: any) => ({
         ...m,
         name: m.full_name || m.email, // Map full_name to name
