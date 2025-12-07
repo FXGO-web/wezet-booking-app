@@ -144,7 +144,19 @@ export function AvailabilityManagement() {
       setActiveTab(tabParam);
     }
   }, []);
-  // Fetch team members
+  // Logger for debugging user identity
+  const { user, loading: authLoading } = useAuth();
+  useEffect(() => {
+    if (!authLoading && user) {
+      console.log('AvailabilityManagement: Current User:', {
+        id: user.id,
+        email: user.email,
+        role: user.app_metadata?.role || user.user_metadata?.role
+      });
+    }
+  }, [user, authLoading]);
+
+  // Fetch Team Members
   useEffect(() => {
     const fetchTeamMembers = async () => {
       setLoading(true);
@@ -379,8 +391,7 @@ export function AvailabilityManagement() {
 
       await availabilityAPI.blockDates(
         selectedMember,
-        newBlocked.map(b => ({ date: b.date.toISOString(), reason: b.reason, type: b.type })),
-        accessToken
+        newBlocked.map(b => ({ date: b.date.toISOString(), reason: b.reason, type: b.type }))
       );
 
       setBlockedDates(prev => [...prev, ...newBlocked]);
@@ -405,7 +416,7 @@ export function AvailabilityManagement() {
         return;
       }
 
-      await availabilityAPI.unblockDate(selectedMember, id, accessToken);
+      await availabilityAPI.unblockDate(selectedMember, id);
       setBlockedDates(prev => prev.filter(b => b.id !== id));
       toast.success('Date unblocked successfully');
     } catch (error) {
