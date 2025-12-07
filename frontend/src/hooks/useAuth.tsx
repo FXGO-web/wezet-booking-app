@@ -153,8 +153,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     getAccessToken,
     resetPassword: async (email: string) => {
+      const redirectTo = `${window.location.origin}/?view=update-password`;
+      console.log('Reset Password Redirect URL:', redirectTo);
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/?view=update-password`,
+        redirectTo,
       });
       return { error };
     },
