@@ -85,7 +85,6 @@ $$;
 
 -- Grant permissions explicitly
 GRANT EXECUTE ON FUNCTION public.create_booking_from_template TO authenticated;
-GRANT EXECUTE ON FUNCTION public.create_booking_from_template TO admin;
 GRANT EXECUTE ON FUNCTION public.create_booking_from_template TO service_role;
 GRANT EXECUTE ON FUNCTION public.create_booking_from_template TO anon; -- fallback
 
