@@ -501,9 +501,32 @@ export const bookingsAPI = {
   },
 
   create: async (booking: any) => {
+    // If we have a sessionId, we can try direct insert (if RLS allows, but safer to use RPC if possible or just rely on old logic)
+    // But our improved logic relies on template_id + time if session doesn't exist.
+
+    if (booking.serviceId && booking.date) {
+      // Use RPC
+      const { data, error } = await supabase.rpc('create_booking_from_template', {
+        p_template_id: booking.serviceId,
+        p_start_time: booking.date, // BookingFlow sends ISO string
+        p_customer_id: booking.customer_id || booking.customerId,
+        p_status: booking.status || 'confirmed',
+        p_price: booking.price || 0,
+        p_currency: booking.currency || 'EUR',
+        p_notes: booking.notes || null
+      });
+
+      if (error) {
+        console.error("Error creating booking via RPC:", error);
+        throw error;
+      }
+      return data;
+    }
+
+    // Fallback for direct session ID (legacy or specific use case)
     const payload: Database["public"]["Tables"]["bookings"]["Insert"] = {
       customer_id: booking.customerId,
-      session_id: booking.sessionId, // Note: bookings table refers to sessions, not templates directly usually? Wait, schema has session_id.
+      session_id: booking.sessionId,
       status: booking.status ?? "pending",
       price: booking.price ?? 0,
       currency: booking.currency ?? "EUR",

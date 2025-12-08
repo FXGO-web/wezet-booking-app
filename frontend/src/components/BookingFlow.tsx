@@ -286,6 +286,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         teamMemberName: selectedTeamMemberData?.name,
         date: dateTime,
         time: selectedTime,
+        customerId: user?.id,
+        customer_id: user?.id, // Redundant but safe for API handling
+        userId: user?.id,
         clientName: formData.name,
         clientEmail: formData.email,
         clientPhone: formData.phone,
