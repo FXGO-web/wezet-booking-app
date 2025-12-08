@@ -186,14 +186,14 @@ otp_length = 6
 otp_expiry = 3600
 
 # Use a production-ready SMTP server
-# [auth.email.smtp]
-# enabled = true
-# host = "smtp.sendgrid.net"
-# port = 587
-# user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+[auth.email.smtp]
+enabled = false
+host = "smtp.sendgrid.net"
+port = 587
+user = "apikey"
+pass = "env(SENDGRID_API_KEY)"
+admin_email = "admin@wezet.xyz"
+sender_name = "WEZET BOOKING app"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -205,6 +205,10 @@ otp_expiry = 3600
 # enabled = true
 # subject = "Your password has been changed"
 # content_path = "./templates/password_changed_notification.html"
+
+[auth.email.template.reset_password]
+subject = "WEZET BOOKING app - Password Recovery"
+content_path = "./supabase/templates/reset_password.html"
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
