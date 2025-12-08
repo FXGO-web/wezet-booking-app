@@ -111,9 +111,21 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   useEffect(() => {
     if (user && showAuth) {
       setShowAuth(false);
-      setCurrentStep(2);
+      // Stay on step 1 if no preselection, otherwise go to step 2?
+      // Actually if we just logged in, we should check if we have enough info to proceed.
+      if (preselection) {
+        setCurrentStep(2);
+      }
     }
-  }, [user, showAuth]);
+  }, [user, showAuth, preselection]);
+
+  // Force Auth if arriving with preselection but not logged in
+  useEffect(() => {
+    if (preselection && !user && !loading) {
+      console.log("Forcing auth for booking");
+      setShowAuth(true);
+    }
+  }, [preselection, user, loading]);
 
   useEffect(() => {
     // If we have preselection data from calendar, apply it and skip to step 2

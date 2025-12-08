@@ -44,6 +44,7 @@ import {
   Wind,
   Sparkles,
   Users,
+  User,
   LogOut,
   Loader2,
   Database,
@@ -112,7 +113,68 @@ function AppContent() {
     }
   }, [user, activeView]);
 
-  // If we're embedded, constrain navigation to a safe subset
+  // Check Access Permissions
+  useEffect(() => {
+    if (loading) return;
+
+    // 1. Redirect if not logged in for protected routes
+    const protectedViews = [
+      "admin-dashboard",
+      "team-dashboard",
+      "client-dashboard",
+      "settings-page",
+      "analytics-dashboard",
+      "user-management",
+      "services-categories",
+      "availability-management",
+      "locations-directory",
+      "bookings-directory"
+    ];
+
+    if (!user && protectedViews.includes(activeView)) {
+      setActiveView("auth");
+      return;
+    }
+
+    // 2. Check Role Permissions
+    if (user) {
+      const role = (user.user_metadata?.role || "Client").toLowerCase();
+      // Special check for admin emails just in case metadata is out of sync
+      const isAdminEmail = user.email?.toLowerCase().includes("admin") ||
+        user.email?.toLowerCase().includes("fx@fxcreativestudio.com");
+
+      const isAdmin = role === "admin" || isAdminEmail;
+      const isInstructor = role === "instructor" || role === "teacher";
+      // const isClient = role === "client";
+
+      const adminRoutes = [
+        "admin-dashboard",
+        "analytics-dashboard",
+        "user-management",
+        "settings-page"
+      ];
+
+      const teamRoutes = [
+        "team-dashboard",
+        "availability-management", // Maybe instructors need this?
+        "bookings-directory" // Instructors might need to see bookings
+      ];
+
+      if (adminRoutes.includes(activeView) && !isAdmin) {
+        console.warn(`Access Denied to ${activeView} for role: ${role}`);
+        setActiveView("home");
+        // Optionally show a toast here if we had access to it inside this effect easily
+        // But setActiveView will trigger re-render so we are good.
+      }
+
+      if (teamRoutes.includes(activeView) && !isAdmin && !isInstructor) {
+        console.warn(`Access Denied to ${activeView} for role: ${role}`);
+        setActiveView("home");
+      }
+    }
+
+  }, [user, loading, activeView]);
+
   useEffect(() => {
     if (embedMode && !EMBED_ALLOWED_VIEWS.includes(activeView)) {
       setActiveView("calendar");
@@ -622,91 +684,112 @@ function AppContent() {
             </p>
           </div>
 
+
           {/* Main Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
             {/* Admin Dashboard - PRIMARY */}
-            <button
-              onClick={() => user ? setActiveView("admin-dashboard") : setActiveView("auth")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <BarChart3 className="h-6 w-6 text-primary" />
+            {user && (user.user_metadata?.role?.toLowerCase() === 'admin' || user.email?.toLowerCase().includes('admin')) && (
+              <button
+                onClick={() => setActiveView("admin-dashboard")}
+                className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
+              >
+                <div className="space-y-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <BarChart3 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3>Admin Dashboard</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Platform management and analytics
+                    </p>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <h3>Admin Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {user ? "Platform management, analytics, and bookings overview" : "Log in to access admin tools"}
-                  </p>
-                </div>
-              </div>
-            </button>
+              </button>
+            )}
 
-            {/* Public Calendar */}
+            {/* Public Calendar - Visible to EVERYONE */}
             <button
               onClick={() => setActiveView("calendar")}
               className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
             >
               <div className="space-y-4">
                 <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <div className="grid grid-cols-3 gap-1">
-                    {[...Array(9)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="h-1 w-1 rounded-full bg-primary"
-                      ></div>
-                    ))}
-                  </div>
+                  <CalendarIcon className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-2">
                   <h3>Public Calendar</h3>
                   <p className="text-sm text-muted-foreground">
-                    Monthly grid view with available slots and team selection
+                    View schedule and book sessions
                   </p>
                 </div>
               </div>
             </button>
 
-            {/* Team Dashboard */}
-            <button
-              onClick={() => user ? setActiveView("team-dashboard") : setActiveView("auth")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <Wind className="h-6 w-6 text-primary" />
-                </div>
-                <div className="space-y-2">
-                  <h3>Team Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {user ? "Weekly schedule, session management, and analytics" : "Log in to access team tools"}
-                  </p>
-                </div>
-              </div>
-            </button>
+            {/* Team Dashboard - Admin & Instructors */}
+            {user && (
+              user.user_metadata?.role?.toLowerCase() === 'admin' ||
+              user.user_metadata?.role?.toLowerCase() === 'instructor' ||
+              user.user_metadata?.role?.toLowerCase() === 'teacher' ||
+              user.email?.toLowerCase().includes('admin')
+            ) && (
+                <button
+                  onClick={() => setActiveView("team-dashboard")}
+                  className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
+                >
+                  <div className="space-y-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <Wind className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3>Team Dashboard</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Schedule and session management
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              )}
 
-            {/* Client Dashboard */}
-            <button
-              onClick={() => user ? setActiveView("client-dashboard") : setActiveView("auth")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
-            >
-              <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <div className="space-y-1">
-                    <div className="h-2 w-8 rounded bg-primary"></div>
-                    <div className="h-2 w-6 rounded bg-primary/60"></div>
-                    <div className="h-2 w-4 rounded bg-primary/30"></div>
+            {/* Client Dashboard - Clients (and everyone else who is logged in) */}
+            {user && (
+              <button
+                onClick={() => setActiveView("client-dashboard")}
+                className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02]"
+              >
+                <div className="space-y-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <User className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3>Client Dashboard</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Your bookings and progress
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <h3>Client Dashboard</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {user ? "Upcoming sessions, progress tracking, and quick actions" : "Log in to access your dashboard"}
-                  </p>
+              </button>
+            )}
+
+            {/* Log In / Sign Up - Only if NOT logged in */}
+            {!user && (
+              <button
+                onClick={() => setActiveView("auth")}
+                className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20"
+              >
+                <div className="space-y-4">
+                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                    <LogOut className="h-6 w-6 text-primary rotate-180" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3>Log In / Sign Up</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Access your account to manage bookings
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
+            )}
 
           </div>
         </div>
