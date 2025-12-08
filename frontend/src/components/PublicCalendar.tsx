@@ -58,11 +58,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
-  const [programs, setPrograms] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [allServices, setAllServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
   const daysInMonth = new Date(
@@ -228,24 +226,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     fetchAvailability();
   }, [currentDate, allServices]);
 
-  // Fetch Programs
-  useEffect(() => {
-    const fetchPrograms = async () => {
-      try {
-        setLoadingPrograms(true);
-        const data = await programsAPI.getAll();
-        if (data && data.programs) {
-          setPrograms(data.programs);
-        }
-      } catch (error) {
-        console.error("Failed to fetch programs:", error);
-      } finally {
-        setLoadingPrograms(false);
-      }
-    };
 
-    fetchPrograms();
-  }, []);
 
   // Fetch Products
   useEffect(() => {
@@ -337,12 +318,29 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     if (!availability) return [];
     const month = currentDate.getMonth() + 1;
     const year = currentDate.getFullYear();
+
+    // Get current real date to filter out past days
+    const now = new Date();
+    const currentRealMonth = now.getMonth() + 1;
+    const currentRealYear = now.getFullYear();
+    const currentRealDay = now.getDate();
+
     const slots: { day: number; slot: TimeSlot }[] = [];
 
     Object.keys(availability)
       .map(Number)
       .sort((a, b) => a - b)
       .forEach((day) => {
+        // Filter out past days if we are looking at the current month/year
+        if (year === currentRealYear && month === currentRealMonth && day < currentRealDay) {
+          return;
+        }
+
+        // Also don't show availability for past months (though API should handle this, safety check)
+        if (year < currentRealYear || (year === currentRealYear && month < currentRealMonth)) {
+          return;
+        }
+
         (availability[day]?.slots || []).forEach((slot: TimeSlot) => {
           slots.push({ day, slot });
         });
@@ -402,67 +400,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           </p>
         </div>
 
-        {/* 1. Programs Section */}
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <h2>Programs & Retreats</h2>
-            <p className="text-muted-foreground">
-              Join our transformative multi-day experiences
-            </p>
-          </div>
 
-          {loadingPrograms ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : programs.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {programs.map((program) => (
-                <Card
-                  key={program.id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer group"
-                  onClick={() => onNavigateToProgram && onNavigateToProgram(program.id)}
-                >
-                  <CardHeader className="pb-4">
-                    <div className="w-full bg-gradient-to-br from-primary/5 to-primary/10 border border-primary/20 rounded-lg mb-4 flex items-center justify-center group-hover:from-primary/10 group-hover:to-primary/20 transition-all px-4 py-8">
-                      <span className="text-base md:text-lg font-semibold text-primary uppercase tracking-widest text-center line-clamp-2 break-words">
-                        {program.name.split(' ').slice(0, 2).join(' ')}
-                      </span>
-                    </div>
-                    <CardTitle className="flex items-start justify-between text-lg">
-                      <span>{program.name}</span>
-                      <Badge variant="secondary" className="font-normal">
-                        {program.is_active ? 'Published' : 'Draft'}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span>
-                          {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
-                          {program.end_date ? ` - ${new Date(program.end_date).toLocaleDateString()}` : ''}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'Location TBD')}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-foreground font-medium">
-                        <span>{formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
-              No programs available at the moment.
-            </div>
-          )}
-        </div>
 
         {/* 2. Available Sessions (Calendar) */}
         <div className="space-y-6">
