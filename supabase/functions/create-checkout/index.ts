@@ -8,7 +8,7 @@ const corsHeaders = {
 
 // WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
 // WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
-let STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
+let STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')?.trim();
 
 // Initialize Supabase Client to fetch settings if needed
 
@@ -38,7 +38,7 @@ if (!STRIPE_SECRET_KEY) {
     console.error("Missing STRIPE_SECRET_KEY environment variable and database fallback failed.");
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY || "", {
+const stripe = new Stripe(STRIPE_SECRET_KEY?.trim() || "", {
     apiVersion: '2023-10-16',
     httpClient: Stripe.createFetchHttpClient(),
 });

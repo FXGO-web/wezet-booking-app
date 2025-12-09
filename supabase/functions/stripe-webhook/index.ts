@@ -3,8 +3,8 @@ import Stripe from "https://esm.sh/stripe@14.14.0";
 
 // Initialize Supabase Client for fetching settings if needed
 // WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
-let STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY");
-let STRIPE_WEBHOOK_SIGNING_SECRET = Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET");
+let STRIPE_SECRET_KEY = Deno.env.get("STRIPE_SECRET_KEY")?.trim();
+let STRIPE_WEBHOOK_SIGNING_SECRET = Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")?.trim();
 
 // Initialize Supabase Client to fetch settings if needed
 // createClient is already imported at the top
@@ -28,7 +28,7 @@ if (!STRIPE_SECRET_KEY || !STRIPE_WEBHOOK_SIGNING_SECRET) {
     }
 }
 
-const stripe = new Stripe(STRIPE_SECRET_KEY || "", {
+const stripe = new Stripe(STRIPE_SECRET_KEY?.trim() || "", {
     apiVersion: "2023-10-16",
     httpClient: Stripe.createFetchHttpClient(),
 });
