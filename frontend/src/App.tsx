@@ -141,7 +141,9 @@ function AppContent() {
       const role = (user.user_metadata?.role || "Client").toLowerCase();
       // Special check for admin emails just in case metadata is out of sync
       const isAdminEmail = user.email?.toLowerCase().includes("admin") ||
-        user.email?.toLowerCase().includes("fx@fxcreativestudio.com");
+        user.email?.toLowerCase().includes("fx@fxcreativestudio.com") ||
+        user.email?.toLowerCase() === "contact@mroffbeat.com" ||
+        user.email?.toLowerCase() === "hanna@wezet.xyz";
 
       const isAdmin = role === "admin" || isAdminEmail;
       const isInstructor = role === "instructor" || role === "teacher";
@@ -689,24 +691,30 @@ function AppContent() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 max-w-4xl mx-auto">
 
             {/* Admin Dashboard - PRIMARY */}
-            {user && (user.user_metadata?.role?.toLowerCase() === 'admin' || user.email?.toLowerCase().includes('admin')) && (
-              <button
-                onClick={() => setActiveView("admin-dashboard")}
-                className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
-              >
-                <div className="space-y-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                    <BarChart3 className="h-6 w-6 text-primary" />
+            {user && (
+              user.user_metadata?.role?.toLowerCase() === 'admin' ||
+              user.email?.toLowerCase().includes('admin') ||
+              user.email?.toLowerCase().includes('fx@fxcreativestudio.com') ||
+              user.email?.toLowerCase() === 'contact@mroffbeat.com' ||
+              user.email?.toLowerCase() === 'hanna@wezet.xyz'
+            ) && (
+                <button
+                  onClick={() => setActiveView("admin-dashboard")}
+                  className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] border-primary/20 ring-1 ring-primary/10"
+                >
+                  <div className="space-y-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                      <BarChart3 className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3>Admin Dashboard</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Platform management and analytics
+                      </p>
+                    </div>
                   </div>
-                  <div className="space-y-2">
-                    <h3>Admin Dashboard</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Platform management and analytics
-                    </p>
-                  </div>
-                </div>
-              </button>
-            )}
+                </button>
+              )}
 
             {/* Public Calendar - Visible to EVERYONE */}
             <button
@@ -731,7 +739,10 @@ function AppContent() {
               user.user_metadata?.role?.toLowerCase() === 'admin' ||
               user.user_metadata?.role?.toLowerCase() === 'instructor' ||
               user.user_metadata?.role?.toLowerCase() === 'teacher' ||
-              user.email?.toLowerCase().includes('admin')
+              user.email?.toLowerCase().includes('admin') ||
+              user.email?.toLowerCase().includes('fx@fxcreativestudio.com') ||
+              user.email?.toLowerCase() === 'contact@mroffbeat.com' ||
+              user.email?.toLowerCase() === 'hanna@wezet.xyz'
             ) && (
                 <button
                   onClick={() => setActiveView("team-dashboard")}
