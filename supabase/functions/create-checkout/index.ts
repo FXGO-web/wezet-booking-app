@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
             }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                status: 400,
+                status: 200, // Return 200 so client can parse the error body easily
             },
         )
     }

@@ -317,19 +317,16 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         });
 
         if (error) {
-          // Try to extract useful error message
-          let errorMessage = "Payment initialization failed";
-          if (error instanceof Error) errorMessage = error.message;
-          // Sometimes context is available in Supabase invoke errors
-          if ((error as any).context?.text) {
-            try {
-              const body = await (error as any).context.json();
-              if (body.error) errorMessage = body.error;
-            } catch (e) { /* ignore */ }
-          }
-          console.error("Checkout error:", error);
-          toast.error(errorMessage);
+          console.error("Checkout invoke error:", error);
+          toast.error("Connection error: " + error.message);
           throw error;
+        }
+
+        // Check for logical error returned with 200 status
+        if (data?.error) {
+          console.error("Stripe error:", data);
+          toast.error(`Payment Error: ${data.message || data.error}`);
+          throw new Error(data.error);
         }
 
         if (data?.url) {
