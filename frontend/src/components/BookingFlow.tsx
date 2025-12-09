@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { sessionsAPI as servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
 import { toast } from "sonner";
-import { format, parse } from "date-fns";
+import { format, parse, addMinutes, isBefore, startOfDay } from "date-fns";
+import { supabase } from "../utils/supabase/client";
 import { useAuth } from "../hooks/useAuth";
 import { AuthPage } from "./AuthPage";
 import { useCurrency } from "../context/CurrencyContext";
@@ -296,10 +297,36 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         price: selectedPrice || 0,
         currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
         duration: displayService?.duration || selectedServiceData?.duration,
-        status: 'confirmed',
+        status: 'pending',
       };
 
-      const bookingRes = await bookingsAPI.create(bookingData);
+      const bookingRes: any = await bookingsAPI.create(bookingData);
+
+      // If price > 0, redirect to Stripe
+      if ((selectedPrice || 0) > 0) {
+        toast.loading("Redirecting to payment...");
+        const { data, error } = await supabase.functions.invoke('create-checkout', {
+          body: {
+            price: selectedPrice,
+            currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
+            description: `${bookingData.serviceName} with ${selectedTeamMemberData?.name}`,
+            booking_id: bookingRes.id,
+            return_url: window.location.href.split('?')[0], // Current page URL base
+            customer_email: formData.email
+          }
+        });
+
+        if (error) throw error;
+        if (data?.url) {
+          window.location.href = data.url;
+          return; // Stop execution, redirecting
+        }
+      }
+
+      // If free or error in checkout url (fallback)
+      setCreatedBooking(bookingRes);
+      toast.success("Booking confirmed!");
+      setCurrentStep(3);
       setCreatedBooking(bookingRes);
       toast.success("Booking confirmed!");
       setCurrentStep(3);
@@ -795,50 +822,12 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
                   <Separator />
 
-                  {/* Payment Fields */}
-                  <div className="space-y-4">
-                    <h4 className="text-sm">Payment Information</h4>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="cardNumber">Card Number</Label>
-                      <div className="relative">
-                        <Input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                          value={formData.cardNumber}
-                          onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-                        />
-                        <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input
-                          id="expiry"
-                          placeholder="MM/YY"
-                          value={formData.expiry}
-                          onChange={(e) => handleInputChange("expiry", e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="cvc">CVC</Label>
-                        <Input
-                          id="cvc"
-                          placeholder="123"
-                          value={formData.cvc}
-                          onChange={(e) => handleInputChange("cvc", e.target.value)}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-xl mt-4">
-                      <Lock className="h-4 w-4 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">
-                        Your payment information is encrypted and secure
-                      </p>
-                    </div>
+                  {/* Payment Fields REMOVED - Using Stripe Checkout */}
+                  <div className="flex items-center gap-2 p-4 bg-muted/50 rounded-xl mt-4">
+                    <Lock className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">
+                      You will be redirected to a secure payment page
+                    </p>
                   </div>
                 </CardContent>
               </Card>

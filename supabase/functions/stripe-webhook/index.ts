@@ -88,6 +88,43 @@ Deno.serve(async (req) => {
                 console.error("Error updating booking:", error);
                 return new Response("Error updating booking", { status: 500 });
             }
+
+            // Send Confirmation Email via Resend
+            const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+            if (RESEND_API_KEY) {
+                try {
+                    const customerEmail = session.customer_details?.email || session.customer_email;
+                    if (customerEmail) {
+                        const res = await fetch("https://api.resend.com/emails", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${RESEND_API_KEY}`
+                            },
+                            body: JSON.stringify({
+                                from: "Wezet <confirmations@wezet.xyz>", // Ideally this should be verified domain
+                                to: [customerEmail],
+                                subject: "Booking Confirmed - Wezet",
+                                html: `
+                                    <h1>Booking Confirmed!</h1>
+                                    <p>Your session has been successfully booked.</p>
+                                    <p><strong>Booking ID:</strong> ${bookingId}</p>
+                                    <p>We look forward to seeing you!</p>
+                                `
+                            })
+                        });
+                        const emailData = await res.json();
+                        console.log("Email sent result:", emailData);
+                    } else {
+                        console.log("No customer email found in session, skipping email.");
+                    }
+                } catch (emailError) {
+                    console.error("Error sending email:", emailError);
+                }
+            } else {
+                console.log("RESEND_API_KEY not set, skipping email.");
+            }
+
         } else {
             console.log("No booking_id found in session metadata");
         }
