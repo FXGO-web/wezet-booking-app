@@ -11,7 +11,6 @@ const corsHeaders = {
 let STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
 // Initialize Supabase Client to fetch settings if needed
-import { createClient } from "jsr:@supabase/supabase-js@2";
 
 if (!STRIPE_SECRET_KEY) {
     console.log("STRIPE_SECRET_KEY not found in env, attempting to fetch from database...");
