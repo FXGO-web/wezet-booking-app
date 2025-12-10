@@ -485,7 +485,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="text-xs">
-                              {service.category}
+                              {typeof service.category === 'object' ? service.category?.name : service.category}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2">
@@ -511,9 +511,10 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {teamMembers.map((mentor) => {
                     const serviceData = services.find(s => s.id === selectedService);
+                    const categoryName = serviceData ? (typeof serviceData.category === 'object' ? serviceData.category?.name : serviceData.category) : "";
                     const isSpecialized = serviceData && mentor.specialties?.some((s: string) =>
-                      serviceData.category.toLowerCase().includes(s.toLowerCase()) ||
-                      s.toLowerCase().includes(serviceData.category.toLowerCase())
+                      categoryName?.toLowerCase().includes(s.toLowerCase()) ||
+                      s.toLowerCase().includes(categoryName?.toLowerCase())
                     );
 
                     return (
@@ -612,7 +613,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         </h3>
                         {displayService?.category && (
                           <Badge variant="secondary" className="text-xs">
-                            {displayService.category}
+                            {typeof displayService.category === 'object' ? displayService.category?.name : displayService.category}
                           </Badge>
                         )}
                       </div>
