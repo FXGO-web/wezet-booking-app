@@ -70,6 +70,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Filter state
   const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory || null);
@@ -117,11 +118,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
       toast.success("Slot added successfully");
       setIsAddSlotOpen(false);
-      // Trigger refresh by toggling date slightly or just re-running effect
-      // A hack to force refresh:
-      const current = new Date(currentDate);
-      setCurrentDate(new Date(current.getTime() + 1));
-      setCurrentDate(current);
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.error("Error adding slot:", error);
       toast.error("Failed to add slot");
@@ -144,19 +141,27 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     }
 
     try {
+      // Ensure date is YYYY-MM-DD
+      const dateOnly = slot.dateTime.includes('T') ? slot.dateTime.split('T')[0] : slot.dateTime;
+
+      console.log("Deleting slot with data:", {
+        instructor_id: targetInstructorId,
+        date: dateOnly,
+        start_time: slot.time,
+        end_time: slot.endTime,
+        original_dateTime: slot.dateTime
+      });
+
       await availabilityAPI.addException({
         instructor_id: targetInstructorId,
-        date: slot.dateTime, // assuming this is YYYY-MM-DD
+        date: dateOnly,
         start_time: slot.time,
         end_time: slot.endTime || computeEndTime(slot.time, 60),
         is_available: false // BLOCK IT
       });
 
       toast.success("Slot removed (blocked)");
-      // Refresh
-      const current = new Date(currentDate);
-      setCurrentDate(new Date(current.getTime() + 1));
-      setCurrentDate(current);
+      setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.error("Error deleting slot:", error);
       toast.error("Failed to delete slot");
@@ -352,7 +357,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     };
 
     fetchAvailability();
-  }, [currentDate, allServices, activeCategory]);
+    fetchAvailability();
+  }, [currentDate, allServices, activeCategory, refreshKey]);
 
 
 
