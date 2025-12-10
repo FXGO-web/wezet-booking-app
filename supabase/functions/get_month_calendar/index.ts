@@ -13,7 +13,9 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { year, month } = await req.json();
+        const reqData = await req.json();
+        console.log("get_month_calendar called with:", reqData);
+        const { year, month } = reqData;
 
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
         const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -70,62 +72,73 @@ Deno.serve(async (req) => {
             const dateStr = d.toISOString().split("T")[0];
             const weekday = d.getDay(); // 0=Sun, 1=Mon, ...
 
-            // Blocked?
-            const isBlocked = blocked?.some((b: any) => b.date === dateStr);
-            if (isBlocked) continue;
+            // 1. Get all raw weekly slots for this day
+            const weeklyForDay = weekly?.filter((w: any) => w.weekday === weekday) || [];
 
-            // Weekly slots
-            // Note: JS getDay() returns 0 for Sunday, but your DB might use 0 or 7.
-            // Assuming standard 0-6.
-            const weeklySlots =
-                weekly
-                    ?.filter((w: any) => w.weekday === weekday)
-                    .map((w: any) => ({
-                        date: dateStr,
-                        start: w.start_time,
-                        end: w.end_time,
-                        template_id: w.session_template_id, // Corrected column name
-                        instructor_id: w.instructor_id, // Corrected column name
-                        location_id: w.location_id,
-                    })) || [];
-
-            // Specific slots override?
-            // Usually specific slots ADD to availability or REPLACE it.
-            // If 'is_available' is false, it acts as a block.
-            // If 'is_available' is true, it adds a slot.
+            // 2. Get all raw exceptions for this day
             const specificForDay = specific?.filter((s: any) => s.date === dateStr) || [];
 
-            // If there are specific rules for this day, do they replace the weekly ones?
-            // Or do they just add/subtract?
-            // Logic: If specific rule says is_available=false, it blocks.
-            // If is_available=true, it's a slot.
-            // A common pattern: if specific rules exist for a day, IGNORE weekly rules?
-            // OR: specific rules are just extra slots / blocks.
-            // Let's assume:
-            // 1. If any specific rule has is_available=false (and no times), it blocks the whole day?
-            //    Or maybe it just blocks that specific slot?
-            //    Let's look at the schema implication. 'availability_exceptions' usually implies "Use this INSTEAD of weekly".
-            //    Let's go with: If exceptions exist for this date, use ONLY exceptions.
+            // 3. Get all blocked dates for this day
+            const blockedForDay = blocked?.filter((b: any) => b.date === dateStr) || [];
 
-            let daySlots: any[] = [];
+            // 4. Identify all instructors involved today (from weekly rules or exceptions)
+            // Use Set to deduplicate
+            const instructorsOnDay = new Set([
+                ...weeklyForDay.map((w: any) => w.instructor_id),
+                ...specificForDay.map((s: any) => s.instructor_id)
+            ]);
 
-            if (specificForDay.length > 0) {
-                // Use specific slots only
-                const activeSpecific = specificForDay.filter((s: any) => s.is_available);
-                daySlots = activeSpecific.map((s: any) => ({
+            // 5. Process slots per instructor
+            for (const instId of instructorsOnDay) {
+                // Is this instructor blocked for the whole day?
+                const isDayBlocked = blockedForDay.some((b: any) => b.instructor_id === instId);
+                if (isDayBlocked) continue;
+
+                // My Weekly Slots
+                const myWeekly = weeklyForDay.filter((w: any) => w.instructor_id === instId);
+
+                // My Exceptions
+                const myExceptions = specificForDay.filter((s: any) => s.instructor_id === instId);
+                const toBlock = myExceptions.filter((e: any) => !e.is_available);
+                const toAdd = myExceptions.filter((e: any) => e.is_available);
+
+                // Start with Weekly slots
+                let mySlots = myWeekly.map((w: any) => ({
+                    date: dateStr,
+                    start: w.start_time,
+                    end: w.end_time,
+                    template_id: w.session_template_id,
+                    instructor_id: w.instructor_id,
+                    location_id: w.location_id
+                }));
+
+                // Apply Blocks - Filter out slots that match blocked times
+                if (toBlock.length > 0) {
+                    console.log(`[${dateStr}] Instructor ${instId} has blocking exceptions:`, toBlock);
+                    mySlots = mySlots.filter((slot: any) => {
+                        const slotStart = slot.start.slice(0, 5); // HH:MM
+                        // If any block matches this start time, filter it OUT
+                        const isBlocked = toBlock.some((b: any) => b.start_time.slice(0, 5) === slotStart);
+                        if (isBlocked) {
+                            console.log(`  -> Blocking slot at ${slotStart} due to exception`);
+                        }
+                        return !isBlocked;
+                    });
+                }
+
+                // Add Extra Slots (Exceptions that are additions)
+                const extraSlots = toAdd.map((s: any) => ({
                     date: dateStr,
                     start: s.start_time,
                     end: s.end_time,
                     template_id: s.session_template_id,
                     instructor_id: s.instructor_id,
-                    location_id: s.location_id,
+                    location_id: s.location_id
                 }));
-            } else {
-                // Use weekly slots
-                daySlots = weeklySlots;
-            }
 
-            results.push(...daySlots);
+                // Combine
+                results.push(...mySlots, ...extraSlots);
+            }
         }
 
         return new Response(JSON.stringify({ slots: results, teamMembers }), {

@@ -145,6 +145,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
       // Ensure date is YYYY-MM-DD
       const dateOnly = slot.dateTime.includes('T') ? slot.dateTime.split('T')[0] : slot.dateTime;
 
+      console.log("handleDeleteSlot Called. Slot:", slot);
+      console.log("Target Instructor ID:", targetInstructorId);
+      console.log("Calculated DateOnly:", dateOnly);
+
       console.log("Deleting slot with data:", {
         instructor_id: targetInstructorId,
         date: dateOnly,
