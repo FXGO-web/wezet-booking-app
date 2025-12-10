@@ -288,7 +288,16 @@ export const servicesAPI = {
       mapped.instructor_id =
         updates.instructorId ?? updates.instructor_id ?? updates.teamMemberId;
 
-    if (updates.capacity !== undefined) mapped.capacity = updates.capacity;
+    if (updates.categoryId !== undefined || updates.category_id !== undefined) {
+      mapped.category_id = updates.categoryId ?? updates.category_id;
+      // Convert empty string to null if needed, though usually we want a valid UUID
+      if (mapped.category_id === "") mapped.category_id = null;
+    }
+
+    if (updates.locationId !== undefined || updates.location_id !== undefined) {
+      const locId = updates.locationId ?? updates.location_id;
+      mapped.location_id = locId === "" || locId === "none" ? null : locId;
+    }
     if (updates.sessionType ?? updates.session_type)
       mapped.session_type =
         updates.sessionType ?? updates.session_type;

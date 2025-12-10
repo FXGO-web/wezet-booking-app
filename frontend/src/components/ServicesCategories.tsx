@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { ServiceModal } from "./ServiceModal";
 import { AdvancedFilters, FilterConfig } from "./AdvancedFilters";
 import { SortableTable } from "./SortableTable";
-import { sessionsAPI } from "../utils/api";
+import { sessionsAPI, categoriesAPI } from "../utils/api";
 import { Database } from "../types/database.types";
 
 type Service = Database['public']['Tables']['session_templates']['Row'];
@@ -24,12 +24,13 @@ const CATEGORIES = [
 export function ServicesCategories() {
   const { convertAndFormat } = useCurrency();
   const [services, setServices] = useState<Service[]>([]);
+  const [dynamicCategories, setDynamicCategories] = useState<any[]>([]); // New state
   const [loading, setLoading] = useState(true);
   const [filterValues, setFilterValues] = useState<any>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | undefined>(undefined);
 
-  const categories = CATEGORIES;
+  // const categories = CATEGORIES; // Removed, now using dynamicCategories
 
   const handleEditClick = (service: Service) => {
     setSelectedService(service);
@@ -136,8 +137,23 @@ export function ServicesCategories() {
       if (filterValues.search) filters.search = filterValues.search;
       if (filterValues.category && filterValues.category !== 'all') filters.category = filterValues.category;
 
-      const { services: data } = await sessionsAPI.getAll(filters);
+      const [{ services: data }, { categories: cats }] = await Promise.all([
+        sessionsAPI.getAll(filters),
+        categoriesAPI.getAll({ appliesTo: 'session' })
+      ]);
+
       setServices(data || []);
+      // Map API categories to our UI format, preserving icons if name matches, or default
+      const mappedCategories = (cats || []).map((c: any) => {
+        const defaultCat = CATEGORIES.find(dc => dc.name === c.name);
+        return {
+          id: c.id,
+          name: c.name,
+          icon: defaultCat ? defaultCat.icon : Activity
+        };
+      });
+      setDynamicCategories(mappedCategories);
+
     } catch (error) {
       console.error('Error fetching services:', error);
       setServices([]);
@@ -163,7 +179,7 @@ export function ServicesCategories() {
     const headers = ['Session Name', 'Category', 'Duration (min)', 'Price', 'Currency', 'Status'];
     const rows = filteredServices.map(s => [
       s.name,
-      s.category,
+      s.category?.name || 'Uncategorized',
       s.duration_minutes.toString(),
       s.price.toString(),
       s.currency,
@@ -214,7 +230,7 @@ export function ServicesCategories() {
       type: 'select',
       options: [
         { label: 'All Categories', value: 'all' },
-        ...categories.map(c => ({ label: c.name, value: c.id }))
+        ...dynamicCategories.map(c => ({ label: c.name, value: c.id }))
       ]
     },
     {
@@ -270,15 +286,16 @@ export function ServicesCategories() {
 
         {/* Category Stats */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {categories.map((category) => {
+          {dynamicCategories.map((category) => {
             const Icon = category.icon;
-            const count = filteredServices.filter(s => s.category === category.id).length;
+            // s.category is an object { id, name } or null
+            const count = services.filter(s => s.category && s.category.id === category.id).length;
 
             return (
               <Card
                 key={category.id}
-                className="cursor-pointer hover:border-primary/50 transition-colors"
-                onClick={() => setFilterValues({ ...filterValues, category: category.id })}
+                className={`cursor-pointer transition-colors ${filterValues.category === category.id ? 'border-primary bg-primary/5' : 'hover:border-primary/50'}`}
+                onClick={() => setFilterValues({ ...filterValues, category: category.id === filterValues.category ? 'all' : category.id })}
               >
                 <CardContent className="p-4 text-center space-y-2">
                   <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
@@ -294,7 +311,7 @@ export function ServicesCategories() {
           })}
         </div>
 
-        {/* Advanced Filters */}
+        {/* AdvancedFilters */}
         <AdvancedFilters
           filters={filterConfig}
           values={filterValues}
