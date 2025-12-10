@@ -32,6 +32,7 @@ USING ( public.is_admin() )
 WITH CHECK ( public.is_admin() );
 
 -- Re-create Instructor policy (manage own)
+DROP POLICY IF EXISTS "Instructors can manage own availability_exceptions" ON public.availability_exceptions;
 CREATE POLICY "Instructors can manage own availability_exceptions"
 ON public.availability_exceptions
 FOR ALL
@@ -50,6 +51,7 @@ TO authenticated
 USING ( public.is_admin() )
 WITH CHECK ( public.is_admin() );
 
+DROP POLICY IF EXISTS "Instructors can manage own availability_rules" ON public.availability_rules;
 CREATE POLICY "Instructors can manage own availability_rules"
 ON public.availability_rules
 FOR ALL
