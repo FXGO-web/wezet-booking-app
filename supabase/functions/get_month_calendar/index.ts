@@ -76,10 +76,11 @@ Deno.serve(async (req) => {
             const weeklyForDay = weekly?.filter((w: any) => w.weekday === weekday) || [];
 
             // 2. Get all raw exceptions for this day
-            const specificForDay = specific?.filter((s: any) => s.date === dateStr) || [];
+            // Normalize s.date just in case it's ISO
+            const specificForDay = specific?.filter((s: any) => (s.date && s.date.substring(0, 10) === dateStr)) || [];
 
             // 3. Get all blocked dates for this day
-            const blockedForDay = blocked?.filter((b: any) => b.date === dateStr) || [];
+            const blockedForDay = blocked?.filter((b: any) => (b.date && b.date.substring(0, 10) === dateStr)) || [];
 
             // 4. Identify all instructors involved today (from weekly rules or exceptions)
             // Use Set to deduplicate
@@ -116,9 +117,13 @@ Deno.serve(async (req) => {
                 if (toBlock.length > 0) {
                     console.log(`[${dateStr}] Instructor ${instId} has blocking exceptions:`, toBlock);
                     mySlots = mySlots.filter((slot: any) => {
-                        const slotStart = slot.start.slice(0, 5); // HH:MM
+                        const slotStart = slot.start.substring(0, 5); // HH:MM
                         // If any block matches this start time, filter it OUT
-                        const isBlocked = toBlock.some((b: any) => b.start_time.slice(0, 5) === slotStart);
+                        // Normalize b.start_time
+                        const isBlocked = toBlock.some((b: any) => {
+                            const blockStart = b.start_time ? b.start_time.substring(0, 5) : "";
+                            return blockStart === slotStart;
+                        });
                         if (isBlocked) {
                             console.log(`  -> Blocking slot at ${slotStart} due to exception`);
                         }

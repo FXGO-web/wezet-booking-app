@@ -127,7 +127,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   };
 
   const handleDeleteSlot = async (slot: TimeSlot, instructorId?: string) => {
-    if (!confirm("Are you sure you want to remove this slot? This will block this time for this instructor.")) return;
+    if (!confirm("Are you sure you want to delete this session?")) return;
 
     // We need an instructor ID. 
     // If the slot has multiple services, it might have multiple instructors.
