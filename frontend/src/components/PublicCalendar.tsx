@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { ChevronLeft, ChevronRight, Clock, Sparkles, Loader2, ArrowRight, MapPin, Calendar, Video, Package, PlayCircle, Plus, Trash2, X } from "lucide-react";
-import { availabilityAPI, programsAPI, productsAPI, sessionsAPI } from "../utils/api";
+import { availabilityAPI, programsAPI, productsAPI, sessionsAPI, categoriesAPI } from "../utils/api";
 import { useCurrency } from "../context/CurrencyContext";
 import { useAuth } from "../hooks/useAuth";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
@@ -67,6 +67,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [allServices, setAllServices] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
@@ -387,6 +388,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     fetchServices();
   }, []);
 
+  // Fetch Categories
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { categories } = await categoriesAPI.getAll();
+        setCategories(categories || []);
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
   const goToPreviousMonth = () => {
     setCurrentDate(
       new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1)
@@ -537,12 +551,24 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
               <p className="text-muted-foreground">
                 Select a date and time to book a session
               </p>
-              {activeCategory && (
-                <Badge variant="secondary" className="px-2 py-1 flex items-center gap-2 cursor-pointer hover:bg-secondary/80" onClick={() => setActiveCategory(null)}>
-                  Category: {activeCategory}
-                  <span className="text-xs text-muted-foreground">(x)</span>
-                </Badge>
-              )}
+              <div className="flex items-center gap-2 ml-auto">
+                <Select
+                  value={activeCategory || "all"}
+                  onValueChange={(val: string) => setActiveCategory(val === "all" ? null : val)}
+                >
+                  <SelectTrigger className="w-[180px] h-8 text-xs">
+                    <SelectValue placeholder="All Categories" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
@@ -632,11 +658,20 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
               <CardHeader>
                 <CardTitle className="text-base flex justify-between items-center">
                   <span>{selectedDay ? `${monthName} ${selectedDay}, ${year}` : "Upcoming Sessions"}</span>
-                  {isAdmin && selectedDay && (
+                  {isAdmin && (
                     <Button size="sm" variant="outline" onClick={() => {
-                      const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
-                      const dayStr = String(selectedDay).padStart(2, '0');
-                      setNewSlot(prev => ({ ...prev, date: `${year}-${monthStr}-${dayStr}` }));
+                      // If selected day, prefill. Else, maybe default to today?
+                      if (selectedDay) {
+                        const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+                        const dayStr = String(selectedDay).padStart(2, '0');
+                        setNewSlot(prev => ({ ...prev, date: `${year}-${monthStr}-${dayStr}` }));
+                      } else {
+                        // Default to today
+                        const now = new Date();
+                        const monthStr = String(now.getMonth() + 1).padStart(2, '0');
+                        const dayStr = String(now.getDate()).padStart(2, '0');
+                        setNewSlot(prev => ({ ...prev, date: `${now.getFullYear()}-${monthStr}-${dayStr}` }));
+                      }
                       setIsAddSlotOpen(true);
                     }}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -772,42 +807,58 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                         {service.availableWith.map((member: TeamMember) => (
                                           <button
                                             key={`${service.id}-${member.id}`}
-                                            onClick={() => handleServiceSlotClick(slot, service, member, day)}
-                                            className="w-full p-3 rounded-xl bg-card border hover:border-primary hover:shadow-md transition-all text-left group"
+                                            className="w-full relative group"
                                           >
-                                            <div className="space-y-2">
-                                              <div className="flex items-start justify-between gap-2">
-                                                <div className="flex-1 min-w-0">
-                                                  <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-medium truncate">{service.name}</p>
-                                                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">
-                                                      {service.category}
-                                                    </Badge>
+                                            <div
+                                              onClick={() => handleServiceSlotClick(slot, service, member, day)}
+                                              className="p-3 rounded-xl bg-card border hover:border-primary hover:shadow-md transition-all text-left"
+                                            >
+                                              <div className="space-y-2">
+                                                <div className="flex items-start justify-between gap-2">
+                                                  <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                      <p className="text-sm font-medium truncate">{service.name}</p>
+                                                      <Badge variant="secondary" className="text-[10px] h-5 px-1.5 shrink-0">
+                                                        {service.category}
+                                                      </Badge>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 mt-1.5">
+                                                      <Avatar className="h-4 w-4">
+                                                        {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+                                                        <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
+                                                          {member.name.split(' ').map(n => n[0]).join('')}
+                                                        </AvatarFallback>
+                                                      </Avatar>
+                                                      <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                                    </div>
                                                   </div>
-                                                  <div className="flex items-center gap-2 mt-1.5">
-                                                    <Avatar className="h-4 w-4">
-                                                      {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
-                                                      <AvatarFallback className="bg-primary text-primary-foreground text-[8px]">
-                                                        {member.name.split(' ').map(n => n[0]).join('')}
-                                                      </AvatarFallback>
-                                                    </Avatar>
-                                                    <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                                  <div className="flex flex-col items-end gap-1 shrink-0">
+                                                    <span className="text-sm font-medium">
+                                                      {normalizePrice(service) !== null
+                                                        ? formatFixedPrice(
+                                                          service.fixedPrices || null,
+                                                          normalizePrice(service) as number,
+                                                          service.currency || "EUR"
+                                                        )
+                                                        : "Price varies"}
+                                                    </span>
+                                                    <ArrowRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                                   </div>
-                                                </div>
-                                                <div className="flex flex-col items-end gap-1 shrink-0">
-                                                  <span className="text-sm font-medium">
-                                                    {normalizePrice(service) !== null
-                                                      ? formatFixedPrice(
-                                                        service.fixedPrices || null,
-                                                        normalizePrice(service) as number,
-                                                        service.currency || "EUR"
-                                                      )
-                                                      : "Price varies"}
-                                                  </span>
-                                                  <ArrowRight className="h-3 w-3 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </div>
                                               </div>
                                             </div>
+                                            {isAdmin && (
+                                              <div
+                                                className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteSlot(slot, member.id);
+                                                }}
+                                                title="Remover disponibilidad (Admin)"
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </div>
+                                            )}
                                           </button>
                                         ))}
                                       </div>
