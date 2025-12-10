@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "./ui/select";
 
-import { sessionsAPI as servicesAPI, teamMembersAPI, locationsAPI } from "../utils/api";
+import { sessionsAPI as servicesAPI, teamMembersAPI, locationsAPI, categoriesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 
 interface ServiceModalProps {
@@ -29,17 +29,6 @@ interface ServiceModalProps {
   onSuccess: () => void;
   service?: any;
 }
-
-const categories = [
-  "Breathwork",
-  "Bodywork",
-  "Coaching",
-  "Education",
-  "Retreats",
-  "Meditation",
-  "Yoga",
-  "Sound Healing",
-];
 
 const allowedCurrencies = ["EUR", "DKK"];
 const allowedStatus = ["active", "inactive"];
@@ -50,14 +39,12 @@ const sanitizeCurrency = (value?: string) =>
 const sanitizeStatus = (value?: string) =>
   allowedStatus.includes(value || "") ? value! : "active";
 
-const sanitizeCategory = (value?: string) =>
-  value && categories.includes(value) ? value : "Breathwork";
-
 export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceModalProps) {
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [locations, setLocations] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
     name: service?.name || "",
@@ -66,7 +53,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     price: service?.price || 0,
     currency: sanitizeCurrency(service?.currency),
     fixedPrices: service?.fixed_prices || service?.fixedPrices || { EUR: service?.price || 0, DKK: 0 },
-    category: sanitizeCategory(service?.category),
+    categoryId: service?.category?.id || service?.category_id || service?.categoryId || "",
     status: sanitizeStatus(service?.status),
     teamMemberId:
       service?.teamMemberId ||
@@ -87,7 +74,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
       price: service?.price || 0,
       currency: sanitizeCurrency(service?.currency),
       fixedPrices: service?.fixed_prices || service?.fixedPrices || { EUR: service?.price || 0, DKK: 0 },
-      category: sanitizeCategory(service?.category),
+      categoryId: service?.category?.id || service?.category_id || service?.categoryId || "",
       status: sanitizeStatus(service?.status),
       teamMemberId:
         service?.teamMemberId ||
@@ -104,9 +91,10 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
     const loadData = async () => {
       try {
         const token = await getAccessToken();
-        const [{ teamMembers: members }, { locations: locs }] = await Promise.all([
+        const [{ teamMembers: members }, { locations: locs }, { categories: cats }] = await Promise.all([
           teamMembersAPI.getAll({ status: "active" }),
-          locationsAPI.getAll()
+          locationsAPI.getAll(),
+          categoriesAPI.getAll({ appliesTo: 'session' })
         ]);
 
         console.log("ServiceModal: Raw team members:", members);
@@ -121,10 +109,12 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
 
         setTeamMembers(filteredMembers);
         setLocations(locs || []);
+        setCategories(cats || []);
       } catch (error) {
         console.error("Error loading data:", error);
         setTeamMembers([]);
         setLocations([]);
+        setCategories([]);
       }
     };
     loadData();
@@ -141,7 +131,7 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
         return;
       }
 
-      if (!formData.name || !formData.category || !formData.currency) {
+      if (!formData.name || !formData.categoryId || !formData.currency) {
         alert("Please fill in all required fields.");
         setLoading(false);
         return;
@@ -373,16 +363,16 @@ export function ServiceModal({ isOpen, onClose, onSuccess, service }: ServiceMod
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select
-                  value={formData.category || ""}
-                  onValueChange={(value: string) => setFormData({ ...formData, category: value })}
+                  value={formData.categoryId}
+                  onValueChange={(value: string) => setFormData({ ...formData, categoryId: value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                      <SelectItem key={cat.id} value={cat.id}>
+                        {cat.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
