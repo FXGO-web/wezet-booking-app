@@ -89,10 +89,41 @@ Deno.serve(async (req) => {
                 return new Response("Error updating booking", { status: 500 });
             }
 
+            // Fetch full booking details for the email
+            const { data: bookingData, error: bookingError } = await supabase
+                .from("bookings")
+                .select(`
+                    id,
+                    price,
+                    currency,
+                    sessions (
+                        start_time,
+                        end_time,
+                        session_templates ( name ),
+                        locations ( name, address, google_maps_url ),
+                        profiles ( full_name )
+                    )
+                `)
+                .eq("id", bookingId)
+                .single();
+
+            if (bookingError) {
+                console.error("Error fetching booking details for email:", bookingError);
+            }
+
             // Send Confirmation Email via Resend
             const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-            if (RESEND_API_KEY) {
+            if (RESEND_API_KEY && bookingData) {
                 try {
+                    const sessionData = bookingData.sessions;
+                    const sessionName = sessionData?.session_templates?.name || "Session";
+                    const instructorName = sessionData?.profiles?.full_name || "Wezet Instructor";
+                    const locationName = sessionData?.locations?.name || "Online";
+                    const locationAddress = sessionData?.locations?.address || "";
+                    const dateObj = new Date(sessionData?.start_time);
+                    const dateStr = dateObj.toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+                    const timeStr = dateObj.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+
                     const customerEmail = session.customer_details?.email || session.customer_email;
                     if (customerEmail) {
                         const res = await fetch("https://api.resend.com/emails", {
@@ -102,14 +133,52 @@ Deno.serve(async (req) => {
                                 "Authorization": `Bearer ${RESEND_API_KEY}`
                             },
                             body: JSON.stringify({
-                                from: "Wezet <confirmations@wezet.xyz>", // Ideally this should be verified domain
+                                from: "Wezet <confirmations@wezet.xyz>",
                                 to: [customerEmail],
-                                subject: "Booking Confirmed - Wezet",
+                                subject: `Booking Confirmed: ${sessionName}`,
                                 html: `
-                                    <h1>Booking Confirmed!</h1>
-                                    <p>Your session has been successfully booked.</p>
-                                    <p><strong>Booking ID:</strong> ${bookingId}</p>
-                                    <p>We look forward to seeing you!</p>
+                                    <!DOCTYPE html>
+                                    <html>
+                                    <head>
+                                        <style>
+                                            body { font-family: sans-serif; line-height: 1.6; color: #333; }
+                                            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+                                            .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+                                            .header h1 { color: #000; margin: 0; }
+                                            .details { margin: 20px 0; background: #f9f9f9; padding: 20px; border-radius: 8px; }
+                                            .detail-row { margin-bottom: 10px; }
+                                            .label { font-weight: bold; color: #666; }
+                                            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #999; }
+                                            .button { display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 4px; margin-top: 20px; }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class="container">
+                                            <div class="header">
+                                                <h1>WEZET</h1>
+                                                <p>Booking Confirmed</p>
+                                            </div>
+                                            <p>Hi there,</p>
+                                            <p>We are excited to confirm your booking for <strong>${sessionName}</strong>.</p>
+                                            
+                                            <div class="details">
+                                                <div class="detail-row"><span class="label">Date:</span> ${dateStr}</div>
+                                                <div class="detail-row"><span class="label">Time:</span> ${timeStr}</div>
+                                                <div class="detail-row"><span class="label">Instructor:</span> ${instructorName}</div>
+                                                <div class="detail-row"><span class="label">Location:</span> ${locationName}</div>
+                                                ${locationAddress ? `<div class="detail-row"><span class="label">Address:</span> ${locationAddress}</div>` : ''}
+                                                <div class="detail-row"><span class="label">Price:</span> ${bookingData.price} ${bookingData.currency}</div>
+                                            </div>
+
+                                            <p>Please arrive 10 minutes before the session starts.</p>
+                                            
+                                            <div class="footer">
+                                                <p>Booking ID: ${bookingData.id}</p>
+                                                <p>&copy; ${new Date().getFullYear()} Wezet. All rights reserved.</p>
+                                            </div>
+                                        </div>
+                                    </body>
+                                    </html>
                                 `
                             })
                         });
@@ -122,7 +191,7 @@ Deno.serve(async (req) => {
                     console.error("Error sending email:", emailError);
                 }
             } else {
-                console.log("RESEND_API_KEY not set, skipping email.");
+                console.log("RESEND_API_KEY not set or booking data lookup failed, skipping email.");
             }
 
         } else {
