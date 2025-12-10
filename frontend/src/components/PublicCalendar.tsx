@@ -752,7 +752,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                         </div>
                                         {isAdmin && (
                                           <div
-                                            className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               handleDeleteSlot(slot, member.id);
@@ -849,7 +849,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                             </div>
                                             {isAdmin && (
                                               <div
-                                                className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                                                 onClick={(e) => {
                                                   e.stopPropagation();
                                                   handleDeleteSlot(slot, member.id);
