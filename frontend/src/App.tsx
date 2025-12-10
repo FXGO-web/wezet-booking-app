@@ -344,6 +344,7 @@ function AppContent() {
         )}
         <PublicCalendar
           initialCategory={initialCategory}
+          isEmbedded={embedMode}
           onNavigateToBooking={(bookingData) => {
             // Store booking data for BookingFlow
             console.log(

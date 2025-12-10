@@ -57,9 +57,10 @@ interface PublicCalendarProps {
   onNavigateToProgram?: (programId: string) => void;
   onNavigateToProduct?: (productId: string) => void;
   initialCategory?: string;
+  isEmbedded?: boolean;
 }
 
-export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct, initialCategory }: PublicCalendarProps) {
+export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct, initialCategory, isEmbedded }: PublicCalendarProps) {
   const { convertAndFormat, formatFixedPrice } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -537,15 +538,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   };
 
   return (
-    <div className="min-h-screen bg-background p-6 md:p-12">
-      <div className="max-w-7xl mx-auto space-y-12">
-        {/* Header */}
-        <div className="space-y-4">
-          <h1>Book a Session</h1>
-          <p className="text-muted-foreground max-w-2xl">
-            Explore our programs, digital products, and book a session with our team.
-          </p>
-        </div>
+    <div className={`min-h-screen bg-background ${isEmbedded ? 'p-0' : 'p-6 md:p-12'}`}>
+      <div className={`${isEmbedded ? 'w-full' : 'max-w-7xl mx-auto'} space-y-6 md:space-y-12`}>
+        {/* Header - Hidden in Embed Mode */}
+        {!isEmbedded && (
+          <div className="space-y-4">
+            <h1 className="text-3xl font-medium tracking-tight">Book a Session</h1>
+            <p className="text-muted-foreground max-w-2xl text-lg">
+              Explore our programs, digital products, and book a session with our team.
+            </p>
+          </div>
+        )}
 
 
 
