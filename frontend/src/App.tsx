@@ -96,6 +96,9 @@ function AppContent() {
     const viewParam = params.get("view");
     const embedParam = params.get("embed");
     const returnParam = params.get("return");
+    const categoryParam = params.get("category");
+    const programIdParam = params.get("programId");
+
     if (viewParam) {
       setActiveView(viewParam);
     }
@@ -105,7 +108,24 @@ function AppContent() {
     if (returnParam) {
       setReturnView(returnParam);
     }
+
+    // Handle category filter for calendar
+    if (categoryParam) {
+      // We'll pass this via a temporary hack or context, but practically
+      // passing it to PublicCalendar directly is better. 
+      // For now, let's store it in a state variable if we want it to persist during this session
+      // But Wait: The PublicCalendar component is rendered conditionally below.
+      // We need a state for initialCategory to pass it down.
+      setInitialCategory(categoryParam);
+    }
+
+    // Handle Deep Link to Program
+    if (viewParam === "program-checkout" && programIdParam) {
+      setSelectedProgramId(programIdParam);
+    }
   }, []);
+
+  const [initialCategory, setInitialCategory] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (user && activeView === "auth") {
@@ -323,6 +343,7 @@ function AppContent() {
           </div>
         )}
         <PublicCalendar
+          initialCategory={initialCategory}
           onNavigateToBooking={(bookingData) => {
             // Store booking data for BookingFlow
             console.log(

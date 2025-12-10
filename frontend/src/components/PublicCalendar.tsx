@@ -50,9 +50,10 @@ interface PublicCalendarProps {
   }) => void;
   onNavigateToProgram?: (programId: string) => void;
   onNavigateToProduct?: (productId: string) => void;
+  initialCategory?: string;
 }
 
-export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct }: PublicCalendarProps) {
+export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct, initialCategory }: PublicCalendarProps) {
   const { convertAndFormat, formatFixedPrice } = useCurrency();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
@@ -62,6 +63,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [allServices, setAllServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Filter state
+  const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory || null);
+
+  useEffect(() => {
+    if (initialCategory) {
+      setActiveCategory(initialCategory);
+    }
+  }, [initialCategory]);
 
   const daysInMonth = new Date(
     currentDate.getFullYear(),
@@ -114,11 +124,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           let applicableServices: any[] = [];
 
           if (slot.template_id) {
-            const s = allServices.find(s => String(s.id) === String(slot.template_id));
+            const s = allServices.find((s: any) => String(s.id) === String(slot.template_id));
             if (s) applicableServices.push(s);
           } else {
             // Generic slot: find all services for this instructor
-            applicableServices = allServices.filter(s =>
+            applicableServices = allServices.filter((s: any) =>
               String(s.instructor?.id) === String(slot.instructor_id) ||
               String(s.instructor_id) === String(slot.instructor_id)
             );
@@ -143,6 +153,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
           // Process each applicable service
           applicableServices.forEach(serviceDetails => {
+            // FILTER BY CATEGORY IF ACTIVE
+            if (activeCategory && serviceDetails) {
+              const catName = typeof serviceDetails.category === 'object' ? serviceDetails.category?.name : (serviceDetails.category || "General");
+              if (catName?.toLowerCase() !== activeCategory.toLowerCase()) {
+                return;
+              }
+            }
+            // If we are filtering by category and this is a generic fallback (serviceDetails is null), we should probably skip it 
+            // OR we risk showing generic slots for correct category queries if we are not careful.
+            // Safe bet: if filtering, only show matched services.
+            if (activeCategory && !serviceDetails) return;
+
+
             // Calculate duration/end time based on service or default
             const duration = serviceDetails?.duration_minutes || serviceDetails?.duration || 60;
             const endTime = slot.end ? slot.end.slice(0, 5) : computeEndTime(time, duration);
@@ -192,11 +215,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             // Deduplication Logic:
             // 1. If we are adding a specific service, remove any existing generic services from this slot.
             if (serviceDetails) {
-              timeSlot.services = timeSlot.services.filter(s => !s.id.startsWith('generic-'));
+              timeSlot.services = timeSlot.services.filter((s: Service) => !s.id.startsWith('generic-'));
             }
 
             // 2. If we are adding a generic service, but the slot already has specific services, SKIP adding this generic one.
-            if (!serviceDetails && timeSlot.services.some(s => !s.id.startsWith('generic-'))) {
+            if (!serviceDetails && timeSlot.services.some((s: Service) => !s.id.startsWith('generic-'))) {
               return; // Skip adding generic service
             }
 
@@ -213,6 +236,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           });
         });
 
+        // Clean up empty slots/days after filtering
+        Object.keys(currentAvailability).forEach(dayKey => {
+          const d = Number(dayKey);
+          currentAvailability[d].slots = currentAvailability[d].slots.filter((s: TimeSlot) => s.services.length > 0);
+          if (currentAvailability[d].slots.length === 0) {
+            delete currentAvailability[d];
+          }
+        });
+
         setAvailability(currentAvailability);
       } catch (error) {
         console.error('Error fetching calendar availability:', error);
@@ -224,7 +256,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     };
 
     fetchAvailability();
-  }, [currentDate, allServices]);
+  }, [currentDate, allServices, activeCategory]);
 
 
 
@@ -406,9 +438,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         <div className="space-y-6">
           <div className="space-y-2">
             <h2>Available Sessions</h2>
-            <p className="text-muted-foreground">
-              Select a date and time to book a session
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-muted-foreground">
+                Select a date and time to book a session
+              </p>
+              {activeCategory && (
+                <Badge variant="secondary" className="px-2 py-1 flex items-center gap-2 cursor-pointer hover:bg-secondary/80" onClick={() => setActiveCategory(null)}>
+                  Category: {activeCategory}
+                  <span className="text-xs text-muted-foreground">(x)</span>
+                </Badge>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
