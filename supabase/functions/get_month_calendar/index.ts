@@ -113,26 +113,23 @@ Deno.serve(async (req) => {
                     location_id: w.location_id
                 }));
 
-                // Apply Blocks - Filter out slots that match blocked times
+                // Apply Blocks to WEEKLY slots
                 if (toBlock.length > 0) {
-                    console.log(`[${dateStr}] Instructor ${instId} has blocking exceptions:`, toBlock);
                     mySlots = mySlots.filter((slot: any) => {
-                        const slotStart = slot.start.substring(0, 5); // HH:MM
-                        // If any block matches this start time, filter it OUT
-                        // Normalize b.start_time
+                        const slotStart = slot.start.substring(0, 5);
                         const isBlocked = toBlock.some((b: any) => {
                             const blockStart = b.start_time ? b.start_time.substring(0, 5) : "";
                             return blockStart === slotStart;
                         });
-                        if (isBlocked) {
-                            console.log(`  -> Blocking slot at ${slotStart} due to exception`);
-                        }
                         return !isBlocked;
                     });
                 }
 
                 // Add Extra Slots (Exceptions that are additions)
-                const extraSlots = toAdd.map((s: any) => ({
+                // BUT: Filter them too! If I added a slot manually, then decided to "delete" (block) it later, 
+                // the block must exist.
+                // Ideally, deleting a manual slot should REMOVE the row, but if the UI "adds a false exception", we must respect it.
+                let extraSlots = toAdd.map((s: any) => ({
                     date: dateStr,
                     start: s.start_time,
                     end: s.end_time,
@@ -140,6 +137,18 @@ Deno.serve(async (req) => {
                     instructor_id: s.instructor_id,
                     location_id: s.location_id
                 }));
+
+                // Apply Blocks to EXTRA slots too
+                if (toBlock.length > 0) {
+                    extraSlots = extraSlots.filter((slot: any) => {
+                        const slotStart = slot.start.substring(0, 5);
+                        const isBlocked = toBlock.some((b: any) => {
+                            const blockStart = b.start_time ? b.start_time.substring(0, 5) : "";
+                            return blockStart === slotStart;
+                        });
+                        return !isBlocked;
+                    });
+                }
 
                 // Combine
                 results.push(...mySlots, ...extraSlots);
