@@ -3,9 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { ChevronLeft, ChevronRight, Clock, Sparkles, Loader2, ArrowRight, MapPin, Calendar, Video, Package, PlayCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Sparkles, Loader2, ArrowRight, MapPin, Calendar, Video, Package, PlayCircle, Plus, Trash2, X } from "lucide-react";
 import { availabilityAPI, programsAPI, productsAPI, sessionsAPI } from "../utils/api";
 import { useCurrency } from "../context/CurrencyContext";
+import { useAuth } from "../hooks/useAuth";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Label } from "./ui/label";
+import { Input } from "./ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { toast } from "sonner";
 
 interface TeamMember {
   id: string;
@@ -66,6 +72,95 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
   // Filter state
   const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory || null);
+
+  // Admin / Edit Mode State
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
+  const [newSlot, setNewSlot] = useState({
+    instructorId: "",
+    startTime: "09:00",
+    endTime: "10:00",
+    date: ""
+  });
+
+  useEffect(() => {
+    if (user) {
+      const email = user.email?.toLowerCase() || "";
+      const role = user.user_metadata?.role?.toLowerCase();
+      const isAdminEmail = email.includes("admin") ||
+        email.includes("fx@fxcreativestudio.com") ||
+        email === "contact@mroffbeat.com" ||
+        email === "hanna@wezet.xyz";
+
+      setIsAdmin(role === "admin" || isAdminEmail);
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
+
+  const handleAddSlot = async () => {
+    if (!newSlot.instructorId || !newSlot.date) {
+      toast.error("Please select an instructor and date");
+      return;
+    }
+
+    try {
+      await availabilityAPI.addException({
+        instructor_id: newSlot.instructorId,
+        date: newSlot.date,
+        start_time: newSlot.startTime,
+        end_time: newSlot.endTime,
+        is_available: true
+      });
+
+      toast.success("Slot added successfully");
+      setIsAddSlotOpen(false);
+      // Trigger refresh by toggling date slightly or just re-running effect
+      // A hack to force refresh:
+      const current = new Date(currentDate);
+      setCurrentDate(new Date(current.getTime() + 1));
+      setCurrentDate(current);
+    } catch (error) {
+      console.error("Error adding slot:", error);
+      toast.error("Failed to add slot");
+    }
+  };
+
+  const handleDeleteSlot = async (slot: TimeSlot, instructorId?: string) => {
+    if (!confirm("Are you sure you want to remove this slot? This will block this time for this instructor.")) return;
+
+    // We need an instructor ID. 
+    // If the slot has multiple services, it might have multiple instructors.
+    // The UI renders buttons per (Service + Instructor). 
+    // So we should pass the specific instructor ID from the button click context.
+
+    const targetInstructorId = instructorId || (slot.services[0]?.availableWith[0]?.id);
+
+    if (!targetInstructorId) {
+      toast.error("Could not identify instructor for this slot");
+      return;
+    }
+
+    try {
+      await availabilityAPI.addException({
+        instructor_id: targetInstructorId,
+        date: slot.dateTime, // assuming this is YYYY-MM-DD
+        start_time: slot.time,
+        end_time: slot.endTime || computeEndTime(slot.time, 60),
+        is_available: false // BLOCK IT
+      });
+
+      toast.success("Slot removed (blocked)");
+      // Refresh
+      const current = new Date(currentDate);
+      setCurrentDate(new Date(current.getTime() + 1));
+      setCurrentDate(current);
+    } catch (error) {
+      console.error("Error deleting slot:", error);
+      toast.error("Failed to delete slot");
+    }
+  };
 
   useEffect(() => {
     if (initialCategory) {
@@ -535,8 +630,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             {/* Available Services for Selected Day or Upcoming List */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
-                  {selectedDay ? `${monthName} ${selectedDay}, ${year}` : "Upcoming Sessions"}
+                <CardTitle className="text-base flex justify-between items-center">
+                  <span>{selectedDay ? `${monthName} ${selectedDay}, ${year}` : "Upcoming Sessions"}</span>
+                  {isAdmin && selectedDay && (
+                    <Button size="sm" variant="outline" onClick={() => {
+                      const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+                      const dayStr = String(selectedDay).padStart(2, '0');
+                      setNewSlot(prev => ({ ...prev, date: `${year}-${monthStr}-${dayStr}` }));
+                      setIsAddSlotOpen(true);
+                    }}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Slot
+                    </Button>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   {selectedDay ? "Available sessions for this date" : `All available sessions in ${monthName}`}
@@ -569,42 +675,58 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                     {service.availableWith.map((member: TeamMember) => (
                                       <button
                                         key={`${service.id}-${member.id}`}
-                                        onClick={() => handleServiceSlotClick(slot, service, member)}
-                                        className="w-full p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left group"
+                                        className="w-full relative group"
                                       >
-                                        <div className="space-y-2">
-                                          <div className="flex items-start justify-between gap-2">
-                                            <div className="flex-1 min-w-0">
-                                              <div className="flex items-center gap-2">
-                                                <p className="text-sm truncate">{service.name}</p>
-                                                <Badge variant="secondary" className="text-xs shrink-0">
-                                                  {service.category}
-                                                </Badge>
+                                        <div
+                                          onClick={() => handleServiceSlotClick(slot, service, member)}
+                                          className="p-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary hover:shadow-md transition-all text-left"
+                                        >
+                                          <div className="space-y-2">
+                                            <div className="flex items-start justify-between gap-2">
+                                              <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                  <p className="text-sm truncate">{service.name}</p>
+                                                  <Badge variant="secondary" className="text-xs shrink-0">
+                                                    {service.category}
+                                                  </Badge>
+                                                </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                  <Avatar className="h-5 w-5">
+                                                    {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+                                                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                                                      {member.name.split(' ').map(n => n[0]).join('')}
+                                                    </AvatarFallback>
+                                                  </Avatar>
+                                                  <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                                </div>
                                               </div>
-                                              <div className="flex items-center gap-2 mt-1">
-                                                <Avatar className="h-5 w-5">
-                                                  {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
-                                                  <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                                    {member.name.split(' ').map(n => n[0]).join('')}
-                                                  </AvatarFallback>
-                                                </Avatar>
-                                                <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                              <div className="flex flex-col items-end gap-1 shrink-0">
+                                                <span className="text-sm">
+                                                  {normalizePrice(service) !== null
+                                                    ? formatFixedPrice(
+                                                      service.fixedPrices || null,
+                                                      normalizePrice(service) as number,
+                                                      service.currency || "EUR"
+                                                    )
+                                                    : "Price varies"}
+                                                </span>
+                                                <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                               </div>
-                                            </div>
-                                            <div className="flex flex-col items-end gap-1 shrink-0">
-                                              <span className="text-sm">
-                                                {normalizePrice(service) !== null
-                                                  ? formatFixedPrice(
-                                                    service.fixedPrices || null,
-                                                    normalizePrice(service) as number,
-                                                    service.currency || "EUR"
-                                                  )
-                                                  : "Price varies"}
-                                              </span>
-                                              <ArrowRight className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                                             </div>
                                           </div>
                                         </div>
+                                        {isAdmin && (
+                                          <div
+                                            className="absolute top-2 right-2 z-10 p-2 cursor-pointer bg-red-100 hover:bg-red-200 rounded-full text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleDeleteSlot(slot, member.id);
+                                            }}
+                                            title="Remover disponibilidad (Admin)"
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </div>
+                                        )}
                                       </button>
                                     ))}
                                   </div>
@@ -792,6 +914,70 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           )}
         </div>
       </div>
+
+      <Dialog open={isAddSlotOpen} onOpenChange={setIsAddSlotOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Availability Slot</DialogTitle>
+            <DialogDescription>
+              Create a one-off availability slot for a team member.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="date">Date</Label>
+              <Input
+                id="date"
+                type="date"
+                value={newSlot.date}
+                onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="instructor">Team Member</Label>
+              <Select
+                value={newSlot.instructorId}
+                onValueChange={(val: string) => setNewSlot({ ...newSlot, instructorId: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select instructor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teamMembers.map((member) => (
+                    <SelectItem key={member.id} value={member.id}>
+                      {member.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="start">Start Time</Label>
+                <Input
+                  id="start"
+                  type="time"
+                  value={newSlot.startTime}
+                  onChange={(e) => setNewSlot({ ...newSlot, startTime: e.target.value })}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="end">End Time</Label>
+                <Input
+                  id="end"
+                  type="time"
+                  value={newSlot.endTime}
+                  onChange={(e) => setNewSlot({ ...newSlot, endTime: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddSlotOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddSlot}>Save Slot</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

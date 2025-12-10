@@ -1033,6 +1033,36 @@ export const availabilityAPI = {
     return data;
   },
 
+  addException: async (exception: {
+    instructor_id: string;
+    date: string;
+    start_time: string;
+    end_time: string;
+    is_available: boolean;
+    session_template_id?: string | null;
+  }) => {
+    // Ensure times are HH:MM
+    const payload = {
+      instructor_id: exception.instructor_id,
+      date: exception.date,
+      start_time: exception.start_time.slice(0, 5),
+      end_time: exception.end_time.slice(0, 5),
+      is_available: exception.is_available,
+      session_template_id: exception.session_template_id || null
+    };
+
+    console.log("Adding availability exception:", payload);
+
+    const { data, error } = await supabase
+      .from("availability_exceptions")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   blockDates: async (teamMemberId: string, dates: any[]) => {
     if (dates.length === 0) return [];
 
