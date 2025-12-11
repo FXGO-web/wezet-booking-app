@@ -562,10 +562,12 @@ export function AvailabilityManagement() {
               <Clock className="h-4 w-4 mr-2" />
               Weekly Schedule
             </TabsTrigger>
+            {/* Specific Dates Tab Hidden - Managed via Public Calendar
             <TabsTrigger value="specific">
               <CalendarDays className="h-4 w-4 mr-2" />
               Specific Dates
             </TabsTrigger>
+            */}
             <TabsTrigger value="blocked">
               <CalendarIcon className="h-4 w-4 mr-2" />
               Blocked Dates
