@@ -67,6 +67,7 @@ interface SpecificDateSlot {
   startTime: string;
   endTime: string;
   isAvailable?: boolean;
+  sessionTemplateId?: string | null;
 }
 
 interface BlockedDate {
@@ -690,7 +691,14 @@ export function AvailabilityManagement() {
                             return (
                               <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50/50">
                                 <div className="space-y-1">
-                                  <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
+                                  <div className="font-medium">
+                                    {format(slot.date, 'MMM d, yyyy')}
+                                    {!slot.sessionTemplateId && (
+                                      <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                        Global
+                                      </span>
+                                    )}
+                                  </div>
                                   <div className="flex items-center gap-2">
                                     <Input
                                       type="time"
