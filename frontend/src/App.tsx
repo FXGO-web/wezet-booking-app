@@ -107,6 +107,10 @@ function AppContent() {
     }
     if (successParam === "true") {
       setActiveView("booking-success");
+      // Clean URL to prevent reload loops, but keep session_id for the UI
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete("success");
+      window.history.replaceState({}, '', newUrl.toString());
     }
     if (embedParam) {
       setEmbedMode(embedParam === "1" || embedParam === "true");
