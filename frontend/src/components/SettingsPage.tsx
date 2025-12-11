@@ -122,6 +122,9 @@ export function SettingsPage() {
         setDailySummary(settings.dailySummary ?? true);
         setNotifyEmail(settings.notifyEmail || "admin@wezet.com");
 
+        // Email Integration
+        setResendApiKey(settings.resendApiKey || "");
+
         // Policies
         setRefundPolicy(settings.refundPolicy || refundPolicy);
         setPrivacyPolicy(settings.privacyPolicy || "https://wezet.com/privacy");
