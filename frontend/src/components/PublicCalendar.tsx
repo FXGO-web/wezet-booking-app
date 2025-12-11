@@ -437,7 +437,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   useEffect(() => {
     const fetchServices = async () => {
       try {
+        console.log("Fetching services...");
         const { services } = await sessionsAPI.getAll();
+        console.log("Fetched services:", services?.length);
+        if (services?.length === 0) console.warn("Warning: No services returned from API");
         setAllServices(services || []);
       } catch (error) {
         console.error("Failed to fetch services:", error);
