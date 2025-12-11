@@ -182,6 +182,11 @@ export function SettingsPage() {
       testMode,
     });
 
+  const handleSaveEmailIntegration = () =>
+    saveSettings("Email Integration", {
+      resendApiKey,
+    });
+
   const handleSaveEmailTemplates = () =>
     saveSettings("Email Templates", {
       bookingConfirm,
