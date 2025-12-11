@@ -856,7 +856,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <span className="text-muted-foreground">Session</span>
                       <span>
                         {selectedPrice !== null
-                          ? convertAndFormat(selectedPrice, selectedServiceData?.currency || 'EUR')
+                          ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
                           : 'Price varies'}
                       </span>
                     </div>
@@ -866,7 +866,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         <div className="flex justify-between">
                           <span>Total</span>
                           <span className="text-lg">
-                            {convertAndFormat(selectedPrice, selectedServiceData?.currency || 'EUR')}
+                            {formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}
                           </span>
                         </div>
                       </>
@@ -911,7 +911,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                   </>
                 ) : (
                   selectedPrice !== null
-                    ? `Confirm & Pay ${convertAndFormat(selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}`
+                    ? `Confirm & Pay ${formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}`
                     : "Request Booking"
                 )}
               </Button>
