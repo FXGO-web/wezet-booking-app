@@ -38,6 +38,8 @@ interface TimeSlot {
   duration?: number;
   available: boolean;
   services: Service[];
+  source?: 'rule' | 'exception';
+  exception_id?: string;
 }
 
 interface PublicCalendarProps {
@@ -175,6 +177,12 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         console.log("Blocking WEEKLY RULE (adding block exception)");
         await availabilityAPI.addException({
           instructor_id: targetInstructorId,
+          // If the slot is associated with a specific service (not generic), we should block that service specifically.
+          // This ensures AvailabilityManagement filtering by service sees the block.
+          // If it's generic, we block generic (null).
+          session_template_id: (slot.services?.[0]?.id && !slot.services[0].id.startsWith('generic-'))
+            ? slot.services[0].id
+            : null,
           date: dateOnly,
           start_time: slot.time,
           end_time: slot.endTime || computeEndTime(slot.time, 60),
@@ -302,7 +310,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 endTime: endTime,
                 duration: duration,
                 available: true,
-                services: []
+                services: [],
+                source: slot.source,
+                exception_id: slot.exception_id
               };
               currentAvailability[day].slots.push(timeSlot);
               // Sort slots

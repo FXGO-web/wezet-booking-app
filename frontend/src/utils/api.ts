@@ -850,7 +850,9 @@ export const availabilityAPI = {
       .select("*")
       .eq("instructor_id", teamMemberId);
 
-    if (serviceId) rulesQuery = rulesQuery.eq("session_template_id", serviceId);
+    if (serviceId) {
+      rulesQuery = rulesQuery.or(`session_template_id.eq.${serviceId},session_template_id.is.null`);
+    }
 
     const { data: rules, error: rulesError } = await rulesQuery;
     if (rulesError) throw rulesError;
@@ -895,7 +897,9 @@ export const availabilityAPI = {
       .select("*")
       .eq("instructor_id", teamMemberId);
 
-    if (serviceId) exQuery = exQuery.eq("session_template_id", serviceId);
+    if (serviceId) {
+      exQuery = exQuery.or(`session_template_id.eq.${serviceId},session_template_id.is.null`);
+    }
 
     const { data: exceptions, error: exError } = await exQuery;
     if (exError) throw exError;
