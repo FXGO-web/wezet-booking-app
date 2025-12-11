@@ -1024,8 +1024,10 @@ export const availabilityAPI = {
       .eq("instructor_id", teamMemberId);
 
     if (serviceId && serviceId !== 'all') {
-      del = del.eq("session_template_id", serviceId);
-    } else if (serviceId !== 'all') {
+      del = del.or(`session_template_id.eq.${serviceId},session_template_id.is.null`);
+    } else if (serviceId !== 'all' && serviceId !== undefined) {
+      // Explicit check for non-all, non-undefined to target only global slots if strictly requested
+      // But based on usage, serviceId='all' skips this and deletes everything
       del = del.is("session_template_id", null);
     }
 
