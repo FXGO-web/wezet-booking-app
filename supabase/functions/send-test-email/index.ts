@@ -12,9 +12,16 @@ Deno.serve(async (req) => {
 
     try {
         const { to } = await req.json();
-        // Ensure to is a string and trim whitespace
-        const cleanTo = typeof to === 'string' ? to.trim() : "";
-        const targetEmail = cleanTo || "confirmation-test@wezet.xyz";
+
+        let targetEmails: string[] = ["confirmation-test@wezet.xyz"];
+
+        if (to && typeof to === 'string') {
+            targetEmails = to.split(',').map(e => e.trim()).filter(e => e.length > 0);
+        }
+
+        if (targetEmails.length === 0) {
+            targetEmails = ["confirmation-test@wezet.xyz"];
+        }
 
         // Initialize Supabase Client
         const supabase = createClient(
@@ -43,7 +50,7 @@ Deno.serve(async (req) => {
             },
             body: JSON.stringify({
                 from: "Wezet Test <confirmations@wezet.xyz>",
-                to: [targetEmail],
+                to: targetEmails,
                 subject: "Test Email from Wezet Admin",
                 html: `
                     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
@@ -58,7 +65,7 @@ Deno.serve(async (req) => {
         const data = await res.json();
 
         if (!res.ok) {
-            throw new Error(`Resend API Error: ${JSON.stringify(data)}`);
+            throw new Error(`Resend API Error: ${JSON.stringify(data)} (Attempted to send to: ${JSON.stringify(targetEmails)})`);
         }
 
         return new Response(JSON.stringify({ success: true, data }), {
