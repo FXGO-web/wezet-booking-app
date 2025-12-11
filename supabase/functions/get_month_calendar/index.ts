@@ -48,8 +48,14 @@ Deno.serve(async (req) => {
         // 5) Get team members (profiles)
         const { data: profiles, error: profilesError } = await supabase
             .from("profiles")
-            .select("id, full_name, avatar_url, role")
-            .neq("role", "customer"); // Include ALL non-customer roles (admin, instructor, team_member, owner, etc.)
+            .select("id, full_name, avatar_url, role, email")
+            .in("email", [
+                "hanna@wezet.xyz",
+                "saszeline@theassana.com",
+                "pakosub@gmail.com",
+                "fx_dev@wezet.xyz",
+                "contact@mroffbeat.com"
+            ]);
         if (profilesError) throw profilesError;
 
         const teamMembers = profiles?.map((p: any) => ({
