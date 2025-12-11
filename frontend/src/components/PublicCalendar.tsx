@@ -412,8 +412,20 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     };
 
     fetchAvailability();
-    fetchAvailability();
   }, [currentDate, allServices, activeCategory, refreshKey]);
+
+  // Debug Availability State changes
+  useEffect(() => {
+    if (availability) {
+      const days = Object.keys(availability).map(Number).sort((a, b) => a - b);
+      console.log("Availability Updated. Days with slots:", days);
+      days.forEach(d => {
+        console.log(`Day ${d}: ${availability[d].slots.length} slots`);
+      });
+    } else {
+      console.log("Availability Updated: null");
+    }
+  }, [availability]);
 
 
 
