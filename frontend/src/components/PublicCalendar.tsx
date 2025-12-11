@@ -440,10 +440,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         console.log("Fetching services...");
         const { services } = await sessionsAPI.getAll();
         console.log("Fetched services:", services?.length);
-        if (services?.length === 0) console.warn("Warning: No services returned from API");
+
+        if (!services || services.length === 0) {
+          console.warn("Warning: No services returned from API");
+          // Only show toast if we expected services and got none (optional, might be annoying if truly empty)
+          // toast.error("Warning: No services loaded. Calendar may be empty."); 
+        }
+
         setAllServices(services || []);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Failed to fetch services:", error);
+        toast.error(`System Error: Failed to load services. ${error.message || error}`);
       }
     };
     fetchServices();
