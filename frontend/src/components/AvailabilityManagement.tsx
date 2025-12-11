@@ -332,32 +332,28 @@ export function AvailabilityManagement() {
 
       await availabilityAPI.updateSchedule(selectedMember, sanitizedSchedule, accessToken, serviceId);
 
-      // Also save specific dates if any
-      if (specificDateSlots.length > 0) {
-        const validSlots = specificDateSlots
-          .filter((s) => s.date && !isNaN(s.date.getTime()))
-          .map((s) => {
-            const isTempId = !s.id || !String(s.id).includes('-');
-            const slotData = {
-              ...s,
-              date: format(s.date, 'yyyy-MM-dd'),
-            };
-            if (isTempId) {
-              const { id, ...rest } = slotData;
-              return rest;
-            }
-            return slotData;
-          });
+      // Also save specific dates (even if empty, to clear deletions)
+      const validSlots = specificDateSlots
+        .filter((s) => s.date && !isNaN(s.date.getTime()))
+        .map((s) => {
+          const isTempId = !s.id || !String(s.id).includes('-');
+          const slotData = {
+            ...s,
+            date: format(s.date, 'yyyy-MM-dd'),
+          };
+          if (isTempId) {
+            const { id, ...rest } = slotData;
+            return rest;
+          }
+          return slotData;
+        });
 
-        if (validSlots.length > 0) {
-          await availabilityAPI.updateSpecificDates(
-            selectedMember,
-            validSlots,
-            accessToken,
-            serviceId
-          );
-        }
-      }
+      await availabilityAPI.updateSpecificDates(
+        selectedMember,
+        validSlots,
+        accessToken,
+        serviceId
+      );
 
       toast.success('Availability saved successfully!');
     } catch (error: any) {
