@@ -788,6 +788,17 @@ export const settingsAPI = {
 
     return data;
   },
+
+  testEmail: async (email: string) => {
+    const { data, error } = await supabase.functions.invoke("send-test-email", {
+      body: { to: email },
+    });
+
+    if (error) throw error;
+    if (data.error) throw new Error(data.error);
+
+    return data;
+  },
 };
 
 // ===========================================================

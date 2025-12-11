@@ -456,13 +456,30 @@ export function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="grid gap-2">
               <Label htmlFor="resendApiKey">Resend API Key (re_...)</Label>
-              <Input
-                id="resendApiKey"
-                value={resendApiKey}
-                onChange={(e) => setResendApiKey(e.target.value)}
-                type="password"
-                placeholder="re_..."
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="resendApiKey"
+                  value={resendApiKey}
+                  onChange={(e) => setResendApiKey(e.target.value)}
+                  type="password"
+                  placeholder="re_..."
+                />
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    try {
+                      toast.info("Sending test email...");
+                      await settingsAPI.testEmail("confirmation-test@wezet.xyz"); // You might want to make this dynamic or current user's email
+                      toast.success("Test email sent! Check your inbox.");
+                    } catch (error: any) {
+                      toast.error(`Failed to send test email: ${error.message}`);
+                    }
+                  }}
+                  title="Send a test email to check configuration"
+                >
+                  Test Email
+                </Button>
+              </div>
               <p className="text-xs text-muted-foreground">Required for sending confirmation emails.</p>
             </div>
             <Button
