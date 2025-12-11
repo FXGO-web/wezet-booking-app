@@ -356,7 +356,7 @@ export function AvailabilityManagement() {
         selectedMember,
         validSlots,
         accessToken,
-        serviceId
+        selectedService // Pass 'all' explicitly if selected
       );
 
       toast.success('Availability saved successfully!');

@@ -1023,9 +1023,9 @@ export const availabilityAPI = {
       .delete()
       .eq("instructor_id", teamMemberId);
 
-    if (serviceId) {
+    if (serviceId && serviceId !== 'all') {
       del = del.eq("session_template_id", serviceId);
-    } else {
+    } else if (serviceId !== 'all') {
       del = del.is("session_template_id", null);
     }
 
@@ -1036,7 +1036,7 @@ export const availabilityAPI = {
 
     const rows: Database["public"]["Tables"]["availability_exceptions"]["Insert"][] = dates.map((d: any) => ({
       instructor_id: teamMemberId,
-      session_template_id: serviceId ?? d.sessionTemplateId ?? null,
+      session_template_id: (serviceId && serviceId !== 'all') ? serviceId : (d.sessionTemplateId ?? null),
       date: d.date,
       start_time: d.startTime ?? d.start_time ?? "00:00", // Ensure valid time
       end_time: d.endTime ?? d.end_time ?? "23:59", // Ensure valid time
