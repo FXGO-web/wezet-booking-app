@@ -468,9 +468,13 @@ export function SettingsPage() {
                   variant="outline"
                   onClick={async () => {
                     try {
-                      toast.info("Sending test email...");
-                      await settingsAPI.testEmail("confirmation-test@wezet.xyz"); // You might want to make this dynamic or current user's email
-                      toast.success("Test email sent! Check your inbox.");
+                      if (!notifyEmail) {
+                        toast.error("Please set a Notification Email first to receive the test.");
+                        return;
+                      }
+                      toast.info(`Sending test email to ${notifyEmail}...`);
+                      await settingsAPI.testEmail(notifyEmail);
+                      toast.success(`Test email sent to ${notifyEmail}!`);
                     } catch (error: any) {
                       toast.error(`Failed to send test email: ${error.message}`);
                     }
