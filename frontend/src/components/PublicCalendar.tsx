@@ -245,6 +245,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         const response = await availabilityAPI.getAvailability(year, month);
         const rawSlots = response?.slots || [];
         const members = response?.teamMembers || [];
+        if (response?.debug_exceptions) {
+          console.log("DEBUG EXCEPTIONS FROM BACKEND:", response.debug_exceptions);
+        }
         console.log("DEBUG: Fetched availability:", { year, month, rawSlots, members });
         setTeamMembers(members);
 
