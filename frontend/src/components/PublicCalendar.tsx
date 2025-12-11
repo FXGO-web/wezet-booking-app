@@ -112,21 +112,32 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     }
 
     try {
-      await availabilityAPI.addException({
+      console.log("Adding slot:", newSlot);
+      const serviceIdToSend = (!newSlot.serviceId || newSlot.serviceId === "none") ? null : newSlot.serviceId;
+      console.log("Service ID being sent:", serviceIdToSend);
+
+      const result = await availabilityAPI.addException({
         instructor_id: newSlot.instructorId,
-        session_template_id: newSlot.serviceId || null,
+        session_template_id: serviceIdToSend,
         date: newSlot.date,
         start_time: newSlot.startTime,
         end_time: newSlot.endTime,
         is_available: true
       });
 
+      console.log("Slot added result:", result);
+
+      if (!result) {
+        // Fallback check if result is unexpectedly null but no error thrown
+        console.warn("API returned empty result checking for success...");
+      }
+
       toast.success("Slot added successfully");
       setIsAddSlotOpen(false);
       setRefreshKey(prev => prev + 1);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error adding slot:", error);
-      toast.error("Failed to add slot");
+      toast.error(`Failed to add slot: ${error.message || "Unknown error"}`);
     }
   };
 
