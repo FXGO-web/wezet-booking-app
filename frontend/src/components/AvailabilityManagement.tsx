@@ -66,6 +66,7 @@ interface SpecificDateSlot {
   date: Date;
   startTime: string;
   endTime: string;
+  isAvailable?: boolean;
 }
 
 interface BlockedDate {
@@ -202,7 +203,11 @@ export function AvailabilityManagement() {
         if (blocked) setBlockedDates(blocked.map((b: any) => ({ ...b, date: new Date(b.date) })));
         if (specificDates) {
           const validSpecificDates = specificDates
-            .map((s: any) => ({ ...s, date: new Date(s.date) }))
+            .map((s: any) => ({
+              ...s,
+              date: new Date(s.date),
+              isAvailable: s.is_available // Map snake_case to camelCase
+            }))
             .filter((s: any) => !isNaN(s.date.getTime()));
           setSpecificDateSlots(validSpecificDates);
         }
@@ -672,49 +677,97 @@ export function AvailabilityManagement() {
                 <CardHeader>
                   <CardTitle>Specific Date Slots</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  {specificDateSlots.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      No specific slots added. Select a date from the calendar.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {specificDateSlots
-                        .sort((a, b) => a.date.getTime() - b.date.getTime())
-                        .map(slot => {
-                          if (isNaN(slot.date.getTime())) return null;
-                          return (
-                            <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg">
-                              <div className="space-y-1">
-                                <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
+                <CardContent className="space-y-6">
+                  {/* Added Slots Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground">Extra Added Slots</h3>
+                    {specificDateSlots.filter(s => s.isAvailable !== false).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        No extra slots added.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {specificDateSlots
+                          .filter(s => s.isAvailable !== false)
+                          .sort((a, b) => a.date.getTime() - b.date.getTime())
+                          .map(slot => {
+                            if (isNaN(slot.date.getTime())) return null;
+                            return (
+                              <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg bg-green-50/50">
+                                <div className="space-y-1">
+                                  <div className="font-medium">{format(slot.date, 'MMM d, yyyy')}</div>
+                                  <div className="flex items-center gap-2">
+                                    <Input
+                                      type="time"
+                                      value={slot.startTime}
+                                      onChange={(e) => handleSpecificDateSlotChange(slot.id, 'startTime', e.target.value)}
+                                      className="w-24 h-8"
+                                    />
+                                    <span>-</span>
+                                    <Input
+                                      type="time"
+                                      value={slot.endTime}
+                                      onChange={(e) => handleSpecificDateSlotChange(slot.id, 'endTime', e.target.value)}
+                                      className="w-24 h-8"
+                                    />
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveSpecificDateSlot(slot.id)}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Blocked Slots Section */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                      Cancelled / Blocked Slots
+                      <Badge variant="outline" className="text-xs font-normal">Created from Calendar</Badge>
+                    </h3>
+                    {specificDateSlots.filter(s => s.isAvailable === false).length === 0 ? (
+                      <p className="text-sm text-muted-foreground italic">
+                        No slots blocked from the calendar.
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        {specificDateSlots
+                          .filter(s => s.isAvailable === false)
+                          .sort((a, b) => a.date.getTime() - b.date.getTime())
+                          .map(slot => {
+                            if (isNaN(slot.date.getTime())) return null;
+                            return (
+                              <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg bg-red-50/50 border-red-100">
+                                <div className="space-y-1">
+                                  <div className="font-medium text-red-900">{format(slot.date, 'MMM d, yyyy')}</div>
+                                  <div className="flex items-center gap-2 text-sm text-red-700">
+                                    <span>{slot.startTime} - {slot.endTime}</span>
+                                    <span className="text-xs font-semibold uppercase tracking-wider">(Blocked)</span>
+                                  </div>
+                                </div>
                                 <div className="flex items-center gap-2">
-                                  <Input
-                                    type="time"
-                                    value={slot.startTime}
-                                    onChange={(e) => handleSpecificDateSlotChange(slot.id, 'startTime', e.target.value)}
-                                    className="w-24 h-8"
-                                  />
-                                  <span>-</span>
-                                  <Input
-                                    type="time"
-                                    value={slot.endTime}
-                                    onChange={(e) => handleSpecificDateSlotChange(slot.id, 'endTime', e.target.value)}
-                                    className="w-24 h-8"
-                                  />
+                                  <span className="text-xs text-muted-foreground mr-2">Delete to Restore</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRemoveSpecificDateSlot(slot.id)}
+                                  >
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                  </Button>
                                 </div>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveSpecificDateSlot(slot.id)}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  )}
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
