@@ -12,7 +12,9 @@ Deno.serve(async (req) => {
 
     try {
         const { to } = await req.json();
-        const targetEmail = to || "confirmation-test@wezet.xyz";
+        // Ensure to is a string and trim whitespace
+        const cleanTo = typeof to === 'string' ? to.trim() : "";
+        const targetEmail = cleanTo || "confirmation-test@wezet.xyz";
 
         // Initialize Supabase Client
         const supabase = createClient(

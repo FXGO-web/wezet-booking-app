@@ -475,9 +475,9 @@ export function SettingsPage() {
                         toast.error("Please set a Notification Email first to receive the test.");
                         return;
                       }
-                      toast.info(`Sending test email to ${notifyEmail}...`);
-                      await settingsAPI.testEmail(notifyEmail);
-                      toast.success(`Test email sent to ${notifyEmail}!`);
+                      toast.info(`Sending test email to ${notifyEmail.trim()}...`);
+                      await settingsAPI.testEmail(notifyEmail.trim());
+                      toast.success(`Test email sent to ${notifyEmail.trim()}!`);
                     } catch (error: any) {
                       toast.error(`Failed to send test email: ${error.message}`);
                     }
