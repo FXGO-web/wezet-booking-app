@@ -44,16 +44,49 @@ Deno.serve(async (req) => {
     const body = await req.text();
     let event;
 
-    try {
-        event = await stripe.webhooks.constructEventAsync(
+    // Helper to try verification with a secret
+    const verifyWithSecret = async (secret: string) => {
+        return await stripe.webhooks.constructEventAsync(
             body,
             signature,
-            STRIPE_WEBHOOK_SIGNING_SECRET || "",
+            secret,
             undefined,
             cryptoProvider
         );
+    };
+
+    try {
+        // 1. Try Environment Variable First
+        let secret = Deno.env.get("STRIPE_WEBHOOK_SIGNING_SECRET")?.trim();
+
+        if (secret) {
+            try {
+                event = await verifyWithSecret(secret);
+            } catch (envErr) {
+                console.warn(`Env Var secret verification failed: ${envErr.message}. Trying DB...`);
+                // Verification with Env Var failed, will try DB below
+                secret = null;
+            }
+        }
+
+        // 2. Try DB if Env Var missing or failed
+        if (!secret || !event) {
+            const supabaseSettings = createClient(
+                Deno.env.get("SUPABASE_URL") ?? "",
+                Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+            );
+            const { data } = await supabaseSettings.from("platform_settings").select("stripe_webhook_secret").single();
+
+            if (data?.stripe_webhook_secret) {
+                console.log("Attempting verification with DB secret...");
+                event = await verifyWithSecret(data.stripe_webhook_secret);
+            } else {
+                throw new Error("No Stripe Webhook Secret found in Env or DB");
+            }
+        }
+
     } catch (err: any) {
-        console.error(`Webhook signature verification failed: ${err.message}`);
+        console.error(`Webhook signature verification failed completely: ${err.message}`);
         return new Response(`Webhook Error: ${err.message}`, { status: 400 });
     }
 
@@ -114,23 +147,38 @@ Deno.serve(async (req) => {
 
             // Send Confirmation Email via Resend
             let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+            let emailTemplate = null;
 
-            // Fallback: Try to get RESEND_API_KEY from DB if not in Env
+            // Fallback: Try to get RESEND_API_KEY and Template from DB if not in Env
             if (!RESEND_API_KEY) {
                 console.log("RESEND_API_KEY missing in env, attempting to fetch from database...");
                 try {
                     const { data: settings } = await supabase
                         .from("platform_settings")
-                        .select("resend_api_key")
+                        .select("resend_api_key, email_template_confirmation") // Fetch template too
                         .single();
                     if (settings?.resend_api_key) {
                         RESEND_API_KEY = settings.resend_api_key;
+                        emailTemplate = settings.email_template_confirmation; // Store template
                         console.log("RESEND_API_KEY fetched from database.");
                     } else {
                         console.error("RESEND_API_KEY not found in database settings either.");
                     }
                 } catch (err) {
                     console.error("Error fetching settings for RESEND_API_KEY:", err);
+                }
+            } else {
+                // Even if we have API KEY, let's try to get the template if the user wants custom ones
+                try {
+                    const { data: settings } = await supabase
+                        .from("platform_settings")
+                        .select("email_template_confirmation")
+                        .single();
+                    if (settings?.email_template_confirmation) {
+                        emailTemplate = settings.email_template_confirmation;
+                    }
+                } catch (err) {
+                    console.log("Could not fetch custom template, using default.");
                 }
             }
 
@@ -144,20 +192,28 @@ Deno.serve(async (req) => {
                     const dateObj = new Date(sessionData?.start_time);
                     const dateStr = dateObj.toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
                     const timeStr = dateObj.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit' });
+                    const clientName = session.customer_details?.name || "Client";
 
                     const customerEmail = session.customer_details?.email || session.customer_email;
+
                     if (customerEmail) {
-                        const res = await fetch("https://api.resend.com/emails", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "Authorization": `Bearer ${RESEND_API_KEY}`
-                            },
-                            body: JSON.stringify({
-                                from: "Wezet <confirmations@wezet.xyz>",
-                                to: [customerEmail],
-                                subject: `Booking Confirmed: ${sessionName}`,
-                                html: `
+                        let htmlContent = "";
+
+                        if (emailTemplate) {
+                            // Replace placeholders in custom template
+                            htmlContent = emailTemplate
+                                .replace(/{{client_name}}/g, clientName)
+                                .replace(/{{session_name}}/g, sessionName)
+                                .replace(/{{date}}/g, dateStr)
+                                .replace(/{{time}}/g, timeStr)
+                                .replace(/{{instructor}}/g, instructorName)
+                                .replace(/{{location}}/g, locationName)
+                                .replace(/{{address}}/g, locationAddress)
+                                .replace(/{{price}}/g, `${bookingData.price} ${bookingData.currency}`)
+                                .replace(/{{booking_id}}/g, bookingData.id);
+                        } else {
+                            // Default Hardcoded Template
+                            htmlContent = `
                                     <!DOCTYPE html>
                                     <html>
                                     <head>
@@ -170,7 +226,6 @@ Deno.serve(async (req) => {
                                             .detail-row { margin-bottom: 10px; }
                                             .label { font-weight: bold; color: #666; }
                                             .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #999; }
-                                            .button { display: inline-block; padding: 10px 20px; background-color: #000; color: #fff; text-decoration: none; border-radius: 4px; margin-top: 20px; }
                                         </style>
                                     </head>
                                     <body>
@@ -179,7 +234,7 @@ Deno.serve(async (req) => {
                                                 <h1>WEZET</h1>
                                                 <p>Booking Confirmed</p>
                                             </div>
-                                            <p>Hi there,</p>
+                                            <p>Hi ${clientName},</p>
                                             <p>We are excited to confirm your booking for <strong>${sessionName}</strong>.</p>
                                             
                                             <div class="details">
@@ -200,7 +255,20 @@ Deno.serve(async (req) => {
                                         </div>
                                     </body>
                                     </html>
-                                `
+                                `;
+                        }
+
+                        const res = await fetch("https://api.resend.com/emails", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                                "Authorization": `Bearer ${RESEND_API_KEY}`
+                            },
+                            body: JSON.stringify({
+                                from: "Wezet <confirmations@wezet.xyz>",
+                                to: [customerEmail],
+                                subject: `Booking Confirmed: ${sessionName}`,
+                                html: htmlContent
                             })
                         });
                         const emailData = await res.json();
