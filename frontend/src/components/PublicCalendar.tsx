@@ -70,6 +70,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [allServices, setAllServices] = useState<any[]>([]);
+
+  console.log(`Render PublicCalendar. allServices count: ${allServices.length}`);
+
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
