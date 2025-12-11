@@ -483,6 +483,44 @@ export function AvailabilityManagement() {
     );
   }
 
+  import { supabase } from "../utils/supabase";
+
+  // ... inside component ...
+
+  const handleRepairDec19 = async () => {
+    if (!selectedMember) return;
+    if (!confirm("This will delete ALL availability slots (active and blocked) for Dec 19, 2025. You will need to re-add the good slots. Continue?")) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('availability_exceptions')
+        .delete()
+        .eq('instructor_id', selectedMember)
+        .eq('date', '2025-12-19');
+
+      if (error) throw error;
+
+      toast.success("Dec 19 cleared successfully. Please re-add your slots.");
+      // Refresh data
+      const { specificDates } = await availabilityAPI.get(selectedMember, selectedService === 'all' ? undefined : selectedService);
+      if (specificDates) {
+        const validSpecificDates = specificDates
+          .map((s: any) => ({
+            ...s,
+            date: new Date(s.date),
+            isAvailable: s.is_available
+          }))
+          .filter((s: any) => !isNaN(s.date.getTime()));
+        setSpecificDateSlots(validSpecificDates);
+      }
+    } catch (e: any) {
+      toast.error("Repair failed: " + e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 space-y-8">
@@ -494,19 +532,24 @@ export function AvailabilityManagement() {
               Configure weekly schedules, blocked dates & time slots
             </p>
           </div>
-          <Button onClick={handleSaveSchedule} disabled={saving || !selectedMember}>
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Save All Changes
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="destructive" onClick={handleRepairDec19} disabled={saving || !selectedMember}>
+              Fix Dec 19 Glitch
+            </Button>
+            <Button onClick={handleSaveSchedule} disabled={saving || !selectedMember}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Save All Changes
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Team Member Selector */}
