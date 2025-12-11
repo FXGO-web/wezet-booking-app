@@ -444,7 +444,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         const { services } = await sessionsAPI.getAll();
         console.log("Fetched services:", services?.length);
 
-        if (!services || services.length === 0) {
+        if (services?.length > 0) {
+          console.log("Loaded Service IDs:", services.map((s: any) => `${s.id} (${s.name})`));
+        } else if (!services || services.length === 0) {
           console.warn("Warning: No services returned from API");
           // Only show toast if we expected services and got none (optional, might be annoying if truly empty)
           // toast.error("Warning: No services loaded. Calendar may be empty."); 
