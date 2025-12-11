@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
         const { data: profiles, error: profilesError } = await supabase
             .from("profiles")
             .select("id, full_name, avatar_url, role")
-            .in("role", ["instructor", "admin", "team_member"]); // Include relevant roles
+            .neq("role", "customer"); // Include ALL non-customer roles (admin, instructor, team_member, owner, etc.)
         if (profilesError) throw profilesError;
 
         const teamMembers = profiles?.map((p: any) => ({
