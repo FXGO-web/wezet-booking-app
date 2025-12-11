@@ -166,7 +166,11 @@ Deno.serve(async (req) => {
             }
         }
 
-        return new Response(JSON.stringify({ slots: results, teamMembers }), {
+        return new Response(JSON.stringify({
+            slots: results,
+            teamMembers,
+            debug_exceptions: specific  // Expose raw exceptions
+        }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
         });
