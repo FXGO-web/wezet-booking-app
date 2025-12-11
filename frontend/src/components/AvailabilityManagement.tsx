@@ -1,4 +1,4 @@
-// Trigger Vercel deployment
+
 import { useState, useEffect } from "react";
 import { supabase } from "../utils/supabase/client";
 
