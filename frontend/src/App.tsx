@@ -40,6 +40,7 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { NotificationCenter } from "./components/NotificationCenter";
 import { ProgramsRetreats } from "./components/ProgramsRetreats";
 import { ProductsOnDemand } from "./components/ProductsOnDemand";
+import { BookingSuccess } from "./components/BookingSuccess";
 import {
   Wind,
   Sparkles,
@@ -99,8 +100,13 @@ function AppContent() {
     const categoryParam = params.get("category");
     const programIdParam = params.get("programId");
 
+    const successParam = params.get("success");
+
     if (viewParam) {
       setActiveView(viewParam);
+    }
+    if (successParam === "true") {
+      setActiveView("booking-success");
     }
     if (embedParam) {
       setEmbedMode(embedParam === "1" || embedParam === "true");
@@ -689,6 +695,15 @@ function AppContent() {
       <div>
         <HeaderBar onBack={() => setActiveView("home")} />
         <AuthPage mode="update-password" />
+      </div>
+    );
+  }
+
+  if (activeView === "booking-success") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("home")} />
+        <BookingSuccess onGoToDashboard={() => setActiveView("client-dashboard")} />
       </div>
     );
   }

@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
                 },
             ],
             mode: 'payment',
-            success_url: `${return_url}${return_url.includes('?') ? '&' : '?'}success=true&session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${return_url}${return_url.includes('?') ? '&' : '?'}view=booking-success&session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${return_url}${return_url.includes('?') ? '&' : '?'}canceled=true`,
             customer_email: customer_email,
             metadata: {
