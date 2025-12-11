@@ -267,7 +267,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
 
           if (slot.template_id) {
             const s = allServices.find((s: any) => String(s.id) === String(slot.template_id));
-            if (s) applicableServices.push(s);
+            if (s) {
+              applicableServices.push(s);
+            } else {
+              console.warn(`Slot ${slot.date} ${slot.start} has template_id ${slot.template_id} but service not found in allServices (count: ${allServices.length})`);
+            }
           } else {
             // Generic slot: find all services for this instructor
             applicableServices = allServices.filter((s: any) =>
@@ -298,14 +302,19 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
             // FILTER BY CATEGORY IF ACTIVE
             if (activeCategory && serviceDetails) {
               const catName = typeof serviceDetails.category === 'object' ? serviceDetails.category?.name : (serviceDetails.category || "General");
+
               if (catName?.toLowerCase() !== activeCategory.toLowerCase()) {
+                // console.log(`Skipping service ${serviceDetails.name} (Cat: ${catName}) due to filter ${activeCategory}`);
                 return;
               }
             }
             // If we are filtering by category and this is a generic fallback (serviceDetails is null), we should probably skip it 
             // OR we risk showing generic slots for correct category queries if we are not careful.
             // Safe bet: if filtering, only show matched services.
-            if (activeCategory && !serviceDetails) return;
+            if (activeCategory && !serviceDetails) {
+              console.log("Skipping generic slot because activeCategory is set:", activeCategory);
+              return;
+            }
 
 
             // Calculate duration/end time based on service or default
