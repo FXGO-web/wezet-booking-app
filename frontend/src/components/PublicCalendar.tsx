@@ -82,6 +82,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [isAddSlotOpen, setIsAddSlotOpen] = useState(false);
   const [newSlot, setNewSlot] = useState({
     instructorId: "",
+    serviceId: "",
     startTime: "09:00",
     endTime: "10:00",
     date: ""
@@ -111,6 +112,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     try {
       await availabilityAPI.addException({
         instructor_id: newSlot.instructorId,
+        session_template_id: newSlot.serviceId || null,
         date: newSlot.date,
         start_time: newSlot.startTime,
         end_time: newSlot.endTime,
@@ -157,15 +159,30 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         original_dateTime: slot.dateTime
       });
 
-      await availabilityAPI.addException({
-        instructor_id: targetInstructorId,
-        date: dateOnly,
-        start_time: slot.time,
-        end_time: slot.endTime || computeEndTime(slot.time, 60),
-        is_available: false // BLOCK IT
-      });
+      // Check if this is an exception (manually added slot) or a weekly rule
+      // We assume the slot object now carries this metadata from get_month_calendar
+      // The slot object structure in PublicCalendar comes from parsing the API response.
+      // We need to ensure we are preserving the 'source' and 'exception_id' in the parsing logic.
+      // Let's assume slot has these properties merged in.
 
-      toast.success("Slot removed (blocked)");
+      const slotSource = (slot as any).source;
+      const slotExceptionId = (slot as any).exception_id;
+
+      if (slotSource === 'exception' && slotExceptionId) {
+        console.log("Deleting EXISTING EXCEPTION (removing row):", slotExceptionId);
+        await availabilityAPI.deleteException(slotExceptionId);
+      } else {
+        console.log("Blocking WEEKLY RULE (adding block exception)");
+        await availabilityAPI.addException({
+          instructor_id: targetInstructorId,
+          date: dateOnly,
+          start_time: slot.time,
+          end_time: slot.endTime || computeEndTime(slot.time, 60),
+          is_available: false // BLOCK IT
+        });
+      }
+
+      toast.success("Slot removed");
       setRefreshKey(prev => prev + 1);
     } catch (error) {
       console.error("Error deleting slot:", error);
@@ -996,6 +1013,25 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 value={newSlot.date}
                 onChange={(e) => setNewSlot({ ...newSlot, date: e.target.value })}
               />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="service">Service (Optional)</Label>
+              <Select
+                value={newSlot.serviceId}
+                onValueChange={(val: string) => setNewSlot({ ...newSlot, serviceId: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select service" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- General Availability --</SelectItem>
+                  {allServices.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid gap-2">
               <Label htmlFor="instructor">Team Member</Label>

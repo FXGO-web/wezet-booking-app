@@ -678,12 +678,11 @@ export function AvailabilityManagement() {
                   <CardTitle>Specific Date Slots</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Added Slots Section */}
+                  {/* Added Slots Section (Only show active additions) */}
                   <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground">Extra Added Slots</h3>
                     {specificDateSlots.filter(s => s.isAvailable !== false).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">
-                        No extra slots added.
+                      <p className="text-sm text-muted-foreground italic text-center py-8">
+                        No extra slots added. Used to add specific sessions on top of weekly schedule.
                       </p>
                     ) : (
                       <div className="space-y-3">
@@ -726,48 +725,12 @@ export function AvailabilityManagement() {
                     )}
                   </div>
 
-                  {/* Blocked Slots Section */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                      Cancelled / Blocked Slots
-                      <Badge variant="outline" className="text-xs font-normal">Created from Calendar</Badge>
-                    </h3>
-                    {specificDateSlots.filter(s => s.isAvailable === false).length === 0 ? (
-                      <p className="text-sm text-muted-foreground italic">
-                        No slots blocked from the calendar.
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {specificDateSlots
-                          .filter(s => s.isAvailable === false)
-                          .sort((a, b) => a.date.getTime() - b.date.getTime())
-                          .map(slot => {
-                            if (isNaN(slot.date.getTime())) return null;
-                            return (
-                              <div key={slot.id} className="flex items-center justify-between p-3 border rounded-lg bg-red-50/50 border-red-100">
-                                <div className="space-y-1">
-                                  <div className="font-medium text-red-900">{format(slot.date, 'MMM d, yyyy')}</div>
-                                  <div className="flex items-center gap-2 text-sm text-red-700">
-                                    <span>{slot.startTime} - {slot.endTime}</span>
-                                    <span className="text-xs font-semibold uppercase tracking-wider">(Blocked)</span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs text-muted-foreground mr-2">Delete to Restore</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleRemoveSpecificDateSlot(slot.id)}
-                                  >
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
+                  {/* 
+                      NOTE: Blocked slots (isAvailable: false) are part of specificDateSlots state 
+                      but are HIDDEN from the UI as per user request ("Nada de bloqueos"). 
+                      They will be preserved and sent back to API on save because handleSaveSchedule 
+                      uses the full specificDateSlots array.
+                  */}
                 </CardContent>
               </Card>
             </div>

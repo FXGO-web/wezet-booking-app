@@ -1061,34 +1061,25 @@ export const availabilityAPI = {
 
     if (error) throw error;
     return data;
-  },
+  }));
 
-  blockDates: async (teamMemberId: string, dates: any[]) => {
-    if (dates.length === 0) return [];
+const { data, error } = await supabase
+  .from("availability_blocked_dates")
+  .insert(rows)
+  .select();
 
-    const rows: Database["public"]["Tables"]["availability_blocked_dates"]["Insert"][] = dates.map((d: any) => ({
-      instructor_id: teamMemberId,
-      date: d.date,
-      reason: d.reason ?? null,
-    }));
+if (error) throw error;
+return data;
+      },
 
-    const { data, error } = await supabase
-      .from("availability_blocked_dates")
-      .insert(rows)
-      .select();
-
-    if (error) throw error;
-    return data;
-  },
-
-  unblockDate: async (_teamMemberId: string, dateId: string) => {
-    const { error } = await supabase
-      .from("availability_blocked_dates")
-      .delete()
-      .eq("id", dateId);
-    if (error) throw error;
-    return { success: true };
-  },
+unblockDate: async (_teamMemberId: string, dateId: string) => {
+  const { error } = await supabase
+    .from("availability_blocked_dates")
+    .delete()
+    .eq("id", dateId);
+  if (error) throw error;
+  return { success: true };
+},
 
   getAvailableSlots: async () => {
     return { slots: [] };

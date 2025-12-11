@@ -110,32 +110,37 @@ Deno.serve(async (req) => {
                     end: w.end_time,
                     template_id: w.session_template_id,
                     instructor_id: w.instructor_id,
-                    location_id: w.location_id
+                    location_id: w.location_id,
+                    source: 'rule', // It's a weekly rule
+                    rule_id: w.id
                 }));
 
-                // Apply Blocks to WEEKLY slots
+                // Apply Blocks - Filter out slots that match blocked times
                 if (toBlock.length > 0) {
+                    console.log(`[${dateStr}] Instructor ${instId} has blocking exceptions:`, toBlock);
                     mySlots = mySlots.filter((slot: any) => {
-                        const slotStart = slot.start.substring(0, 5);
+                        const slotStart = slot.start.substring(0, 5); // HH:MM
                         const isBlocked = toBlock.some((b: any) => {
                             const blockStart = b.start_time ? b.start_time.substring(0, 5) : "";
                             return blockStart === slotStart;
                         });
+                        if (isBlocked) {
+                            console.log(`  -> Blocking slot at ${slotStart} due to exception`);
+                        }
                         return !isBlocked;
                     });
                 }
 
                 // Add Extra Slots (Exceptions that are additions)
-                // BUT: Filter them too! If I added a slot manually, then decided to "delete" (block) it later, 
-                // the block must exist.
-                // Ideally, deleting a manual slot should REMOVE the row, but if the UI "adds a false exception", we must respect it.
                 let extraSlots = toAdd.map((s: any) => ({
                     date: dateStr,
                     start: s.start_time,
                     end: s.end_time,
                     template_id: s.session_template_id,
                     instructor_id: s.instructor_id,
-                    location_id: s.location_id
+                    location_id: s.location_id,
+                    source: 'exception', // It's a manual exception
+                    exception_id: s.id
                 }));
 
                 // Apply Blocks to EXTRA slots too
