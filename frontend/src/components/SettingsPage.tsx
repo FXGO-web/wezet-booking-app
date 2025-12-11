@@ -46,6 +46,9 @@ export function SettingsPage() {
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState("");
   const [testMode, setTestMode] = useState(true);
 
+  // Email Integration
+  const [resendApiKey, setResendApiKey] = useState("");
+
   // Email Templates
   const [bookingConfirm, setBookingConfirm] = useState(
     "Hi {{client_name}}, your booking with {{team_member}} on {{date}} is confirmed!"
@@ -434,6 +437,35 @@ export function SettingsPage() {
             >
               {saving === "Payment Settings" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Payment Settings
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Email Integration */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" /> Email Integration
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="resendApiKey">Resend API Key (re_...)</Label>
+              <Input
+                id="resendApiKey"
+                value={resendApiKey}
+                onChange={(e) => setResendApiKey(e.target.value)}
+                type="password"
+                placeholder="re_..."
+              />
+              <p className="text-xs text-muted-foreground">Required for sending confirmation emails.</p>
+            </div>
+            <Button
+              onClick={handleSaveEmailIntegration}
+              disabled={saving === "Email Integration"}
+            >
+              {saving === "Email Integration" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save Email Integration
             </Button>
           </CardContent>
         </Card>

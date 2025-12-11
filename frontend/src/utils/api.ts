@@ -721,6 +721,7 @@ export const settingsAPI = {
       stripePublic: s.stripe_public_key,
       stripeSecret: s.stripe_secret_key,
       stripeWebhookSecret: s.stripe_webhook_secret,
+      resendApiKey: s.resend_api_key, // Added Resend Key
       testMode: s.stripe_test_mode,
       bookingConfirm: s.email_template_confirmation,
       bookingReminder: s.email_template_reminder,
@@ -757,6 +758,9 @@ export const settingsAPI = {
     if (settings.stripeSecret) mapped.stripe_secret_key = settings.stripeSecret;
     if (settings.stripeWebhookSecret) mapped.stripe_webhook_secret = settings.stripeWebhookSecret;
     if (settings.testMode !== undefined) mapped.stripe_test_mode = settings.testMode;
+
+    // Email (Resend)
+    if (settings.resendApiKey) mapped.resend_api_key = settings.resendApiKey;
 
     // Email Templates
     if (settings.bookingConfirm) mapped.email_template_confirmation = settings.bookingConfirm;
