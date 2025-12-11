@@ -465,6 +465,7 @@ export const bookingsAPI = {
             b.session?.instructor?.full_name ?? "Unknown instructor",
           mentorId: b.session?.instructor?.id,
           practitionerAvatar: b.session?.instructor?.avatar_url,
+          startTime: start ? start.toISOString() : null, // Added for robust date handling
           date: start ? start.toISOString().slice(0, 10) : "",
           time: start
             ? start.toLocaleTimeString([], {

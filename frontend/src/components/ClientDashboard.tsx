@@ -78,7 +78,11 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
         const categoryCounts: Record<string, number> = {};
 
         bookings.forEach((booking: any) => {
-          const bookingDate = new Date(`${booking.date}T${booking.time}`);
+          // Use robust startTime if available, else fallback
+          const bookingDate = booking.startTime
+            ? new Date(booking.startTime)
+            : new Date(`${booking.date}T${booking.time}`);
+
           const style = getCategoryStyle(booking.category);
 
           const sessionObj = {
@@ -89,6 +93,8 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
             icon: style.icon,
             color: style.color,
             bgColor: style.bgColor,
+            // Ensure date object is available for sorting
+            _dateObj: bookingDate
           };
 
           if (bookingDate >= now) {
@@ -101,9 +107,9 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
           }
         });
 
-        // Sort bookings
-        upcoming.sort((a, b) => new Date(`${a.date}T${a.time}`).getTime() - new Date(`${b.date}T${a.time}`).getTime());
-        past.sort((a, b) => new Date(`${b.date}T${b.time}`).getTime() - new Date(`${a.date}T${a.time}`).getTime());
+        // Sort bookings using the pre-calculated date object
+        upcoming.sort((a, b) => a._dateObj.getTime() - b._dateObj.getTime());
+        past.sort((a, b) => b._dateObj.getTime() - a._dateObj.getTime());
 
         setUpcomingSessions(upcoming);
         setPastSessions(past);

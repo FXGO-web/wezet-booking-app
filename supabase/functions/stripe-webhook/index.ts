@@ -86,6 +86,7 @@ Deno.serve(async (req) => {
 
             if (error) {
                 console.error("Error updating booking:", error);
+                // We return 500 here to let Stripe retry later
                 return new Response("Error updating booking", { status: 500 });
             }
 
@@ -112,7 +113,27 @@ Deno.serve(async (req) => {
             }
 
             // Send Confirmation Email via Resend
-            const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+            let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
+            // Fallback: Try to get RESEND_API_KEY from DB if not in Env
+            if (!RESEND_API_KEY) {
+                console.log("RESEND_API_KEY missing in env, attempting to fetch from database...");
+                try {
+                    const { data: settings } = await supabase
+                        .from("platform_settings")
+                        .select("resend_api_key")
+                        .single();
+                    if (settings?.resend_api_key) {
+                        RESEND_API_KEY = settings.resend_api_key;
+                        console.log("RESEND_API_KEY fetched from database.");
+                    } else {
+                        console.error("RESEND_API_KEY not found in database settings either.");
+                    }
+                } catch (err) {
+                    console.error("Error fetching settings for RESEND_API_KEY:", err);
+                }
+            }
+
             if (RESEND_API_KEY && bookingData) {
                 try {
                     const sessionData = bookingData.sessions;
@@ -189,6 +210,7 @@ Deno.serve(async (req) => {
                     }
                 } catch (emailError) {
                     console.error("Error sending email:", emailError);
+                    // Do NOT throw error here, as main booking was confirmed.
                 }
             } else {
                 console.log("RESEND_API_KEY not set or booking data lookup failed, skipping email.");
