@@ -1073,6 +1073,15 @@ export const availabilityAPI = {
 
     console.log("Adding availability exception:", payload);
 
+    // CLEANUP: Remove any blocking exceptions (is_available: false) at this time
+    // This prevents "Ghost Blocks" from hiding the new slot
+    await supabase.from("availability_exceptions")
+      .delete()
+      .eq("instructor_id", exception.instructor_id)
+      .eq("date", exception.date)
+      .eq("start_time", exception.start_time.slice(0, 5))
+      .eq("is_available", false);
+
     const { data, error } = await supabase
       .from("availability_exceptions")
       .insert(payload)
