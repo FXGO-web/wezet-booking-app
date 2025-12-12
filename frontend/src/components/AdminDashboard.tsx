@@ -23,6 +23,7 @@ import {
   Loader2,
   TrendingUp,
   Layers,
+  GraduationCap,
 } from "lucide-react";
 import { CurrencySelector } from "./CurrencySelector";
 import { statsAPI, bookingsAPI, settingsAPI } from "../utils/api";
@@ -97,6 +98,12 @@ const navigationCards: NavigationCard[] = [
     description: "Manage studios and session venues",
     icon: MapPin,
     route: "locations-directory",
+  },
+  {
+    title: "E-Learning Content",
+    description: "Manage courses, modules and lessons",
+    icon: GraduationCap,
+    route: "admin-education",
   },
   {
     title: "Analytics & Reports",

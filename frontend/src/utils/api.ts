@@ -1364,5 +1364,75 @@ export const educationAPI = {
 
     if (error) throw error;
     return data;
+  },
+
+  // Admin / CRUD Methods
+  updateCourse: async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("education_courses")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  createModule: async (module: any) => {
+    const { data, error } = await supabase
+      .from("education_modules")
+      .insert(module)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  updateModule: async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("education_modules")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  deleteModule: async (id: string) => {
+    const { error } = await supabase
+      .from("education_modules")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
+  },
+
+  createLesson: async (lesson: any) => {
+    const { data, error } = await supabase
+      .from("education_lessons")
+      .insert(lesson)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  updateLesson: async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("education_lessons")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  deleteLesson: async (id: string) => {
+    const { error } = await supabase
+      .from("education_lessons")
+      .delete()
+      .eq("id", id);
+    if (error) throw error;
   }
 };

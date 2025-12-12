@@ -44,6 +44,7 @@ import { BookingSuccess } from "./components/BookingSuccess";
 import { EducationDashboard } from "./components/education/EducationDashboard";
 import { ModuleOverview } from "./components/education/ModuleOverview";
 import { LessonPlayer } from "./components/education/LessonPlayer";
+import { EducationAdmin } from "./components/admin/EducationAdmin";
 import {
   Wind,
   Sparkles,
@@ -711,6 +712,15 @@ function AppContent() {
   // ============================
   // EDUCATION ROUTES
   // ============================
+  if (activeView === "admin-education") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
+        <EducationAdmin onBack={() => setActiveView("admin-dashboard")} />
+      </div>
+    );
+  }
+
   if (activeView === "education-dashboard") {
     return (
       <div>
