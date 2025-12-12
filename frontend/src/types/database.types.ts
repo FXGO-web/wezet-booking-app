@@ -329,6 +329,163 @@ export interface Database {
                     created_at?: string
                 }
             }
+            education_courses: {
+                Row: {
+                    id: string
+                    title: string
+                    slug: string
+                    description: string | null
+                    thumbnail_url: string | null
+                    price_eur: number | null
+                    price_dkk: number | null
+                    is_published: boolean
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    title: string
+                    slug: string
+                    description?: string | null
+                    thumbnail_url?: string | null
+                    price_eur?: number | null
+                    price_dkk?: number | null
+                    is_published?: boolean
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    title?: string
+                    slug?: string
+                    description?: string | null
+                    thumbnail_url?: string | null
+                    price_eur?: number | null
+                    price_dkk?: number | null
+                    is_published?: boolean
+                    created_at?: string
+                }
+            }
+            education_modules: {
+                Row: {
+                    id: string
+                    course_id: string
+                    title: string
+                    description: string | null
+                    order_index: number
+                    theme_color: string | null
+                    image_url: string | null
+                    is_locked_by_default: boolean
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    course_id: string
+                    title: string
+                    description?: string | null
+                    order_index: number
+                    theme_color?: string | null
+                    image_url?: string | null
+                    is_locked_by_default?: boolean
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    course_id?: string
+                    title?: string
+                    description?: string | null
+                    order_index?: number
+                    theme_color?: string | null
+                    image_url?: string | null
+                    is_locked_by_default?: boolean
+                    created_at?: string
+                }
+            }
+            education_lessons: {
+                Row: {
+                    id: string
+                    module_id: string
+                    title: string
+                    description: string | null
+                    video_url: string | null
+                    video_provider: 'vimeo' | 'youtube' | 'custom'
+                    duration_minutes: number | null
+                    content_markdown: string | null
+                    order_index: number
+                    resources: Json[] | null
+                    created_at: string
+                }
+                Insert: {
+                    id?: string
+                    module_id: string
+                    title: string
+                    description?: string | null
+                    video_url?: string | null
+                    video_provider?: 'vimeo' | 'youtube' | 'custom'
+                    duration_minutes?: number | null
+                    content_markdown?: string | null
+                    order_index: number
+                    resources?: Json[] | null
+                    created_at?: string
+                }
+                Update: {
+                    id?: string
+                    module_id?: string
+                    title?: string
+                    description?: string | null
+                    video_url?: string | null
+                    video_provider?: 'vimeo' | 'youtube' | 'custom'
+                    duration_minutes?: number | null
+                    content_markdown?: string | null
+                    order_index?: number
+                    resources?: Json[] | null
+                    created_at?: string
+                }
+            }
+            education_enrollments: {
+                Row: {
+                    id: string
+                    user_id: string
+                    course_id: string
+                    status: string
+                    enrolled_at: string
+                }
+                Insert: {
+                    id?: string
+                    user_id: string
+                    course_id: string
+                    status?: string
+                    enrolled_at?: string
+                }
+                Update: {
+                    id?: string
+                    user_id?: string
+                    course_id?: string
+                    status?: string
+                    enrolled_at?: string
+                }
+            }
+            education_progress: {
+                Row: {
+                    user_id: string
+                    lesson_id: string
+                    is_completed: boolean
+                    completed_at: string | null
+                    last_watched_position_seconds: number | null
+                }
+                Insert: {
+                    user_id: string
+                    lesson_id: string
+                    is_completed?: boolean
+                    completed_at?: string | null
+                    last_watched_position_seconds?: number | null
+                }
+                Update: {
+                    user_id?: string
+                    lesson_id?: string
+                    is_completed?: boolean
+                    completed_at?: string | null
+                    last_watched_position_seconds?: number | null
+                }
+            }
             platform_settings: {
                 Row: {
                     id: string

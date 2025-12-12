@@ -1255,3 +1255,112 @@ export const programsAPI = {
     return { success: true };
   },
 };
+// ===========================================================
+// EDUCATION (E-LEARNING)
+// ===========================================================
+
+export const educationAPI = {
+    getCourses: async () => {
+        const { data, error } = await supabase
+            .from("education_courses")
+            .select("*")
+            .eq("is_published", true)
+            .order("created_at");
+
+        if (error) {
+            console.warn("Education tables likely missing:", error);
+            return [];
+        }
+        return data ?? [];
+    },
+
+    getCourseBySlug: async (slug: string) => {
+        const { data, error } = await supabase
+            .from("education_courses")
+            .select("*")
+            .eq("slug", slug)
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    getModules: async (courseId: string) => {
+        const { data, error } = await supabase
+            .from("education_modules")
+            .select("*")
+            .eq("course_id", courseId)
+            .order("order_index");
+
+        if (error) throw error;
+        return data ?? [];
+    },
+
+    getLessons: async (moduleId: string) => {
+        const { data, error } = await supabase
+            .from("education_lessons")
+            .select("*, progress:education_progress(is_completed)")
+            .eq("module_id", moduleId)
+            .order("order_index");
+
+        if (error) throw error;
+
+        // Flatten progress
+        return (data ?? []).map((l: any) => ({
+            ...l,
+            isCompleted: l.progress?.[0]?.is_completed ?? false
+        }));
+    },
+
+    getLesson: async (lessonId: string) => {
+        const { data, error } = await supabase
+            .from("education_lessons")
+            .select("*")
+            .eq("id", lessonId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    enroll: async (courseId: string, userId: string) => {
+        const { data, error } = await supabase
+            .from("education_enrollments")
+            .insert({ course_id: courseId, user_id: userId, status: 'active' })
+            .select()
+            .single();
+
+        if (error) {
+            // Ignore duplicate key error (already enrolled)
+            if (error.code === '23505') return { status: 'already_enrolled' };
+            throw error;
+        }
+        return data;
+    },
+
+    getEnrollments: async (userId: string) => {
+        const { data, error } = await supabase
+            .from("education_enrollments")
+            .select("*, course:education_courses(*)")
+            .eq("user_id", userId);
+
+        if (error) throw error;
+        return data ?? [];
+    },
+
+    markLessonComplete: async (lessonId: string, userId: string, isCompleted: boolean) => {
+        const { data, error } = await supabase
+            .from("education_progress")
+            .upsert({
+                lesson_id: lessonId,
+                user_id: userId,
+                is_completed: isCompleted,
+                completed_at: isCompleted ? new Date().toISOString() : null
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    }
+};
