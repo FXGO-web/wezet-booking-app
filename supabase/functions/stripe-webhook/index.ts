@@ -1,5 +1,6 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Stripe from "https://esm.sh/stripe@14.14.0";
+import { getBookingConfirmationTemplate } from "../_shared/email-templates.ts";
 
 // Initialize Supabase Client for fetching settings if needed
 // WARNING: Ensure 'STRIPE_SECRET_KEY' is set in your Supabase project secrets.
@@ -199,8 +200,8 @@ Deno.serve(async (req) => {
                     if (customerEmail) {
                         let htmlContent = "";
 
+                        // Replace placeholders in custom template
                         if (emailTemplate) {
-                            // Replace placeholders in custom template
                             htmlContent = emailTemplate
                                 .replace(/{{client_name}}/g, clientName)
                                 .replace(/{{session_name}}/g, sessionName)
@@ -212,50 +213,18 @@ Deno.serve(async (req) => {
                                 .replace(/{{price}}/g, `${bookingData.price} ${bookingData.currency}`)
                                 .replace(/{{booking_id}}/g, bookingData.id);
                         } else {
-                            // Default Hardcoded Template
-                            htmlContent = `
-                                    <!DOCTYPE html>
-                                    <html>
-                                    <head>
-                                        <style>
-                                            body { font-family: sans-serif; line-height: 1.6; color: #333; }
-                                            .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
-                                            .header { text-align: center; padding-bottom: 20px; border-bottom: 1px solid #eee; }
-                                            .header h1 { color: #000; margin: 0; }
-                                            .details { margin: 20px 0; background: #f9f9f9; padding: 20px; border-radius: 8px; }
-                                            .detail-row { margin-bottom: 10px; }
-                                            .label { font-weight: bold; color: #666; }
-                                            .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #999; }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class="container">
-                                            <div class="header">
-                                                <h1>WEZET</h1>
-                                                <p>Booking Confirmed</p>
-                                            </div>
-                                            <p>Hi ${clientName},</p>
-                                            <p>We are excited to confirm your booking for <strong>${sessionName}</strong>.</p>
-                                            
-                                            <div class="details">
-                                                <div class="detail-row"><span class="label">Date:</span> ${dateStr}</div>
-                                                <div class="detail-row"><span class="label">Time:</span> ${timeStr}</div>
-                                                <div class="detail-row"><span class="label">Instructor:</span> ${instructorName}</div>
-                                                <div class="detail-row"><span class="label">Location:</span> ${locationName}</div>
-                                                ${locationAddress ? `<div class="detail-row"><span class="label">Address:</span> ${locationAddress}</div>` : ''}
-                                                <div class="detail-row"><span class="label">Price:</span> ${bookingData.price} ${bookingData.currency}</div>
-                                            </div>
-
-                                            <p>Please arrive 10 minutes before the session starts.</p>
-                                            
-                                            <div class="footer">
-                                                <p>Booking ID: ${bookingData.id}</p>
-                                                <p>&copy; ${new Date().getFullYear()} Wezet. All rights reserved.</p>
-                                            </div>
-                                        </div>
-                                    </body>
-                                    </html>
-                                `;
+                            // Use Shared Template
+                            htmlContent = getBookingConfirmationTemplate({
+                                clientName,
+                                sessionName,
+                                date: dateStr,
+                                time: timeStr,
+                                instructorName,
+                                locationName,
+                                address: locationAddress,
+                                price: `${bookingData.price} ${bookingData.currency}`,
+                                bookingId: bookingData.id
+                            });
                         }
 
                         const res = await fetch("https://api.resend.com/emails", {

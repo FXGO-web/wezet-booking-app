@@ -76,66 +76,56 @@ function AppContent() {
     "booking",
     "auth",
     "wordpress-calendar-widget",
+    "program-checkout",
   ];
   const { user, loading, signOut, getAccessToken } = useAuth();
-  const [activeView, setActiveView] = useState("home");
-  const [initializingData, setInitializingData] =
-    useState(false);
-  const [bookingPreselection, setBookingPreselection] =
-    useState<any>(null);
-  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(null);
-  const [returnView, setReturnView] = useState<string | null>(
-    null,
-  );
-  const [embedMode, setEmbedMode] = useState(false);
+  // Initialize state from URL to prevent race conditions
+  const [activeView, setActiveView] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("success") === "true") return "booking-success";
+    return params.get("view") || "home";
+  });
+
+  const [initializingData, setInitializingData] = useState(false);
+  const [bookingPreselection, setBookingPreselection] = useState<any>(null);
+
+  const [selectedProgramId, setSelectedProgramId] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("programId");
+  });
+
+  const [returnView, setReturnView] = useState<string | null>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("return");
+  });
+
+  const [embedMode, setEmbedMode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const val = params.get("embed");
+    return val === "1" || val === "true";
+  });
   const userBadgeLabel =
     user?.user_metadata?.role || "Client";
 
-  // Handle URL parameters for routing
+  const [initialCategory, setInitialCategory] = useState<string | undefined>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("category") || undefined;
+  });
+
+  // Handle URL cleanup and specific side effects
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const viewParam = params.get("view");
-    const embedParam = params.get("embed");
-    const returnParam = params.get("return");
-    const categoryParam = params.get("category");
-    const programIdParam = params.get("programId");
-
     const successParam = params.get("success");
 
-    if (viewParam) {
-      setActiveView(viewParam);
-    }
     if (successParam === "true") {
-      setActiveView("booking-success");
       // Clean URL to prevent reload loops, but keep session_id for the UI
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.delete("success");
       window.history.replaceState({}, '', newUrl.toString());
     }
-    if (embedParam) {
-      setEmbedMode(embedParam === "1" || embedParam === "true");
-    }
-    if (returnParam) {
-      setReturnView(returnParam);
-    }
-
-    // Handle category filter for calendar
-    if (categoryParam) {
-      // We'll pass this via a temporary hack or context, but practically
-      // passing it to PublicCalendar directly is better. 
-      // For now, let's store it in a state variable if we want it to persist during this session
-      // But Wait: The PublicCalendar component is rendered conditionally below.
-      // We need a state for initialCategory to pass it down.
-      setInitialCategory(categoryParam);
-    }
-
-    // Handle Deep Link to Program
-    if (viewParam === "program-checkout" && programIdParam) {
-      setSelectedProgramId(programIdParam);
-    }
   }, []);
 
-  const [initialCategory, setInitialCategory] = useState<string | undefined>(undefined);
+
 
   useEffect(() => {
     if (user && activeView === "auth") {
@@ -518,10 +508,10 @@ function AppContent() {
   if (activeView === "program-checkout") {
     return (
       <div>
-        <HeaderBar onBack={() => {
+        {!embedMode && <HeaderBar onBack={() => {
           setActiveView(returnView || "home");
           setSelectedProgramId(null);
-        }} />
+        }} />}
         <ProgramCheckout
           programId={selectedProgramId}
           onBack={() => {
