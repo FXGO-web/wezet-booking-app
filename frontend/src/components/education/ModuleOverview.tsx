@@ -48,69 +48,85 @@ export function ModuleOverview({ moduleId, onNavigate }: ModuleOverviewProps) {
     if (!module) return <div>Module not found</div>;
 
     return (
-        <div className="flex h-screen bg-white">
-            {/* Sidebar */}
+        <div className="flex h-screen bg-[#FDFBF7]">
+            {/* Sidebar - Hidden on mobile, can use drawer later */}
             <EducationSidebar
                 modules={modulesList}
                 activeModuleId={moduleId}
                 onNavigate={onNavigate}
-                className="hidden md:flex"
+                className="hidden lg:flex"
             />
 
             {/* Main Content */}
             <div className="flex-1 overflow-auto">
-                {/* Hero Header */}
-                <div className="bg-[#f8f7f4] border-b p-8 md:p-12">
-                    <Button variant="ghost" className="pl-0 hover:bg-transparent text-gray-500 mb-4" onClick={() => onNavigate('education-dashboard')}>
-                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-                    </Button>
+                <main className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16">
 
-                    <h1 className="text-3xl md:text-4xl font-light text-gray-900 mb-4">
-                        {module.title}
-                    </h1>
-                    <p className="text-gray-600 max-w-2xl text-lg font-light leading-relaxed">
-                        {module.description}
-                    </p>
-
-                    <div className="mt-8 flex items-center gap-4">
-                        {lessons.length > 0 && (
-                            <Button
-                                size="lg"
-                                className="bg-[#E87C55] hover:bg-[#d66c45] text-white rounded-full px-8 shadow-lg shadow-orange-200"
-                                onClick={() => onNavigate('education-lesson', lessons[0].id)}
-                            >
-                                <Play className="w-4 h-4 mr-2" fill="currentColor" /> Start Module
-                            </Button>
-                        )}
-                        <span className="text-sm text-gray-500">{lessons.length} Lessons</span>
+                    {/* Back Nav */}
+                    <div className="mb-8">
+                        <div
+                            className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-gray-800 transition-colors cursor-pointer"
+                            onClick={() => onNavigate('education-dashboard')}
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" /> All Modules
+                        </div>
                     </div>
-                </div>
 
-                {/* Lesson List Body */}
-                <div className="p-8 md:p-12 max-w-3xl">
-                    <h3 className="text-sm font-bold uppercase tracking-widest text-gray-400 mb-6">Curriculum</h3>
+                    {/* Hero Header */}
+                    <div className="mb-16">
+                        <span className="inline-block px-3 py-1 rounded-full bg-orange-50 text-[#E87C55] text-xs font-bold tracking-widest uppercase mb-6">
+                            Module {module.order_index}
+                        </span>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-gray-900 mb-6 tracking-tight leading-tight">
+                            {module.title}
+                        </h1>
+                        <p className="text-xl text-gray-500 font-light leading-relaxed max-w-3xl">
+                            {module.description}
+                        </p>
 
+                        <div className="mt-8 pt-8 border-t border-gray-100 flex items-center gap-6">
+                            {lessons.length > 0 && (
+                                <Button
+                                    size="lg"
+                                    className="bg-[#E87C55] hover:bg-[#D66C45] text-white rounded-full px-8 h-12 text-base shadow-xl shadow-orange-200/50 transition-transform hover:scale-105"
+                                    onClick={() => onNavigate('education-lesson', lessons[0].id)}
+                                >
+                                    <Play className="w-4 h-4 mr-2 fill-current" /> Start Learning
+                                </Button>
+                            )}
+                            <div className="text-sm font-medium text-gray-400">
+                                {lessons.length} Lessons • {lessons.reduce((acc, l) => acc + (l.duration_minutes || 0), 0)} Minutes Total
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Curriculum List */}
                     <div className="space-y-4">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 pl-2">Lessons in this module</h3>
+
                         {lessons.map((lesson, idx) => (
                             <div
                                 key={lesson.id}
                                 onClick={() => onNavigate('education-lesson', lesson.id)}
-                                className="group flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-orange-200 hover:shadow-md cursor-pointer transition-all bg-white"
+                                className="group flex items-center gap-6 p-6 rounded-2xl bg-white border border-transparent hover:border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer"
                             >
-                                <div className="h-10 w-10 rounded-full bg-orange-50 flex items-center justify-center text-[#E87C55] font-medium shrink-0 group-hover:bg-[#E87C55] group-hover:text-white transition-colors">
+                                <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 font-mono text-lg group-hover:bg-[#E87C55] group-hover:text-white transition-colors shrink-0">
                                     {idx + 1}
                                 </div>
                                 <div className="flex-1">
-                                    <h4 className="font-medium text-gray-900 group-hover:text-[#E87C55] transition-colors">{lesson.title}</h4>
-                                    <p className="text-sm text-gray-500 line-clamp-1">{lesson.description || `${lesson.duration_minutes || 15} min video`}</p>
+                                    <h4 className="text-lg font-medium text-gray-900 group-hover:text-[#E87C55] transition-colors mb-1">{lesson.title}</h4>
+                                    <p className="text-sm text-gray-400 font-light">{lesson.description || `${lesson.duration_minutes || 15} min video`}</p>
                                 </div>
-                                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Play className="w-5 h-5 text-[#E87C55]" fill="currentColor" />
+                                <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:border-[#E87C55] group-hover:text-[#E87C55] transition-colors">
+                                    <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
                                 </div>
                             </div>
                         ))}
+
+                        {lessons.length === 0 && (
+                            <div className="text-center py-12 text-gray-300 italic">No lessons available yet.</div>
+                        )}
                     </div>
-                </div>
+                </main>
             </div>
         </div>
     );

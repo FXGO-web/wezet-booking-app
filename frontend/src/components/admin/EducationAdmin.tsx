@@ -148,6 +148,19 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         } catch (e) { console.error(e); }
     }
 
+    const toggleModuleLock = async (mod: any, e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent opening the module
+        try {
+            const newStatus = !mod.is_locked_by_default;
+            await educationAPI.updateModule(mod.id, { is_locked_by_default: newStatus });
+            // Optimistic update or reload
+            const updated = modules.map(m => m.id === mod.id ? { ...m, is_locked_by_default: newStatus } : m);
+            setModules(updated);
+        } catch (err) {
+            console.error("Failed to toggle lock", err);
+        }
+    }
+
 
     return (
         <div className="min-h-screen bg-background p-6 md:p-12 max-w-7xl mx-auto">
@@ -203,68 +216,85 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {m.is_locked_by_default && <Lock className="w-4 h-4 text-muted-foreground" />}
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className={m.is_locked_by_default ? "text-amber-500 hover:text-amber-600 hover:bg-amber-50" : "text-gray-300 hover:text-green-600"}
+                                    onClick={(e) => toggleModuleLock(m, e)}
+                                    title={m.is_locked_by_default ? "Locked (Click to Unlock)" : "Unlocked (Click to Lock)"}
+                                >
+                                    {m.is_locked_by_default ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
+                                </Button>
                                 <Button size="sm" variant="ghost" onClick={() => openModule(m)}>Manage Lessons <ChevronRight className="w-4 h-4 ml-1" /></Button>
                             </div>
                         </div>
                     ))}
                 </div>
             )}
-
+            {/* Lessons View */}
             {!loading && view === "lessons" && (
                 <div className="space-y-4">
-                    <div className="flex justify-end">
+                    <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg">
+                        <div>
+                            <h3 className="font-medium text-lg">Module Content</h3>
+                            <p className="text-sm text-muted-foreground">Manage the videos and lessons for this module.</p>
+                        </div>
                         <Button onClick={() => startEditLesson(null)}><Plus className="w-4 h-4 mr-2" /> Add Lesson</Button>
                     </div>
 
-                    {lessons.length === 0 && <div className="text-center py-12 text-muted-foreground">No lessons allowed yet.</div>}
+                    {lessons.length === 0 && <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">No lessons added yet. Click above to add one.</div>}
 
-                    {lessons.map((l) => (
-                        <div key={l.id} className="border p-4 rounded-xl bg-card flex justify-between items-center">
-                            <div className="flex items-center gap-4">
-                                <div className="w-8 h-8 flex items-center justify-center text-muted-foreground font-mono text-sm">
-                                    {l.order_index}
-                                </div>
-                                <div>
-                                    <h3 className="font-medium">{l.title}</h3>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                        {l.video_url ? <span className="flex items-center text-green-600"><Play className="w-3 h-3 mr-1" /> Video Set</span> : <span className="text-red-400">No Video</span>}
-                                        <span>• {l.duration_minutes} min</span>
+                    <div className="space-y-3">
+                        {lessons.map((l) => (
+                            <div key={l.id} className="border p-4 rounded-xl bg-card flex justify-between items-center hover:bg-muted/20 transition-colors">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-8 h-8 flex items-center justify-center text-muted-foreground font-mono text-sm bg-muted rounded-md">
+                                        {l.order_index}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-medium">{l.title}</h3>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                                            {l.video_url ? <span className="flex items-center text-green-600 bg-green-50 px-2 py-0.5 rounded-full"><Play className="w-3 h-3 mr-1" /> Video Set</span> : <span className="text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">No Video</span>}
+                                            <span>• {l.duration_minutes} min</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="flex items-center gap-1">
+                                    <Button size="icon" variant="ghost" onClick={() => startEditLesson(l)}><Edit2 className="w-4 h-4 text-primary" /></Button>
+                                    <Button size="icon" variant="ghost" className="text-red-400 hover:text-red-700 hover:bg-red-50" onClick={() => deleteLessonItem(l.id)}><Trash2 className="w-4 h-4" /></Button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Button size="icon" variant="ghost" onClick={() => startEditLesson(l)}><Edit2 className="w-4 h-4" /></Button>
-                                <Button size="icon" variant="ghost" className="text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => deleteLessonItem(l.id)}><Trash2 className="w-4 h-4" /></Button>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             )}
 
+            {/* Edit Lesson Form */}
             {!loading && view === "edit-lesson" && (
-                <div className="max-w-2xl mx-auto space-y-6 bg-card p-8 rounded-xl border">
-                    <div className="space-y-4">
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Lesson Title</label>
+                <div className="max-w-2xl mx-auto space-y-6 bg-card p-8 rounded-xl border shadow-sm">
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Lesson Title</label>
                             <Input
                                 value={editForm.title}
                                 onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                                placeholder="e.g. 1.1 Welcome"
+                                placeholder="e.g. 1.1 Welcome to Breathwork"
+                                className="text-lg"
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Order Index</label>
+                        <div className="grid grid-cols-2 gap-6">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Order Index</label>
                                 <Input
                                     type="number"
                                     value={editForm.order_index}
                                     onChange={(e) => setEditForm({ ...editForm, order_index: parseInt(e.target.value) })}
                                 />
+                                <p className="text-[10px] text-muted-foreground">Determines the sequence in the module.</p>
                             </div>
-                            <div>
-                                <label className="text-sm font-medium mb-1 block">Duration (min)</label>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Duration (min)</label>
                                 <Input
                                     type="number"
                                     value={editForm.duration_minutes || 0}
@@ -273,36 +303,42 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                             </div>
                         </div>
 
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Description</label>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Description</label>
                             <Textarea
                                 value={editForm.description || ''}
                                 onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                                placeholder="Brief summary..."
-                                rows={3}
+                                placeholder="Brief summary of what this lesson covers..."
+                                rows={4}
                             />
                         </div>
 
-                        <div>
-                            <label className="text-sm font-medium mb-1 block">Video URL (WordPress MP4 or Vimeo)</label>
+                        <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                            <div className="flex items-center gap-2 mb-2">
+                                <FileVideo className="w-4 h-4 text-primary" />
+                                <label className="text-sm font-medium">Video Content</label>
+                            </div>
+
                             <Input
                                 value={editForm.video_url || ''}
                                 onChange={(e) => setEditForm({ ...editForm, video_url: e.target.value })}
-                                placeholder="https://wezet.xyz/.../video.mp4"
+                                placeholder="https://..."
                             />
-                            <p className="text-xs text-muted-foreground mt-1">
-                                Paste the full direct link for WordPress files, or the Vimeo/YouTube URL.
-                            </p>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                                <p>Supported formats:</p>
+                                <ul className="list-disc list-inside ml-1">
+                                    <li><strong>WordPress / Direct MP4:</strong> Paste the full URL ending in .mp4</li>
+                                    <li><strong>Vimeo / YouTube:</strong> Paste the shareable link</li>
+                                </ul>
+                            </div>
                         </div>
 
-                        {/* Markdown content could be added here later */}
-
                     </div>
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button variant="ghost" onClick={goBack}>Cancel</Button>
-                        <Button onClick={saveLesson} disabled={saving}>
+                    <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+                        <Button variant="outline" onClick={goBack}>Cancel</Button>
+                        <Button onClick={saveLesson} disabled={saving} className="min-w-[120px]">
                             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                            Save Lesson
+                            {selectedLesson ? "Save Changes" : "Create Lesson"}
                         </Button>
                     </div>
                 </div>
