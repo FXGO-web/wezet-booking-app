@@ -347,7 +347,7 @@ function AppContent() {
                   window.open(`${base}/?view=client-dashboard`, "_blank");
                 }}
               >
-                Ir al panel
+                User Panel
               </Button>
             </div>
           </div>
