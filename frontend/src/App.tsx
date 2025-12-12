@@ -897,18 +897,19 @@ function AppContent() {
             )}
 
             {/* Education Module - "Premium" look */}
+            {/* Education Module */}
             <button
               onClick={() => setActiveView("education-dashboard")}
-              className="group text-left p-8 rounded-2xl border bg-gradient-to-br from-orange-50 to-white hover:shadow-xl transition-all hover:scale-[1.02] border-[#E87C55]/30 md:col-span-2"
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] md:col-span-2"
             >
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-[#E87C55] flex items-center justify-center text-white shadow-lg shadow-orange-200">
-                  <GraduationCap className="h-6 w-6" />
+                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                  <GraduationCap className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-[#E87C55] font-semibold">Wezet Breathwork Education</h3>
-                    <Badge variant="secondary" className="bg-white text-[#E87C55] border-[#E87C55]/20">New</Badge>
+                    <h3>Wezet Breathwork Education</h3>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">New</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Master the art of breathwork. 6 Modules, 20 Weeks.

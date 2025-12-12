@@ -12,7 +12,7 @@ interface EducationAdminProps {
 export function EducationAdmin({ onBack }: EducationAdminProps) {
     const [loading, setLoading] = useState(true);
     const [courses, setCourses] = useState<any[]>([]);
-    const [view, setView] = useState<"courses" | "modules" | "lessons" | "edit-lesson">("courses");
+    const [view, setView] = useState<"courses" | "modules" | "lessons" | "edit-lesson" | "edit-module">("courses");
 
     // Selection State
     const [selectedCourse, setSelectedCourse] = useState<any>(null);
@@ -87,6 +87,11 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
             setView("lessons");
             return;
         }
+        if (view === "edit-module") {
+            setIsEditing(false);
+            setView("modules");
+            return;
+        }
         if (view === "lessons") {
             setSelectedModule(null);
             setLessons([]);
@@ -102,16 +107,20 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         if (onBack) onBack();
     };
 
-    // CRUD Handlers (Simplyfied for brevity, normally modals)
-    // For this MVP, we will assume standard CRUD logic or inline editing not fully fleshed out 
-    // unless requesting specific "Edit Lesson" screen. 
-    // Let's build a simple Edit Form for Lesson only, as that's the priority (video uploads).
-
+    // CRUD Handlers
     const startEditLesson = (lesson: any = null) => {
         setSelectedLesson(lesson);
         setEditForm(lesson || { title: "", description: "", video_url: "", order_index: lessons.length + 1 });
         setIsEditing(true);
         setView("edit-lesson");
+    };
+
+    const startEditModule = (module: any, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedModule(module);
+        setEditForm({ ...module });
+        setIsEditing(true);
+        setView("edit-module");
     };
 
     const saveLesson = async () => {
@@ -140,6 +149,32 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         }
     };
 
+    const saveModule = async () => {
+        if (!selectedModule) return;
+        setSaving(true);
+        try {
+            await educationAPI.updateModule(selectedModule.id, {
+                title: editForm.title,
+                description: editForm.description,
+                image_url: editForm.image_url
+            });
+            // Reload all modules to update list
+            if (activeCourseId) await loadModules(activeCourseId);
+            else if (selectedCourse) await loadModules(selectedCourse.id);
+            // Fallback reload logic if state is tricky
+
+            setView("modules");
+            setIsEditing(false);
+        } catch (e) {
+            alert("Error saving module");
+            console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const activeCourseId = selectedCourse?.id; // Helper
+
     const deleteLessonItem = async (id: string) => {
         if (!confirm("Are you sure? This cannot be undone.")) return;
         try {
@@ -153,7 +188,7 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         try {
             const newStatus = !mod.is_locked_by_default;
             await educationAPI.updateModule(mod.id, { is_locked_by_default: newStatus });
-            // Optimistic update or reload
+            // Optimistic update
             const updated = modules.map(m => m.id === mod.id ? { ...m, is_locked_by_default: newStatus } : m);
             setModules(updated);
         } catch (err) {
@@ -225,6 +260,7 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                                 >
                                     {m.is_locked_by_default ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
                                 </Button>
+                                <Button size="sm" variant="ghost" onClick={(e) => startEditModule(m, e)} title="Edit Module Settings"><Edit2 className="w-4 h-4 text-muted-foreground hover:text-primary" /></Button>
                                 <Button size="sm" variant="ghost" onClick={() => openModule(m)}>Manage Lessons <ChevronRight className="w-4 h-4 ml-1" /></Button>
                             </div>
                         </div>
@@ -339,6 +375,59 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                         <Button onClick={saveLesson} disabled={saving} className="min-w-[120px]">
                             {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                             {selectedLesson ? "Save Changes" : "Create Lesson"}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Module Form */}
+            {!loading && view === "edit-module" && (
+                <div className="max-w-2xl mx-auto space-y-6 bg-card p-8 rounded-xl border shadow-sm">
+                    <h2 className="text-xl font-semibold mb-4">Edit Module</h2>
+                    <div className="space-y-6">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Module Title</label>
+                            <Input
+                                value={editForm.title}
+                                onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                placeholder="e.g. Module 1: Foundations"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Description</label>
+                            <Textarea
+                                value={editForm.description || ''}
+                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                                rows={3}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Cover Image URL</label>
+                            <div className="flex gap-2">
+                                <Input
+                                    value={editForm.image_url || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, image_url: e.target.value })}
+                                    placeholder="https://..."
+                                />
+                            </div>
+                            <p className="text-xs text-muted-foreground">Paste a direct link to an image (e.g. from WordPress media library).</p>
+                        </div>
+
+                        {editForm.image_url && (
+                            <div className="mt-4 rounded-xl overflow-hidden border h-48 w-full bg-gray-100 relative">
+                                <img src={editForm.image_url} alt="Preview" className="h-full w-full object-cover" />
+                                <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded">Preview</div>
+                            </div>
+                        )}
+
+                    </div>
+                    <div className="flex justify-end gap-3 pt-6 border-t mt-6">
+                        <Button variant="outline" onClick={goBack}>Cancel</Button>
+                        <Button onClick={saveModule} disabled={saving} className="min-w-[120px]">
+                            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Save Changes
                         </Button>
                     </div>
                 </div>
