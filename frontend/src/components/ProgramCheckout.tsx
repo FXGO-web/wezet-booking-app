@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuth } from "../hooks/useAuth";
 import { AuthPage } from "./AuthPage";
+import { CurrencySelector } from "./CurrencySelector";
 
 interface ProgramCheckoutProps {
     programId: string | null;
@@ -206,10 +207,13 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
             <div className="max-w-4xl mx-auto space-y-8">
                 {/* Header */}
                 <div className="space-y-4">
-                    <Button variant="ghost" onClick={onBack} className="pl-0 hover:pl-2 transition-all">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Back to Calendar
-                    </Button>
+                    <div className="flex items-center justify-between">
+                        <Button variant="ghost" onClick={onBack} className="pl-0 hover:pl-2 transition-all">
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Back to Calendar
+                        </Button>
+                        <CurrencySelector />
+                    </div>
                     <h1>Book Your Program</h1>
                     <p className="text-muted-foreground">
                         Complete your registration for this transformative experience
@@ -386,7 +390,7 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
 
                                     <div className="flex items-center justify-between font-semibold text-lg">
                                         <span>Total</span>
-                                        <span>{convertAndFormat(program.price || 0, program.currency || "EUR")}</span>
+                                        <span>{formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}</span>
                                     </div>
                                 </CardContent>
                             </Card>
