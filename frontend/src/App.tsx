@@ -140,6 +140,17 @@ function AppContent() {
     }
   }, [user, activeView]);
 
+  // Role Helpers
+  // Derived state for roles
+  const role = (user?.user_metadata?.role || "Client").toLowerCase();
+  const isAdminEmail = user?.email?.toLowerCase().includes("admin") ||
+    user?.email?.toLowerCase().includes("fx@fxcreativestudio.com") ||
+    user?.email?.toLowerCase() === "contact@mroffbeat.com" ||
+    user?.email?.toLowerCase() === "hanna@wezet.xyz";
+
+  const isAdmin = role === "admin" || isAdminEmail;
+  const isInstructor = role === "instructor" || role === "teacher";
+
   // Check Access Permissions
   useEffect(() => {
     if (loading) return;
@@ -155,7 +166,10 @@ function AppContent() {
       "services-categories",
       "availability-management",
       "locations-directory",
-      "bookings-directory"
+      "bookings-directory",
+      "education-dashboard", // Added
+      "education-module",    // Added
+      "education-lesson"     // Added
     ];
 
     if (!user && protectedViews.includes(activeView)) {
@@ -165,35 +179,26 @@ function AppContent() {
 
     // 2. Check Role Permissions
     if (user) {
-      const role = (user.user_metadata?.role || "Client").toLowerCase();
-      // Special check for admin emails just in case metadata is out of sync
-      const isAdminEmail = user.email?.toLowerCase().includes("admin") ||
-        user.email?.toLowerCase().includes("fx@fxcreativestudio.com") ||
-        user.email?.toLowerCase() === "contact@mroffbeat.com" ||
-        user.email?.toLowerCase() === "hanna@wezet.xyz";
-
-      const isAdmin = role === "admin" || isAdminEmail;
-      const isInstructor = role === "instructor" || role === "teacher";
-      // const isClient = role === "client";
-
       const adminRoutes = [
         "admin-dashboard",
         "analytics-dashboard",
         "user-management",
-        "settings-page"
+        "settings-page",
+        "admin-education",
+        "education-dashboard", // Added to admin-only for now
+        "education-module",
+        "education-lesson"
       ];
 
       const teamRoutes = [
         "team-dashboard",
-        "availability-management", // Maybe instructors need this?
-        "bookings-directory" // Instructors might need to see bookings
+        "availability-management",
+        "bookings-directory"
       ];
 
       if (adminRoutes.includes(activeView) && !isAdmin) {
         console.warn(`Access Denied to ${activeView} for role: ${role}`);
         setActiveView("home");
-        // Optionally show a toast here if we had access to it inside this effect easily
-        // But setActiveView will trigger re-render so we are good.
       }
 
       if (teamRoutes.includes(activeView) && !isAdmin && !isInstructor) {
@@ -202,7 +207,7 @@ function AppContent() {
       }
     }
 
-  }, [user, loading, activeView]);
+  }, [user, loading, activeView, isAdmin, isInstructor, role]);
 
   useEffect(() => {
     if (embedMode && !EMBED_ALLOWED_VIEWS.includes(activeView)) {
@@ -899,17 +904,22 @@ function AppContent() {
             {/* Education Module - "Premium" look */}
             {/* Education Module */}
             <button
-              onClick={() => setActiveView("education-dashboard")}
-              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] md:col-span-2"
+              onClick={() => isAdmin ? setActiveView("education-dashboard") : null}
+              disabled={!isAdmin}
+              className={`group text-left p-8 rounded-2xl border bg-card transition-all md:col-span-2 relative overflow-hidden ${isAdmin ? "hover:shadow-xl hover:scale-[1.02] cursor-pointer" : "opacity-80 cursor-not-allowed"}`}
             >
               <div className="space-y-4">
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                  <GraduationCap className="h-6 w-6 text-primary" />
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-colors ${isAdmin ? "bg-primary/10 group-hover:bg-primary/20" : "bg-muted"}`}>
+                  <GraduationCap className={`h-6 w-6 ${isAdmin ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3>Wezet Breathwork Education</h3>
-                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">New</Badge>
+                    <h3 className={!isAdmin ? "text-muted-foreground" : ""}>Wezet Breathwork Education</h3>
+                    {isAdmin ? (
+                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">New</Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-muted-foreground/50 text-muted-foreground">Coming Soon</Badge>
+                    )}
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Master the art of breathwork. 6 Modules, 20 Weeks.
