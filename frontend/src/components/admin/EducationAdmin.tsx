@@ -137,8 +137,11 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                 }
             }
 
+            // Strip non-DB fields that might have come from the API (like isCompleted or progress)
+            const { isCompleted: _isCompleted, progress: _progress, ...safeEditForm } = editForm;
+
             const payload = {
-                ...editForm,
+                ...safeEditForm,
                 video_url: finalUrl,
                 module_id: selectedModule.id,
                 video_provider: finalUrl.includes('vimeo') ? 'vimeo' :
