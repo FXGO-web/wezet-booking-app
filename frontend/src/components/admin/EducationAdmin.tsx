@@ -127,11 +127,22 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         if (!selectedModule) return;
         setSaving(true);
         try {
+            let finalUrl = editForm.video_url || "";
+
+            // Auto-extract URL if a full HTML embed code is pasted (iframe or div)
+            if (finalUrl.includes('<iframe') || finalUrl.includes('<div')) {
+                const srcMatch = finalUrl.match(/src=["']([^"']+)["']/);
+                if (srcMatch && srcMatch[1]) {
+                    finalUrl = srcMatch[1];
+                }
+            }
+
             const payload = {
                 ...editForm,
+                video_url: finalUrl,
                 module_id: selectedModule.id,
-                video_provider: editForm.video_url?.includes('vimeo') ? 'vimeo' :
-                    (editForm.video_url?.includes('bunny.net') || editForm.video_url?.includes('mediadelivery.net')) ? 'bunny' : 'custom'
+                video_provider: finalUrl.includes('vimeo') ? 'vimeo' :
+                    (finalUrl.includes('bunny.net') || finalUrl.includes('mediadelivery.net')) ? 'bunny' : 'custom'
             };
 
             if (selectedLesson) {
