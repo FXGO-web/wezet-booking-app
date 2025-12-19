@@ -223,42 +223,43 @@ function AppContent() {
     backLabel?: string;
   }) => (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-      <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 md:gap-3">
           {onBack ? (
             <Button
               variant="ghost"
               onClick={onBack}
-              className="px-2"
+              className="px-2 text-xs md:text-sm"
             >
-              ← {backLabel}
+              ← <span className="hidden xs:inline">{backLabel}</span><span className="xs:hidden">Back</span>
             </Button>
           ) : (
             <>
-              <img src="/logo.png" alt="Wezet Logo" className="h-8 w-auto" />
+              <img src="/logo.png" alt="Wezet Logo" className="h-6 md:h-8 w-auto" />
               {user && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge variant="secondary" className="text-[10px] md:text-xs">
                   {userBadgeLabel}
                 </Badge>
               )}
             </>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           <CurrencySelector />
           <NotificationCenter />
           {user ? (
             <>
-              <div className="text-sm text-muted-foreground hidden sm:block">
+              <div className="text-sm text-muted-foreground hidden lg:block">
                 {user.user_metadata?.name || user.email}
               </div>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={signOut}
+                className="h-8 px-2 md:px-3 text-xs md:text-sm"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
+                <LogOut className="h-3 w-3 md:h-4 md:w-4 mr-1 md:mr-2" />
+                <span className="hidden sm:inline">Sign Out</span>
               </Button>
             </>
           ) : (
@@ -266,6 +267,7 @@ function AppContent() {
               variant="default"
               size="sm"
               onClick={() => setActiveView("auth")}
+              className="h-8 text-xs md:text-sm"
             >
               Log In
             </Button>

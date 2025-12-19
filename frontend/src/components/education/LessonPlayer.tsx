@@ -90,9 +90,9 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
             <div className="flex-1 overflow-auto flex flex-col items-center">
 
                 {/* Video Stage - High-End Presentation */}
-                <div className="w-full bg-[#1A1A1A] h-[55vh] md:h-[70vh] flex items-center justify-center relative shadow-2xl overflow-hidden border-b border-[#1A1A1A]">
+                <div className="w-full bg-[#FDFBF7] flex items-center justify-center relative shadow-sm overflow-hidden border-b border-gray-100">
                     {lesson.video_url ? (
-                        <div className="w-full h-full max-w-[1600px] mx-auto relative group">
+                        <div className="w-full max-w-[1600px] mx-auto relative group aspect-video">
                             {(lesson.video_url.includes('vimeo.com') || lesson.video_url.includes('youtube.com') || lesson.video_url.includes('youtu.be')) ? (
                                 <iframe
                                     src={lesson.video_url.replace('vimeo.com/', 'player.vimeo.com/video/').replace('watch?v=', 'embed/')}
@@ -102,7 +102,7 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                 />
                             ) : (lesson.video_url.includes('bunny.net') || lesson.video_url.includes('mediadelivery.net')) ? (
                                 <iframe
-                                    src={lesson.video_url}
+                                    src={lesson.video_url.replace('/play/', '/embed/')}
                                     loading="lazy"
                                     className="absolute inset-0 w-full h-full"
                                     allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
@@ -111,7 +111,7 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                             ) : (
                                 <video
                                     controls
-                                    className="w-full h-full object-contain"
+                                    className="absolute inset-0 w-full h-full object-contain"
                                     src={lesson.video_url}
                                     controlsList="nodownload"
                                 >
@@ -120,44 +120,44 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                             )}
 
                             {/* Subtle Glass Fade */}
-                            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/60 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                            <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-black/20 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
                         </div>
                     ) : (
-                        <div className="text-white/20 flex flex-col items-center">
-                            <div className="w-24 h-24 rounded-3xl border border-white/5 bg-white/5 flex items-center justify-center mb-6">
-                                <FileVideo className="w-10 h-10" />
+                        <div className="h-[40vh] md:h-[60vh] flex flex-col items-center justify-center bg-white/40 w-full">
+                            <div className="w-20 h-20 rounded-[2rem] border border-gray-100 bg-white flex items-center justify-center mb-6 shadow-sm">
+                                <FileVideo className="w-8 h-8 text-[#E87C55]/40" />
                             </div>
-                            <p className="text-[10px] tracking-[0.3em] uppercase font-bold text-white/40">Visualizing session...</p>
+                            <p className="text-[10px] tracking-[0.3em] uppercase font-bold text-gray-400">Preparing session...</p>
                         </div>
                     )}
                 </div>
 
                 {/* Lesson Info Section */}
-                <div className="w-full max-w-6xl px-6 md:px-12 py-12 md:py-20 mb-20">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 md:gap-24">
+                <div className="w-full max-w-6xl px-4 md:px-12 py-10 md:py-20 mb-20">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 md:gap-24">
 
                         {/* Main Content Pane */}
-                        <div className="lg:col-span-8 space-y-12">
+                        <div className="lg:col-span-8 space-y-10">
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4">
                                     <div className="px-3 py-1 bg-[#E87C55]/10 text-[#E87C55] rounded-full text-[10px] font-bold tracking-[0.15em] uppercase">
                                         Active Lesson
                                     </div>
-                                    <div className="h-1 w-1 rounded-full bg-gray-300" />
+                                    <div className="h-1 w-1 rounded-full bg-gray-200" />
                                     <span className="text-xs text-muted-foreground font-semibold uppercase tracking-widest">{lesson.duration_minutes || 20} min</span>
                                 </div>
-                                <h1 className="text-4xl md:text-5xl font-bold text-[#1A1A1A] tracking-tight leading-tight">
+                                <h1 className="text-3xl md:text-5xl font-bold text-[#1A1A1A] tracking-tight leading-tight">
                                     {lesson.title}
                                 </h1>
-                                <p className="text-xl text-muted-foreground font-light leading-relaxed">
+                                <p className="text-lg md:text-xl text-muted-foreground font-light leading-relaxed">
                                     {lesson.description || "Take a deep dive into the practice with this session's core concepts."}
                                 </p>
                             </div>
 
-                            <div className="h-px bg-[#1A1A1A]/5" />
+                            <div className="h-px bg-gray-100" />
 
                             <div className="prose prose-stone max-w-none">
-                                <div className="text-gray-600 text-lg font-light leading-relaxed whitespace-pre-line space-y-8">
+                                <div className="text-gray-600 text-base md:text-lg font-light leading-relaxed whitespace-pre-line space-y-8">
                                     {lesson.content_markdown}
                                 </div>
                             </div>
@@ -168,9 +168,9 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                             <Button
                                 size="lg"
                                 className={cn(
-                                    "w-full h-16 rounded-2xl text-sm font-bold tracking-widest uppercase transition-all duration-500 shadow-xl",
+                                    "w-full h-16 rounded-2xl text-sm font-bold tracking-widest uppercase transition-all duration-500",
                                     !isCompleted
-                                        ? "bg-[#1A1A1A] hover:bg-[#E87C55] text-white shadow-[#1A1A1A]/10 hover:shadow-[#E87C55]/20"
+                                        ? "bg-[#E87C55] hover:bg-[#D96C3B] text-white shadow-xl shadow-[#E87C55]/20"
                                         : "bg-white border-2 border-green-100 text-green-600 shadow-none hover:bg-green-50"
                                 )}
                                 onClick={handleComplete}
