@@ -1,4 +1,4 @@
--import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { educationAPI } from "../../utils/api";
 import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Play, ChevronRight, Lock, Unlock, LayoutList, FileVideo } from "lucide-react";
