@@ -13,7 +13,7 @@ interface LessonPlayerProps {
 
 export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
     const { user } = useAuth();
-    const [lesson, setLesson] = useState<any>(null);
+    const [lesson, setLesson] = useState<any | null>(null);
     const [modulesList, setModulesList] = useState<any[]>([]);
     const [activeModuleId, setActiveModuleId] = useState<string>('');
     const [loading, setLoading] = useState(true);
@@ -98,6 +98,14 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                 src={lesson.video_url.replace('vimeo.com/', 'player.vimeo.com/video/').replace('watch?v=', 'embed/')}
                                 className="w-full h-full"
                                 allow="autoplay; fullscreen; picture-in-picture"
+                                allowFullScreen
+                            />
+                        ) : (lesson.video_url.includes('bunny.net') || lesson.video_url.includes('mediadelivery.net')) ? (
+                            <iframe
+                                src={lesson.video_url}
+                                loading="lazy"
+                                className="w-full h-full"
+                                allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                                 allowFullScreen
                             />
                         ) : (

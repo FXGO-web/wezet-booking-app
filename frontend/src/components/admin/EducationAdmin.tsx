@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+-import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { educationAPI } from "../../utils/api";
 import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Play, ChevronRight, Lock, Unlock, LayoutList, FileVideo } from "lucide-react";
@@ -130,7 +130,8 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
             const payload = {
                 ...editForm,
                 module_id: selectedModule.id,
-                video_provider: editForm.video_url?.includes('vimeo') ? 'vimeo' : 'custom'
+                video_provider: editForm.video_url?.includes('vimeo') ? 'vimeo' :
+                    (editForm.video_url?.includes('bunny.net') || editForm.video_url?.includes('mediadelivery.net')) ? 'bunny' : 'custom'
             };
 
             if (selectedLesson) {
@@ -363,6 +364,7 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                             <div className="text-xs text-muted-foreground space-y-1">
                                 <p>Supported formats:</p>
                                 <ul className="list-disc list-inside ml-1">
+                                    <li><strong>Bunny.net (Vaninet):</strong> Paste the embed URL (e.g. from Stream {'>'} Embed)</li>
                                     <li><strong>WordPress / Direct MP4:</strong> Paste the full URL ending in .mp4</li>
                                     <li><strong>Vimeo / YouTube:</strong> Paste the shareable link</li>
                                 </ul>
