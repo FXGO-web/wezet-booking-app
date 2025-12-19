@@ -11,7 +11,7 @@ interface ModuleOverviewProps {
 
 export function ModuleOverview({ moduleId, onNavigate }: ModuleOverviewProps) {
     const [module, setModule] = useState<any>(null);
-    const [modulesList, setModulesList] = useState<any[]>([]); // For sidebar
+    const [modulesList, setModulesList] = useState<any[]>([]);
     const [lessons, setLessons] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -49,82 +49,90 @@ export function ModuleOverview({ moduleId, onNavigate }: ModuleOverviewProps) {
 
     return (
         <div className="flex h-screen bg-[#FDFBF7]">
-            {/* Sidebar - Hidden on mobile, can use drawer later */}
             <EducationSidebar
                 modules={modulesList}
                 activeModuleId={moduleId}
                 onNavigate={onNavigate}
-                className="hidden lg:flex"
+                className="hidden lg:flex bg-white border-r border-gray-100 shadow-[20px_0_40px_-20px_rgba(0,0,0,0.02)]"
             />
 
-            {/* Main Content */}
             <div className="flex-1 overflow-auto">
-                <main className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16">
+                <main className="max-w-4xl mx-auto p-6 md:p-12 lg:p-16 space-y-12">
 
-                    {/* Back Nav */}
-                    <div className="mb-8">
-                        <div
-                            className="inline-flex items-center text-sm font-medium text-gray-400 hover:text-gray-800 transition-colors cursor-pointer"
-                            onClick={() => onNavigate('education-dashboard')}
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" /> All Modules
-                        </div>
-                    </div>
+                    {/* Header Nav */}
+                    <button
+                        onClick={() => onNavigate('education-dashboard')}
+                        className="group flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-[#E87C55] transition-colors"
+                    >
+                        <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                        <span>Back to Curriculum</span>
+                    </button>
 
-                    {/* Hero Header */}
-                    <div className="mb-16">
-                        <span className="inline-block px-3 py-1 rounded-full bg-orange-50 text-[#E87C55] text-xs font-bold tracking-widest uppercase mb-6">
+                    {/* Module Hero */}
+                    <div className="space-y-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E87C55]/10 text-[#E87C55] rounded-full text-[10px] font-bold tracking-[0.15em] uppercase">
                             Module {module.order_index}
-                        </span>
-                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-gray-900 mb-6 tracking-tight leading-tight">
+                        </div>
+                        <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-[#1A1A1A] tracking-tight leading-tight">
                             {module.title}
                         </h1>
-                        <p className="text-xl text-gray-500 font-light leading-relaxed max-w-3xl">
-                            {module.description}
+                        <p className="text-xl text-muted-foreground font-light leading-relaxed">
+                            {module.description || "Delve into the core principles and advanced techniques of professional breathwork facilitation."}
                         </p>
 
-                        <div className="mt-8 pt-8 border-t border-gray-100 flex items-center gap-6">
+                        <div className="flex items-center gap-6 pt-4">
                             {lessons.length > 0 && (
                                 <Button
                                     size="lg"
-                                    className="bg-[#E87C55] hover:bg-[#D66C45] text-white rounded-full px-8 h-12 text-base shadow-xl shadow-orange-200/50 transition-transform hover:scale-105"
                                     onClick={() => onNavigate('education-lesson', lessons[0].id)}
+                                    className="h-14 px-8 rounded-full bg-[#1A1A1A] hover:bg-[#E87C55] text-white shadow-xl shadow-[#1A1A1A]/10 hover:shadow-[#E87C55]/20 text-sm font-semibold tracking-wide transition-all duration-500"
                                 >
-                                    <Play className="w-4 h-4 mr-2 fill-current" /> Start Learning
+                                    <Play className="h-4 w-4 mr-2 fill-current" />
+                                    Start Learning
                                 </Button>
                             )}
-                            <div className="text-sm font-medium text-gray-400">
-                                {lessons.length} Lessons • {lessons.reduce((acc, l) => acc + (l.duration_minutes || 0), 0)} Minutes Total
+                            <div className="text-xs font-bold tracking-[0.15em] uppercase text-muted-foreground">
+                                {lessons.length} Lessons • {lessons.reduce((acc, l) => acc + (l.duration_minutes || 0), 0)} min total
                             </div>
                         </div>
                     </div>
 
-                    {/* Curriculum List */}
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-6 pl-2">Lessons in this module</h3>
+                    {/* Lesson Grid/List */}
+                    <div className="space-y-6 pt-12 border-t border-[#1A1A1A]/5">
+                        <h2 className="text-xs font-bold tracking-[0.2em] uppercase text-muted-foreground ml-1">Lessons included</h2>
 
-                        {lessons.map((lesson, idx) => (
-                            <div
-                                key={lesson.id}
-                                onClick={() => onNavigate('education-lesson', lesson.id)}
-                                className="group flex items-center gap-6 p-6 rounded-2xl bg-white border border-transparent hover:border-gray-100 hover:shadow-xl transition-all duration-300 cursor-pointer"
-                            >
-                                <div className="h-12 w-12 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 font-mono text-lg group-hover:bg-[#E87C55] group-hover:text-white transition-colors shrink-0">
-                                    {idx + 1}
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="text-lg font-medium text-gray-900 group-hover:text-[#E87C55] transition-colors mb-1">{lesson.title}</h4>
-                                    <p className="text-sm text-gray-400 font-light">{lesson.description || `${lesson.duration_minutes || 15} min video`}</p>
-                                </div>
-                                <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-gray-300 group-hover:border-[#E87C55] group-hover:text-[#E87C55] transition-colors">
-                                    <Play className="w-4 h-4 ml-0.5" fill="currentColor" />
-                                </div>
-                            </div>
-                        ))}
+                        <div className="grid gap-4">
+                            {lessons.map((lesson, idx) => (
+                                <button
+                                    key={lesson.id}
+                                    onClick={() => onNavigate('education-lesson', lesson.id)}
+                                    className="group text-left p-6 rounded-2xl border bg-white hover:shadow-xl transition-all hover:scale-[1.01] flex items-center gap-6"
+                                >
+                                    <div className="h-12 w-12 rounded-xl bg-gray-50 flex items-center justify-center text-[#1A1A1A]/40 font-bold group-hover:bg-[#E87C55]/10 group-hover:text-[#E87C55] transition-colors shrink-0">
+                                        {String(idx + 1).padStart(2, '0')}
+                                    </div>
 
-                        {lessons.length === 0 && (
-                            <div className="text-center py-12 text-gray-300 italic">No lessons available yet.</div>
-                        )}
+                                    <div className="flex-1 space-y-1">
+                                        <h3 className="text-lg font-semibold text-[#1A1A1A] group-hover:text-[#E87C55] transition-colors">
+                                            {lesson.title}
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground leading-relaxed">
+                                            {lesson.description || `${lesson.duration_minutes || 15} minute video lesson`}
+                                        </p>
+                                    </div>
+
+                                    <div className="w-10 h-10 rounded-full border border-gray-100 flex items-center justify-center text-muted-foreground group-hover:border-[#E87C55] group-hover:text-[#E87C55] transition-all">
+                                        <Play className="h-4 w-4 ml-0.5" fill="currentColor" />
+                                    </div>
+                                </button>
+                            ))}
+
+                            {lessons.length === 0 && (
+                                <div className="text-center py-20 bg-white/50 rounded-2xl border border-dashed border-gray-200">
+                                    <p className="text-sm text-muted-foreground italic tracking-wide">Course material is being prepared</p>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </main>
             </div>
