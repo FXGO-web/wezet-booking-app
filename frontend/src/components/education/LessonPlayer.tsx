@@ -91,12 +91,12 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
             <div className="flex-1 overflow-auto flex flex-col">
                 {/* Video Stage */}
                 {/* Video Stage */}
-                <div className="bg-black w-full aspect-video max-h-[70vh] flex items-center justify-center relative shadow-xl z-10">
+                <div className="bg-black w-full h-[60vh] md:h-[75vh] flex items-center justify-center relative shadow-xl z-10">
                     {lesson.video_url ? (
                         (lesson.video_url.includes('vimeo.com') || lesson.video_url.includes('youtube.com') || lesson.video_url.includes('youtu.be')) ? (
                             <iframe
                                 src={lesson.video_url.replace('vimeo.com/', 'player.vimeo.com/video/').replace('watch?v=', 'embed/')}
-                                className="w-full h-full"
+                                className="absolute inset-0 w-full h-full"
                                 allow="autoplay; fullscreen; picture-in-picture"
                                 allowFullScreen
                             />
@@ -104,7 +104,7 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                             <iframe
                                 src={lesson.video_url}
                                 loading="lazy"
-                                className="w-full h-full"
+                                className="absolute inset-0 w-full h-full"
                                 allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
                                 allowFullScreen
                             />
