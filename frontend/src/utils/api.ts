@@ -1434,5 +1434,72 @@ export const educationAPI = {
       .delete()
       .eq("id", id);
     if (error) throw error;
+  },
+
+  // Quizzes
+  getQuizByLessonId: async (lessonId: string) => {
+    const { data, error } = await supabase
+      .from("education_quizzes")
+      .select("*")
+      .eq("lesson_id", lessonId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  createQuiz: async (quiz: any) => {
+    const { data, error } = await supabase
+      .from("education_quizzes")
+      .insert(quiz)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  updateQuiz: async (id: string, updates: any) => {
+    const { data, error } = await supabase
+      .from("education_quizzes")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  submitQuiz: async (submission: any) => {
+    const { data, error } = await supabase
+      .from("education_quiz_submissions")
+      .upsert(submission, { onConflict: 'user_id, quiz_id' })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  getSubmission: async (quizId: string, userId: string) => {
+    const { data, error } = await supabase
+      .from("education_quiz_submissions")
+      .select("*")
+      .eq("quiz_id", quizId)
+      .eq("user_id", userId)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
+
+  // Storage
+  uploadResource: async (file: File, path: string) => {
+    const { data, error } = await supabase.storage
+      .from('education')
+      .upload(path, file, { upsert: true });
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('education')
+      .getPublicUrl(data.path);
+      
+    return publicUrl;
   }
 };

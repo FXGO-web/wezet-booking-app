@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { educationAPI } from '../../utils/api';
 import { EducationSidebar } from './EducationSidebar';
 import { Button } from "../ui/button";
-import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo } from "lucide-react";
+import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo, HelpCircle, AlertCircle, CheckCircle2 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { useAuth } from '../../hooks/useAuth';
 
@@ -19,6 +19,10 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
     const [loading, setLoading] = useState(true);
     const [marking, setMarking] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
+    const [quiz, setQuiz] = useState<any>(null);
+    const [submission, setSubmission] = useState<any>(null);
+    const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
+    const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
 
     useEffect(() => {
         async function load() {
@@ -29,17 +33,22 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                 setLesson(l);
                 setActiveModuleId(l.module_id);
 
-                // Progress check (requires manual progress fetch or join, snippet has it flattened in getLessons list but getLesson is single)
-                // Ideally we fetch progress separately.
-                // Quick hack: Use the list endpoint to find completion status or create a specific getProgress endpoint.
-                // For now, assume false until user action or better API.
+                // Load Quiz
+                const q = await educationAPI.getQuizByLessonId(lessonId);
+                setQuiz(q);
+
+                if (q && user) {
+                    const sub = await educationAPI.getSubmission(q.id, user.id);
+                    setSubmission(sub);
+                    if (sub?.is_passed) {
+                        setQuizResult({ score: sub.score, passed: true });
+                    }
+                }
 
                 // Load Sidebar
                 const courses = await educationAPI.getCourses();
                 if (courses[0]) {
                     const m = await educationAPI.getModules(courses[0].id);
-                    // Hydrate modules with lessons for sidebar... Expensive?
-                    // Sidebar needs lessons inside modules.
                     const modulesWithLessons = await Promise.all(m.map(async (mod: any) => {
                         const lessons = await educationAPI.getLessons(mod.id);
                         if (mod.id === l.module_id) {
@@ -58,7 +67,42 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
             }
         }
         load();
-    }, [lessonId]);
+    }, [lessonId, user?.id]);
+
+    const handleSubmitQuiz = async () => {
+        if (!quiz || !user) return;
+
+        let correctCount = 0;
+        quiz.questions.forEach((q: any, idx: number) => {
+            if (quizAnswers[idx] === q.correctAnswerIndex) correctCount++;
+        });
+
+        const score = Math.round((correctCount / quiz.questions.length) * 100);
+        const passed = score >= (quiz.passing_score || 80);
+
+        try {
+            setMarking(true);
+            await educationAPI.submitQuiz({
+                user_id: user.id,
+                quiz_id: quiz.id,
+                score,
+                is_passed: passed,
+                answers: quizAnswers
+            });
+
+            setQuizResult({ score, passed });
+
+            if (passed) {
+                await educationAPI.markLessonComplete(lessonId, user.id, true);
+                setIsCompleted(true);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Failed to submit quiz");
+        } finally {
+            setMarking(false);
+        }
+    };
 
     const handleComplete = async () => {
         if (!user) return;
@@ -161,6 +205,100 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                     {lesson.content_markdown}
                                 </div>
                             </div>
+
+                            {/* PPTX Viewer - Image 2 Style */}
+                            {lesson.presentation_url && (
+                                <div className="space-y-6 pt-12 border-t border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-6 bg-[#E87C55] rounded-full" />
+                                        <h3 className="text-xl font-bold text-[#1A1A1A]">Lesson Presentation</h3>
+                                    </div>
+                                    <div className="aspect-[16/10] bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden relative group">
+                                        <iframe
+                                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
+                                            className="w-full h-full border-none"
+                                            title="Presentation Viewer"
+                                        />
+                                        <a
+                                            href={lesson.presentation_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="absolute bottom-6 right-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-widest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
+                                        >
+                                            View Fullscreen
+                                        </a>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Quiz Interface - NEW */}
+                            {quiz && (
+                                <div id="lesson-quiz" className="space-y-8 pt-12 border-t border-gray-100">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-1.5 h-6 bg-[#E87C55] rounded-full" />
+                                            <h3 className="text-xl font-bold text-[#1A1A1A]">Lesson Quiz</h3>
+                                        </div>
+                                        {quizResult?.passed && (
+                                            <div className="flex items-center gap-2 text-green-600 font-bold text-xs uppercase tracking-widest bg-green-50 px-4 py-2 rounded-full">
+                                                <CheckCircle2 className="w-4 h-4" /> Passed
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {!quizResult?.passed ? (
+                                        <div className="space-y-10 bg-white p-8 md:p-12 rounded-3xl border border-gray-100 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.05)]">
+                                            {quiz.questions.map((q: any, idx: number) => (
+                                                <div key={idx} className="space-y-6">
+                                                    <h4 className="text-lg font-semibold text-[#1A1A1A]">
+                                                        <span className="text-[#E87C55] mr-2">{idx + 1}.</span>
+                                                        {q.question}
+                                                    </h4>
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        {q.options.map((opt: string, optIdx: number) => (
+                                                            <button
+                                                                key={optIdx}
+                                                                onClick={() => {
+                                                                    const newAns = [...quizAnswers];
+                                                                    newAns[idx] = optIdx;
+                                                                    setQuizAnswers(newAns);
+                                                                }}
+                                                                className={cn(
+                                                                    "p-6 text-left rounded-2xl border transition-all duration-300",
+                                                                    quizAnswers[idx] === optIdx
+                                                                        ? "bg-[#E87C55] border-[#E87C55] text-white shadow-lg shadow-[#E87C55]/20"
+                                                                        : "bg-[#FDFBF7] border-gray-100 text-gray-600 hover:border-[#E87C55]/30 hover:bg-white"
+                                                                )}
+                                                            >
+                                                                {opt}
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            ))}
+
+                                            <Button
+                                                size="lg"
+                                                className="w-full h-16 rounded-2xl bg-[#1A1A1A] hover:bg-[#E87C55] text-white font-bold tracking-[0.2em] uppercase transition-all duration-500 mt-8 disabled:opacity-30"
+                                                disabled={quizAnswers.length < quiz.questions.length || marking}
+                                                onClick={handleSubmitQuiz}
+                                            >
+                                                {marking ? <Loader2 className="animate-spin" /> : "Submit Quiz & Complete Lesson"}
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-green-50 p-12 rounded-3xl border border-green-100 flex flex-col items-center justify-center text-center space-y-4">
+                                            <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center shadow-sm mb-2">
+                                                <CheckCircle2 className="w-10 h-10 text-green-500" />
+                                            </div>
+                                            <h4 className="text-2xl font-bold text-green-900">Well Done!</h4>
+                                            <p className="text-green-700 max-w-md">
+                                                You've successfully mastered the key concepts of this lesson with a score of {quizResult.score}%.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         {/* Actions & Resources Pane */}
@@ -171,10 +309,10 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                     "w-full h-16 rounded-2xl text-sm font-bold tracking-widest uppercase transition-all duration-500",
                                     !isCompleted
                                         ? "bg-[#E87C55] hover:bg-[#D96C3B] text-white shadow-xl shadow-[#E87C55]/20"
-                                        : "bg-white border-2 border-green-100 text-green-600 shadow-none hover:bg-green-50"
+                                        : "bg-white border-2 border-green-100 text-green-600 shadow-none hover:bg-green-50 cursor-default"
                                 )}
-                                onClick={handleComplete}
-                                disabled={marking}
+                                onClick={quiz && !isCompleted ? () => document.getElementById('lesson-quiz')?.scrollIntoView({ behavior: 'smooth' }) : handleComplete}
+                                disabled={marking || (quiz && !isCompleted && !quizResult?.passed)}
                             >
                                 {marking ? (
                                     <Loader2 className="animate-spin w-5 h-5 text-white" />
@@ -183,6 +321,8 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                         <CheckCircle className="w-6 h-6" />
                                         <span>Lesson Completed</span>
                                     </div>
+                                ) : quiz ? (
+                                    "Jump to Quiz"
                                 ) : (
                                     "Mark as Complete"
                                 )}

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { educationAPI } from '../../utils/api';
 import { EducationSidebar } from './EducationSidebar';
 import { Button } from "../ui/button";
-import { Loader2, ArrowLeft, Play } from "lucide-react";
+import { Loader2, ArrowLeft, Play, FileText, Mail } from "lucide-react";
 
 interface ModuleOverviewProps {
     moduleId: string;
@@ -95,6 +95,46 @@ export function ModuleOverview({ moduleId, onNavigate }: ModuleOverviewProps) {
                                 {lessons.length} Lessons • {lessons.reduce((acc, l) => acc + (l.duration_minutes || 0), 0)} min total
                             </div>
                         </div>
+                    </div>
+
+                    {/* Resources Section - NEW */}
+                    {(module.resources && module.resources.length > 0) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-8">
+                            {module.resources.map((res: any, idx: number) => (
+                                <a
+                                    key={idx}
+                                    href={res.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="group p-6 rounded-2xl bg-white border border-gray-100 hover:border-[#E87C55]/30 hover:shadow-xl transition-all"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-500 mb-4 group-hover:bg-[#E87C55]/10 group-hover:text-[#E87C55] transition-colors">
+                                        <FileText className="w-6 h-6" />
+                                    </div>
+                                    <h3 className="font-semibold text-[#1A1A1A] group-hover:text-[#E87C55] transition-colors line-clamp-2">
+                                        {res.title}
+                                    </h3>
+                                    <p className="text-[10px] font-bold tracking-[0.1em] uppercase text-muted-foreground mt-2">
+                                        .{res.type || 'docx'} Reference
+                                    </p>
+                                </a>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Request Help - NEW */}
+                    <div className="bg-[#1A1A1A]/5 p-8 rounded-3xl border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div className="space-y-1 text-center md:text-left">
+                            <h4 className="font-bold text-[#1A1A1A]">Need guidance?</h4>
+                            <p className="text-sm text-muted-foreground">Our teachers are here to support your journey.</p>
+                        </div>
+                        <Button
+                            variant="outline"
+                            className="rounded-full border-[#1A1A1A] text-[#1A1A1A] hover:bg-[#1A1A1A] hover:text-white transition-all px-8"
+                            onClick={() => window.location.href = `mailto:${module.request_email || 'info@wezet.xyz'}`}
+                        >
+                            <Mail className="w-4 h-4 mr-2" /> Request Help
+                        </Button>
                     </div>
 
                     {/* Lesson Grid/List */}

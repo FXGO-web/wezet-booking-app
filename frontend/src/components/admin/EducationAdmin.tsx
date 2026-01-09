@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { educationAPI } from "../../utils/api";
-import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Play, ChevronRight, Lock, Unlock, LayoutList, FileVideo } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, Trash2, Edit2, Play, ChevronRight, Lock, Unlock, LayoutList, FileVideo, FileText, Upload, HelpCircle, XCircle, CheckCircle2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { cn } from "../ui/utils";
 
 interface EducationAdminProps {
     onBack?: () => void;
@@ -22,6 +23,7 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
     // Data State
     const [modules, setModules] = useState<any[]>([]);
     const [lessons, setLessons] = useState<any[]>([]);
+    const [quiz, setQuiz] = useState<any>(null);
 
     // Editing State
     const [isEditing, setIsEditing] = useState(false);
@@ -68,6 +70,15 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         }
     };
 
+    const loadQuiz = async (lessonId: string) => {
+        try {
+            const data = await educationAPI.getQuizByLessonId(lessonId);
+            setQuiz(data || { lesson_id: lessonId, questions: [] });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     // Navigation Handlers
     const openCourse = (course: any) => {
         setSelectedCourse(course);
@@ -110,7 +121,9 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
     // CRUD Handlers
     const startEditLesson = (lesson: any = null) => {
         setSelectedLesson(lesson);
-        setEditForm(lesson || { title: "", description: "", video_url: "", order_index: lessons.length + 1 });
+        setEditForm(lesson ? { ...lesson } : { title: "", description: "", video_url: "", order_index: lessons.length + 1 });
+        if (lesson) loadQuiz(lesson.id);
+        else setQuiz(null);
         setIsEditing(true);
         setView("edit-lesson");
     };
@@ -129,7 +142,6 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
         try {
             let finalUrl = editForm.video_url || "";
 
-            // Auto-extract URL if a full HTML embed code is pasted (iframe or div)
             if (finalUrl.includes('<iframe') || finalUrl.includes('<div')) {
                 const srcMatch = finalUrl.match(/src=["']([^"']+)["']/);
                 if (srcMatch && srcMatch[1]) {
@@ -137,7 +149,6 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                 }
             }
 
-            // Strip non-DB fields that might have come from the API (like isCompleted or progress)
             const { isCompleted: _isCompleted, progress: _progress, ...safeEditForm } = editForm;
 
             const payload = {
@@ -148,11 +159,26 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                     (finalUrl.includes('bunny.net') || finalUrl.includes('mediadelivery.net')) ? 'bunny' : 'custom'
             };
 
+            let savedLesson;
             if (selectedLesson) {
-                await educationAPI.updateLesson(selectedLesson.id, payload);
+                savedLesson = await educationAPI.updateLesson(selectedLesson.id, payload);
             } else {
-                await educationAPI.createLesson(payload);
+                savedLesson = await educationAPI.createLesson(payload);
             }
+
+            // Save Quiz if any
+            if (quiz) {
+                const quizPayload = {
+                    ...quiz,
+                    lesson_id: savedLesson.id
+                };
+                if (quiz.id) {
+                    await educationAPI.updateQuiz(quiz.id, quizPayload);
+                } else if (quiz.questions?.length > 0) {
+                    await educationAPI.createQuiz(quizPayload);
+                }
+            }
+
             await loadLessons(selectedModule.id);
             setView("lessons");
             setIsEditing(false);
@@ -171,18 +197,42 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
             await educationAPI.updateModule(selectedModule.id, {
                 title: editForm.title,
                 description: editForm.description,
-                image_url: editForm.image_url
+                image_url: editForm.image_url,
+                resources: editForm.resources || [],
+                request_email: editForm.request_email || "info@wezet.xyz"
             });
-            // Reload all modules to update list
+
             if (activeCourseId) await loadModules(activeCourseId);
             else if (selectedCourse) await loadModules(selectedCourse.id);
-            // Fallback reload logic if state is tricky
 
             setView("modules");
             setIsEditing(false);
         } catch (e) {
             alert("Error saving module");
             console.error(e);
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleFileUpload = async (file: File, type: 'module_resource' | 'lesson_presentation') => {
+        try {
+            setSaving(true);
+            const path = `uploads/${Date.now()}_${file.name}`;
+            const url = await educationAPI.uploadResource(file, path);
+
+            if (type === 'module_resource') {
+                const newRes = { title: file.name, url, type: file.name.split('.').pop() };
+                setEditForm({
+                    ...editForm,
+                    resources: [...(editForm.resources || []), newRes]
+                });
+            } else {
+                setEditForm({ ...editForm, presentation_url: url });
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Upload failed");
         } finally {
             setSaving(false);
         }
@@ -354,6 +404,35 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                             </div>
                         </div>
 
+                        {/* PPTX Upload */}
+                        <div className="space-y-3 p-4 bg-muted/30 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Upload className="w-4 h-4 text-primary" />
+                                    <label className="text-sm font-medium">PowerPoint Presentation (.pptx)</label>
+                                </div>
+                                <Input
+                                    type="file"
+                                    accept=".pptx"
+                                    className="hidden"
+                                    id="pptx-upload"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileUpload(file, 'lesson_presentation');
+                                    }}
+                                />
+                                <Button size="sm" variant="outline" onClick={() => document.getElementById('pptx-upload')?.click()}>
+                                    {editForm.presentation_url ? "Change File" : "Upload PPTX"}
+                                </Button>
+                            </div>
+                            {editForm.presentation_url && (
+                                <div className="text-xs text-green-600 bg-green-50 p-2 rounded flex items-center gap-2">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>File uploaded successfully</span>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Description</label>
                             <Textarea
@@ -382,6 +461,80 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                                     <li><strong>WordPress / Direct MP4:</strong> Paste the full URL ending in .mp4</li>
                                     <li><strong>Vimeo / YouTube:</strong> Paste the shareable link</li>
                                 </ul>
+                            </div>
+                        </div>
+
+                        {/* Quiz Management */}
+                        <div className="space-y-4 p-4 bg-muted/20 rounded-lg border border-primary/20">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <HelpCircle className="w-4 h-4 text-primary" />
+                                    <h4 className="font-semibold text-sm uppercase tracking-wider">Lesson Quiz</h4>
+                                </div>
+                                <Button size="sm" variant="ghost" onClick={() => {
+                                    const newQuiz = { ...quiz, questions: [...(quiz?.questions || []), { question: "", options: ["", "", "", ""], correctAnswerIndex: 0 }] };
+                                    setQuiz(newQuiz);
+                                }}>
+                                    <Plus className="w-4 h-4 mr-1" /> Add Question
+                                </Button>
+                            </div>
+
+                            {(!quiz?.questions || quiz.questions.length === 0) && (
+                                <p className="text-xs text-center text-muted-foreground py-4 italic">No questions added yet. Next lesson will be unlocked automatically.</p>
+                            )}
+
+                            <div className="space-y-6">
+                                {quiz?.questions?.map((q: any, idx: number) => (
+                                    <div key={idx} className="space-y-3 p-3 bg-card rounded border relative group">
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-red-50 text-red-500 hover:bg-red-500 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={() => {
+                                                const newQuestions = [...quiz.questions];
+                                                newQuestions.splice(idx, 1);
+                                                setQuiz({ ...quiz, questions: newQuestions });
+                                            }}
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </Button>
+                                        <Input
+                                            placeholder={`Question ${idx + 1}`}
+                                            value={q.question}
+                                            onChange={(e) => {
+                                                const newQuestions = [...quiz.questions];
+                                                newQuestions[idx].question = e.target.value;
+                                                setQuiz({ ...quiz, questions: newQuestions });
+                                            }}
+                                        />
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {q.options.map((opt: string, optIdx: number) => (
+                                                <div key={optIdx} className="flex items-center gap-2">
+                                                    <input
+                                                        type="radio"
+                                                        name={`correct-${idx}`}
+                                                        checked={q.correctAnswerIndex === optIdx}
+                                                        onChange={() => {
+                                                            const newQuestions = [...quiz.questions];
+                                                            newQuestions[idx].correctAnswerIndex = optIdx;
+                                                            setQuiz({ ...quiz, questions: newQuestions });
+                                                        }}
+                                                    />
+                                                    <Input
+                                                        placeholder={`Option ${optIdx + 1}`}
+                                                        value={opt}
+                                                        className="text-xs h-8"
+                                                        onChange={(e) => {
+                                                            const newQuestions = [...quiz.questions];
+                                                            newQuestions[idx].options[optIdx] = e.target.value;
+                                                            setQuiz({ ...quiz, questions: newQuestions });
+                                                        }}
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </div>
 
@@ -429,6 +582,65 @@ export function EducationAdmin({ onBack }: EducationAdminProps) {
                                 />
                             </div>
                             <p className="text-xs text-muted-foreground">Paste a direct link to an image (e.g. from WordPress media library).</p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium">Support Email</label>
+                            <Input
+                                value={editForm.request_email || 'info@wezet.xyz'}
+                                onChange={(e) => setEditForm({ ...editForm, request_email: e.target.value })}
+                                placeholder="info@wezet.xyz"
+                            />
+                            <p className="text-xs text-muted-foreground">Email address for the "Request Help" button.</p>
+                        </div>
+
+                        {/* Module Resources */}
+                        <div className="space-y-4 p-4 bg-muted/30 rounded-lg border">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-primary" />
+                                    <label className="text-sm font-medium">General Resources (.pdf, .docx)</label>
+                                </div>
+                                <input
+                                    type="file"
+                                    accept=".pdf,.docx"
+                                    className="hidden"
+                                    id="module-resource-upload"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) handleFileUpload(file, 'module_resource');
+                                    }}
+                                />
+                                <Button size="sm" variant="outline" onClick={() => document.getElementById('module-resource-upload')?.click()}>
+                                    <Upload className="w-3 h-3 mr-2" /> Upload Resource
+                                </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                                {editForm.resources?.map((res: any, idx: number) => (
+                                    <div key={idx} className="flex items-center justify-between p-2 bg-card rounded border text-sm">
+                                        <div className="flex items-center gap-2 overflow-hidden">
+                                            <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                                            <span className="truncate">{res.title}</span>
+                                        </div>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-red-400"
+                                            onClick={() => {
+                                                const newRes = [...editForm.resources];
+                                                newRes.splice(idx, 1);
+                                                setEditForm({ ...editForm, resources: newRes });
+                                            }}
+                                        >
+                                            <Trash2 className="w-3 h-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {(!editForm.resources || editForm.resources.length === 0) && (
+                                    <p className="text-[10px] text-muted-foreground italic text-center py-2">No general resources added for this module.</p>
+                                )}
+                            </div>
                         </div>
 
                         {editForm.image_url && (
