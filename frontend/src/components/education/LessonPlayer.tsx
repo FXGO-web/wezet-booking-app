@@ -468,14 +468,20 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                 }
                             }
                         }
-                    } else if (lessonId && lesson?.title?.toLowerCase().includes("1.1")) {
-                        // Fallback to DEMO QUIZ only for Lesson 1.1 if no DB quiz exists
-                        console.log("Using Demo Quiz");
+                    } else if (lessonId && l?.title?.toLowerCase().includes("1.1")) {
+                        // Fallback to DEMO QUIZ only for Lesson 1.1 if no DB quiz exists (checking local variable l)
+                        console.log("Using Demo Quiz (No DB Quiz)");
                         setQuiz(DEMO_QUIZ as any);
                     }
                 } catch (quizError) {
                     console.error("Quiz load error:", quizError);
-                    setQuiz(null);
+                    // Fallback on error if it's Lesson 1.1
+                    if (lessonId && l?.title?.toLowerCase().includes("1.1")) {
+                        console.log("Using Demo Quiz (Error Fallback)");
+                        setQuiz(DEMO_QUIZ as any);
+                    } else {
+                        setQuiz(null);
+                    }
                 }
 
                 // Load Sidebar
