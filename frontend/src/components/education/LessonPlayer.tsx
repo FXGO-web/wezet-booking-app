@@ -251,16 +251,67 @@ interface LessonPlayerProps {
     onNavigate: (view: string, id?: string) => void;
 }
 
+interface Lesson {
+    id: string;
+    module_id: string;
+    title: string;
+    description?: string;
+    presentation_url?: string;
+    video_url?: string;
+    content_markdown?: string;
+    duration_minutes?: number;
+    isCompleted?: boolean;
+}
+
+interface Quiz {
+    id: string;
+    lesson_id: string;
+    questions: any[];
+    passing_score?: number;
+}
+
+interface Submission {
+    id: string;
+    is_passed: boolean;
+    score: number;
+}
+
+interface Lesson {
+    id: string;
+    module_id: string;
+    title: string;
+    description?: string;
+    presentation_url?: string;
+    video_url?: string;
+    content_markdown?: string;
+    duration_minutes?: number;
+    resources?: any[];
+    isCompleted?: boolean;
+}
+
+interface Quiz {
+    id: string;
+    lesson_id: string;
+    questions: any[];
+    passing_score?: number;
+}
+
+interface Submission {
+    id: string;
+    is_passed: boolean;
+    score: number;
+}
+
 export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
     const { user } = useAuth();
-    const [lesson, setLesson] = useState<any | null>(null);
+    const [lesson, setLesson] = useState<Lesson | null>(null);
     const [modulesList, setModulesList] = useState<any[]>([]);
     const [activeModuleId, setActiveModuleId] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [marking, setMarking] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
-    const [quiz, setQuiz] = useState<any | null>(null);
-    const [submission, setSubmission] = useState<any | null>(null);
+    const [quiz, setQuiz] = useState<Quiz | null>(null);
+    const [submission, setSubmission] = useState<Submission | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
     const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
 
@@ -269,18 +320,18 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
             try {
                 setLoading(true);
                 // Load Lesson Details
-                const l = await educationAPI.getLesson(lessonId);
+                const l = (await educationAPI.getLesson(lessonId)) as Lesson | null;
                 if (l) {
                     setLesson(l);
                     setActiveModuleId(l.module_id);
                 }
 
                 // Load Quiz
-                const q = await educationAPI.getQuizByLessonId(lessonId);
+                const q = (await educationAPI.getQuizByLessonId(lessonId)) as Quiz | null;
                 setQuiz(q);
 
                 if (q && user) {
-                    const sub = await educationAPI.getSubmission(q.id, user.id);
+                    const sub = (await educationAPI.getSubmission(q.id, user.id)) as Submission | null;
                     if (sub) {
                         setSubmission(sub);
                         if (sub.is_passed) {
@@ -290,11 +341,11 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                 }
 
                 // Load Sidebar
-                const coursesData = await educationAPI.getCourses();
+                const coursesData = (await educationAPI.getCourses()) as any[];
                 if (coursesData && coursesData[0]) {
-                    const m = await educationAPI.getModules(coursesData[0].id);
+                    const m = (await educationAPI.getModules(coursesData[0].id)) as any[];
                     const modulesWithLessons = await Promise.all(m.map(async (mod: any) => {
-                        const lessonsData = await educationAPI.getLessons(mod.id);
+                        const lessonsData = (await educationAPI.getLessons(mod.id)) as any[];
                         if (l && mod.id === l.module_id) {
                             const currentL = lessonsData.find((x: any) => x.id === lessonId);
                             if (currentL?.isCompleted) setIsCompleted(true);
@@ -456,36 +507,38 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                 </div>
                             </div>
 
-                            {/* PPTX Viewer or Native Slide Viewer */}
-                            {lesson.presentation_url && (
+                            {/* Native Slide Viewer or PPTX Viewer */}
+                            {(lesson.title?.toLowerCase().includes("1.1") || lesson.id === "69177a6a-d9de-4475-802c-559d877a5e8c" || lesson.presentation_url === "native") ? (
                                 <div className="space-y-6 pt-12 border-t border-gray-100">
                                     <div className="flex items-center gap-3">
                                         <div className="w-1.5 h-6 bg-[#E87C55] rounded-full" />
                                         <h3 className="text-xl font-bold text-[#1A1A1A]">Lesson Presentation</h3>
                                     </div>
-
-                                    {/* Use Native Viewer for Module 1 Lesson 1 specifically, or if flagged */}
-                                    {(lesson.title?.toLowerCase().includes("1.1") || lesson.id === "69177a6a-d9de-4475-802c-559d877a5e8c") ? (
-                                        <NativeSlideViewer lessonId={lesson.id} />
-                                    ) : (
-                                        <div className="aspect-[16/10] bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden relative group">
-                                            <iframe
-                                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
-                                                className="w-full h-full border-none"
-                                                title="Presentation Viewer"
-                                            />
-                                            <a
-                                                href={lesson.presentation_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="absolute bottom-6 right-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-widest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
-                                            >
-                                                View Fullscreen
-                                            </a>
-                                        </div>
-                                    )}
+                                    <NativeSlideViewer lessonId={lesson.id} />
                                 </div>
-                            )}
+                            ) : lesson.presentation_url ? (
+                                <div className="space-y-6 pt-12 border-t border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-1.5 h-6 bg-[#E87C55] rounded-full" />
+                                        <h3 className="text-xl font-bold text-[#1A1A1A]">Lesson Presentation</h3>
+                                    </div>
+                                    <div className="aspect-[16/10] bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden relative group">
+                                        <iframe
+                                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
+                                            className="w-full h-full border-none"
+                                            title="Presentation Viewer"
+                                        />
+                                        <a
+                                            href={lesson.presentation_url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="absolute bottom-6 right-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-widest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
+                                        >
+                                            View Fullscreen
+                                        </a>
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {/* Quiz Interface - NEW */}
                             {quiz && (
