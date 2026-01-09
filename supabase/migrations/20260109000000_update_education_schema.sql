@@ -43,9 +43,9 @@ add constraint fk_education_lessons_quiz
 foreign key (quiz_id) references public.education_quizzes(id) on delete set null;
 
 -- 6. Storage Setup
-insert into storage.buckets (id, name, public)
-values ('education', 'education', true)
-on conflict (id) do nothing;
+insert into storage.buckets (id, name, public, file_size_limit)
+values ('education', 'education', true, 52428800) -- 50MB limit
+on conflict (id) do update set file_size_limit = 52428800;
 
 -- Storage Policies for 'education' bucket
 drop policy if exists "Public Access Education" on storage.objects;
@@ -94,6 +94,7 @@ alter table public.education_quizzes enable row level security;
 alter table public.education_quiz_submissions enable row level security;
 
 -- Quizzes: Everyone enrolled in the course can view
+drop policy if exists "Enrolled users can view quizzes" on public.education_quizzes;
 create policy "Enrolled users can view quizzes" 
 on public.education_quizzes for select 
 using (
@@ -111,11 +112,13 @@ using (
 );
 
 -- Submissions: Users can see/manage their own submissions
+drop policy if exists "Users manage own submissions" on public.education_quiz_submissions;
 create policy "Users manage own submissions" 
 on public.education_quiz_submissions for all 
 using (auth.uid() = user_id);
 
 -- Admins: Full access to quizzes
+drop policy if exists "Admins full access quizzes" on public.education_quizzes;
 create policy "Admins full access quizzes" 
 on public.education_quizzes for all 
 using (
