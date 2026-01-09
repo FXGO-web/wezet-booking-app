@@ -2,21 +2,65 @@ import React, { useEffect, useState } from 'react';
 import { educationAPI } from '../../utils/api';
 import { EducationSidebar } from './EducationSidebar';
 import { Button } from "../ui/button";
-import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo, HelpCircle, AlertCircle, CheckCircle2, ChevronLeft, Maximize2 } from "lucide-react";
+import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo, HelpCircle, AlertCircle, CheckCircle2, ChevronLeft, Maximize2, Minimize2, PlayCircle } from "lucide-react";
 import { cn } from "../ui/utils";
 import { useAuth } from '../../hooks/useAuth';
 
-// --- NATIVE SLIDE CONTENT (Module 1, Lesson 1) ---
-const SLIDES_CONTENT: Record<string, any[]> = {
-    // Mapping lesson titles/ids to slide arrays
-    "default": [
+// --- DEMO CONTENT ---
+const DEMO_QUIZ = {
+    id: "demo-quiz-1",
+    passing_score: 80,
+    questions: [
         {
+            question: "Hvad er det primære formål med Modul 1?",
+            options: [
+                "At lære avancerede åndedrætsteknikker",
+                "At etablere et fundament af indre sikkerhed og somatisk bevidsthed",
+                "At markedsføre sig selv som facilitator",
+                "At lære om lungernes anatomi i detaljer"
+            ],
+            correctAnswerIndex: 1
+        },
+        {
+            question: "Hvilket nervesystem aktiveres typisk ved hurtig, overfladisk vejrtrækning?",
+            options: [
+                "Det parasympatiske nervesystem (Ro & Hvile)",
+                "Det enteriske nervesystem (Fordøjelse)",
+                "Det sympatiske nervesystem (Kamp & Flugt)",
+                "Det centrale nervesystem"
+            ],
+            correctAnswerIndex: 2
+        },
+        {
+            question: "Hvad indebærer 'Somatisk Orientering'?",
+            options: [
+                "At tænke positivt om kroppen",
+                "At mærke og navigere ud fra kroppens sansninger frem for kun tanker",
+                "At ignorere kroppens signaler for at præstere",
+                "At analysere følelser intellektuelt"
+            ],
+            correctAnswerIndex: 1
+        }
+    ]
+};
+
+function NativeSlideViewer({ lessonId }: { lessonId: string }) {
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+
+    // Enhanced Slide Content with Layouts & Placeholders
+    // REPLACE these URLs with the user's uploaded images later
+    const slides = [
+        {
+            layout: "title",
             title: "Modul 1, lektion 1",
             subtitle: "GRUNDLAG, RAMME & BEVIDSTHED",
             content: "Breathwork Facilitator Uddannelsen\nWezet Breathwork Education\nUdgave 2026",
-            type: "title"
+            image: "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=2000&auto=format&fit=crop", // Placeholder: Abstract/Calm
         },
         {
+            layout: "content-right",
             title: "1. Foremål med Modul 1",
             point: "Modul 1 er dit landingspunkt og fundament.",
             details: [
@@ -25,9 +69,10 @@ const SLIDES_CONTENT: Record<string, any[]> = {
                 "Session structure (Sessionsstruktur)",
                 "Somatic orientation (Somatisk orientering)"
             ],
-            type: "content"
+            image: "https://images.unsplash.com/photo-1544367563-12123d8965cd?q=80&w=2000&auto=format&fit=crop", // Placeholder: Meditation/Focus
         },
         {
+            layout: "list",
             title: "2. Lektionsoversigt – Modul 1",
             items: [
                 "1.1: Welcome, tradition & platform navigation",
@@ -37,32 +82,36 @@ const SLIDES_CONTENT: Record<string, any[]> = {
                 "1.5: The 4 Pillars (Awareness, Technique, Capacity, Integration)",
                 "1.6: Safety and self-regulation (Contraindications)"
             ],
-            type: "list"
+            image: "https://images.unsplash.com/photo-1484069560501-87d72b0c3669?q=80&w=2000&auto=format&fit=crop" // Placeholder: Structure/Books
         },
         {
+            layout: "split",
             title: "3. Hvad denne uddannelse handler om",
             content: "Disciplin, metode og relation. Ikke blot øvelser, men videnskabelige principper, historie og moderne fysiologi.",
             emphasis: "Målet er at guide andre sikkert, etisk og ansvarligt.",
-            type: "content"
+            image: "https://images.unsplash.com/photo-1515023663285-11035f965660?q=80&w=2000&auto=format&fit=crop" // Placeholder: Group/Teaching
         },
         {
+            layout: "content-left",
             title: "4. Grundlaget for åndedrætsarbejde",
             content: "Forstå åndedrættet udover trends.",
             focus: ["Somatisk bevidsthed", "Indre sikkerhed", "Nervesystemsorientering"],
-            type: "content"
+            image: "https://images.unsplash.com/photo-1593811167562-9cef47bfc4d7?q=80&w=2000&auto=format&fit=crop" // Placeholder: Lungs/Breathing
         },
         {
+            layout: "list",
             title: "5. Åndedrættet som bro",
-            bridges: [
+            items: [ // Using 'items' for consistency with 'bridges'
                 "Body / Mind",
                 "Conscious / Unconscious",
                 "Physiology / Emotions",
                 "Activation / Regulation",
                 "Trauma / Integration"
             ],
-            type: "list"
+            image: "https://images.unsplash.com/photo-1504198458649-3128b932f49e?q=80&w=2000&auto=format&fit=crop" // Placeholder: Bridge/Connection
         },
         {
+            layout: "table",
             title: "6. Åndedrættet afspejler din tilstand",
             patterns: [
                 { state: "Stress", pattern: "Fast, shallow, chest-based" },
@@ -71,184 +120,255 @@ const SLIDES_CONTENT: Record<string, any[]> = {
                 { state: "Anxiety", pattern: "Short inhale, high chest" },
                 { state: "Grief", pattern: "Long, heavy exhale" }
             ],
-            type: "table"
+            image: "" // No image for table view, background pattern only
         },
         {
-            title: "8. Ravene krav (Hvad uddannelsen kræver af dig)",
+            layout: "pillars",
+            title: "8. Ravene krav",
+            subtitle: "(Hvad uddannelsen kræver af dig)",
             pillars: [
                 { name: "Ærlighed", desc: "Møde dig selv som du er" },
                 { name: "Konsistens", desc: "Ét åndedrag ad gangen" },
                 { name: "Ansvar", desc: "Selvregulering før facilitering" }
-            ],
-            type: "pillars"
+            ]
         },
         {
+            layout: "quote",
             title: "9. Misforståelser",
-            not: ["Præstation", "Intensitet", "Genvej til oplysning", "Flugt fra følelser"],
-            is: "En relationspraksis med din krop og historie.",
-            type: "misconceptions"
+            content: "Det handler ikke om præstation, intensitet eller at flygte fra følelser.",
+            citation: "Det er en relationspraksis med din krop og historie.",
+            image: "https://images.unsplash.com/photo-1518531933037-91b2f5d2294c?q=80&w=2000&auto=format&fit=crop"
         },
         {
+            layout: "progression",
             title: "10. Sådan arbejder du",
-            progression: ["Awareness", "Technique", "Capacity", "Integration", "Facilitation"],
-            type: "progression"
+            items: ["Awareness", "Technique", "Capacity", "Integration", "Facilitation"]
         },
         {
+            layout: "landing",
             title: "Et øjeblik til at lande",
             exercise: "Observér åndedrættets bevægelse, luftens temperatur og tempo. Uden at ændre noget.",
-            type: "landing"
+            image: "https://images.unsplash.com/photo-1528319725582-ddc096101511?q=80&w=2000&auto=format&fit=crop" // Placeholder: Nature/Peace
         }
-    ]
-};
-
-function NativeSlideViewer({ lessonId }: { lessonId: string }) {
-    const [currentSlide, setCurrentSlide] = useState(0);
-    const slides = SLIDES_CONTENT["default"]; // Can be specialized by lessonId later
+    ];
 
     const next = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
     const prev = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+
+    const toggleFullscreen = () => {
+        if (!containerRef.current) return;
+        if (!document.fullscreenElement) {
+            containerRef.current.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
+
+    useEffect(() => {
+        const handleChange = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handleChange);
+        return () => document.removeEventListener('fullscreenchange', handleChange);
+    }, []);
 
     const slide = slides[currentSlide];
 
     return (
         <div
-            className="aspect-[16/10] rounded-3xl overflow-hidden relative group shadow-2xl flex flex-col"
-            style={{ backgroundColor: '#1A1A1A', color: '#FFFFFF' }}
+            ref={containerRef}
+            className={cn(
+                "group relative overflow-hidden transition-all duration-500 bg-[#FDFBF7]",
+                isFullscreen ? "h-screen w-screen rounded-none" : "aspect-video rounded-[32px] shadow-2xl"
+            )}
         >
-            {/* Slide Content */}
-            <div className="flex-1 p-8 md:p-16 flex flex-col justify-center text-white relative">
-                {/* Background Symbol */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none">
-                    <div className="w-[400px] h-[400px] border-[40px] border-white rounded-full flex items-center justify-center">
-                        <div className="w-0 h-0 border-l-[100px] border-l-transparent border-r-[100px] border-r-transparent border-b-[173px] border-b-white" />
-                    </div>
+            {/* Background Image (with Fade) */}
+            <div className="absolute inset-0 z-0">
+                {slide.image && (
+                    <>
+                        <img
+                            src={slide.image}
+                            alt="Background"
+                            className={cn(
+                                "w-full h-full object-cover transition-opacity duration-700",
+                                slide.layout === 'title' || slide.layout === 'landing' ? "opacity-30 blur-sm" :
+                                    slide.layout === 'quote' ? "opacity-20 grayscale" : "opacity-10"
+                            )}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#FDFBF7] via-[#FDFBF7]/80 to-transparent" />
+                    </>
+                )}
+                {/* Decorative Abstract Shapes (Wezet feel) */}
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#E87C55]/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[#E87C55]/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+            </div>
+
+            {/* Slide Content Container */}
+            <div className="relative z-10 w-full h-full flex flex-col p-8 md:p-12 lg:p-20">
+
+                {/* Header / Top Bar */}
+                <div className="flex justify-between items-start mb-8">
+                    <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#E87C55] bg-[#E87C55]/10 px-3 py-1 rounded-full">
+                        {slide.layout !== 'title' ? `Module 1 • ${slides[0].title}` : 'Wezet Education'}
+                    </span>
                 </div>
 
-                <div className="relative z-10 space-y-8 max-w-3xl mx-auto w-full">
-                    {slide.type === "title" && (
-                        <div className="text-center space-y-6">
-                            <span className="text-[#E87C55] font-bold tracking-[0.3em] uppercase text-xs">{slide.title}</span>
-                            <h2 className="text-4xl md:text-6xl font-black tracking-tight">{slide.subtitle}</h2>
-                            <p className="text-gray-400 font-light leading-relaxed whitespace-pre-line text-lg">{slide.content}</p>
-                        </div>
-                    )}
+                {/* DYNAMIC LAYOUTS */}
+                <div className="flex-1 flex flex-col justify-center">
 
-                    {slide.type === "content" && (
-                        <div className="space-y-6">
-                            <h2 className="text-3xl md:text-4xl font-bold border-b border-white/10 pb-4">{slide.title}</h2>
-                            {slide.point && <p className="text-[#E87C55] text-xl font-medium">{slide.point}</p>}
-                            {slide.content && <p className="text-gray-300 text-lg leading-relaxed">{slide.content}</p>}
-                            {slide.details && (
-                                <ul className="grid grid-cols-2 gap-4">
-                                    {slide.details.map((d: string, i: number) => (
-                                        <li key={i} className="flex items-center gap-3 text-sm text-gray-400 bg-white/5 p-4 rounded-xl">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-[#E87C55]" />
-                                            {d}
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            {slide.emphasis && <p className="text-white italic text-lg border-l-2 border-[#E87C55] pl-6 py-2">{slide.emphasis}</p>}
-                        </div>
-                    )}
-
-                    {slide.type === "list" && (
-                        <div className="space-y-8">
-                            <h2 className="text-3xl font-bold">{slide.title}</h2>
-                            <div className="space-y-3">
-                                {(slide.items || slide.bridges).map((item: string, i: number) => (
-                                    <div key={i} className="flex items-center gap-4 group/item">
-                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[#E87C55] font-bold text-xs group-hover/item:bg-[#E87C55] group-hover/item:text-white transition-all">
-                                            {i + 1}
-                                        </div>
-                                        <span className="text-lg text-gray-300">{item}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {slide.type === "table" && (
-                        <div className="space-y-8">
-                            <h2 className="text-3xl font-bold">{slide.title}</h2>
-                            <div className="grid gap-2">
-                                {slide.patterns.map((p: any, i: number) => (
-                                    <div key={i} className="grid grid-cols-3 p-4 rounded-xl bg-white/5 border border-white/5 items-center">
-                                        <span className="font-bold text-[#E87C55] uppercase tracking-widest text-xs">{p.state}</span>
-                                        <span className="col-span-2 text-gray-300">{p.pattern}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {slide.type === "progression" && (
-                        <div className="space-y-12">
-                            <h2 className="text-3xl font-bold text-center">{slide.title}</h2>
-                            <div className="flex items-center justify-between relative px-4">
-                                <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 z-0" />
-                                {slide.progression.map((p: string, i: number) => (
-                                    <div key={i} className="relative z-10 flex flex-col items-center gap-3">
-                                        <div className="w-4 h-4 rounded-full bg-[#E87C55] shadow-[0_0_15px_rgba(232,124,85,0.5)]" />
-                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{p}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-                    {slide.type === "landing" && (
-                        <div className="text-center space-y-10">
-                            <div className="w-20 h-20 rounded-full border border-[#E87C55]/30 flex items-center justify-center mx-auto mb-8 animate-pulse">
-                                <div className="w-3 h-3 rounded-full bg-[#E87C55]" />
-                            </div>
-                            <h2 className="text-4xl font-bold">{slide.title}</h2>
-                            <p className="text-xl text-gray-400 font-light italic leading-relaxed max-w-xl mx-auto">
-                                "{slide.exercise}"
+                    {/* TITLE LAYOUT */}
+                    {slide.layout === 'title' && (
+                        <div className="text-center space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <span className="block text-[#E87C55] text-sm font-bold tracking-[0.3em] uppercase">{slide.title}</span>
+                            <h1 className="text-5xl md:text-7xl font-light text-[#1A1A1A] tracking-tight leading-tight">
+                                {slide.subtitle}
+                            </h1>
+                            <div className="w-24 h-1 bg-[#E87C55] mx-auto rounded-full" />
+                            <p className="text-lg md:text-xl text-gray-500 font-light whitespace-pre-line leading-relaxed">
+                                {slide.content}
                             </p>
                         </div>
                     )}
-                </div>
-            </div>
 
-            {/* Controls */}
-            <div
-                className="p-6 backdrop-blur-md border-t border-white/5 flex items-center justify-between"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-            >
-                <div className="flex items-center gap-4">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={prev}
-                        disabled={currentSlide === 0}
-                        className="text-white border-white/20 hover:bg-white/20 disabled:opacity-20 size-12 md:size-14 rounded-full transition-all flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)' }}
-                    >
-                        <ChevronLeft className="w-8 h-8" />
-                    </Button>
-                    <div className="text-sm font-black tracking-[0.2em] text-white/60 bg-black/40 px-6 py-3 rounded-full">
-                        <span className="text-white text-base">{currentSlide + 1}</span> / {slides.length}
+                    {/* CONTENT RIGHT / LEFT / SPLIT */}
+                    {(slide.layout === 'content-right' || slide.layout === 'content-left' || slide.layout === 'split') && (
+                        <div className={cn("grid gap-12 items-center", slide.image ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1")}>
+                            <div className={cn("space-y-6 order-2", slide.layout === 'content-right' ? "md:order-1" : "md:order-2")}>
+                                <h2 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] leading-tight">{slide.title}</h2>
+                                {slide.point && <p className="text-[#E87C55] text-xl font-medium">{slide.point}</p>}
+                                {slide.content && <p className="text-lg text-gray-600 leading-relaxed font-light">{slide.content}</p>}
+                                {slide.details && (
+                                    <ul className="space-y-3">
+                                        {slide.details.map((d: string, i: number) => (
+                                            <li key={i} className="flex items-center gap-3 text-gray-600">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-[#E87C55] shrink-0" />
+                                                <span>{d}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                {slide.emphasis && <p className="text-[#1A1A1A] italic font-medium border-l-4 border-[#E87C55] pl-4">{slide.emphasis}</p>}
+                            </div>
+
+                            {/* Optional Image Panel in Split View */}
+                            {slide.image && (
+                                <div className={cn("relative aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl rotate-1 order-1", slide.layout === 'content-right' ? "md:order-2" : "md:order-1")}>
+                                    <img src={slide.image} alt="" className="w-full h-full object-cover" />
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* LIST OR PILLARS */}
+                    {(slide.layout === 'list' || slide.layout === 'pillars') && (
+                        <div className="space-y-8 max-w-4xl mx-auto w-full">
+                            <h2 className="text-3xl font-bold text-[#1A1A1A] text-center mb-12">{slide.title} <span className="text-gray-400 font-light block text-lg mt-2">{slide.subtitle}</span></h2>
+
+                            {slide.items && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {slide.items.map((item: string, i: number) => (
+                                        <div key={i} className="flex items-center gap-4 bg-white/60 p-4 rounded-xl shadow-sm border border-white hover:border-[#E87C55]/30 transition-all">
+                                            <div className="w-8 h-8 rounded-full bg-[#E87C55]/10 text-[#E87C55] flex items-center justify-center font-bold text-sm shrink-0">
+                                                {i + 1}
+                                            </div>
+                                            <span className="text-gray-700 font-medium">{item}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {slide.pillars && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    {slide.pillars.map((p: any, i: number) => (
+                                        <div key={i} className="bg-white p-6 rounded-2xl shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] text-center space-y-4 hover:-translate-y-1 transition-transform duration-300">
+                                            <div className="w-12 h-12 mx-auto bg-[#E87C55] rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                                {p.name[0]}
+                                            </div>
+                                            <h3 className="font-bold text-[#1A1A1A]">{p.name}</h3>
+                                            <p className="text-sm text-gray-500 leading-relaxed">{p.desc}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* TABLE LAYOUT */}
+                    {slide.layout === 'table' && (
+                        <div className="max-w-3xl mx-auto w-full space-y-8">
+                            <h2 className="text-3xl font-bold text-[#1A1A1A] text-center">{slide.title}</h2>
+                            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+                                {slide.patterns?.map((p: any, i: number) => (
+                                    <div key={i} className="grid grid-cols-3 p-6 border-b border-gray-100 last:border-0 hover:bg-[#FDFBF7] transition-colors">
+                                        <span className="font-bold text-[#E87C55] uppercase tracking-widest text-xs self-center">{p.state}</span>
+                                        <span className="col-span-2 text-gray-600 font-light text-lg">{p.pattern}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* QUOTE / LANDING */}
+                    {(slide.layout === 'quote' || slide.layout === 'landing') && (
+                        <div className="text-center max-w-4xl mx-auto space-y-10">
+                            {slide.layout === 'landing' && (
+                                <div className="w-20 h-20 rounded-full border-2 border-[#E87C55] flex items-center justify-center mx-auto animate-pulse text-[#E87C55]">
+                                    <PlayCircle className="w-10 h-10" />
+                                </div>
+                            )}
+                            <h2 className="text-4xl md:text-5xl font-light text-[#1A1A1A] leading-tight">
+                                "{slide.content || slide.exercise}"
+                            </h2>
+                            {slide.citation && <p className="text-[#E87C55] font-bold tracking-widest uppercase text-sm">— {slide.citation}</p>}
+                            {slide.layout === 'landing' && <p className="text-gray-400 uppercase tracking-widest text-xs">Take a moment to arrive</p>}
+                        </div>
+                    )}
+
+                </div>
+
+                {/* Footer Controls */}
+                <div className="mt-8 flex items-center justify-between z-20">
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={toggleFullscreen}
+                            className="text-gray-400 hover:text-[#1A1A1A] hover:bg-black/5 rounded-full"
+                        >
+                            {isFullscreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                        </Button>
+                        <span className="text-[10px] text-gray-300 font-mono hidden md:inline-block">
+                            {currentSlide + 1} / {slides.length}
+                        </span>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={next}
-                        disabled={currentSlide === slides.length - 1}
-                        className="text-white border-white/20 hover:bg-white/20 disabled:opacity-20 size-12 md:size-14 rounded-full transition-all flex items-center justify-center shrink-0"
-                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)' }}
-                    >
-                        <ChevronRight className="w-8 h-8" />
-                    </Button>
+
+                    <div className="flex items-center gap-4">
+                        <Button
+                            variant="outline"
+                            onClick={prev}
+                            disabled={currentSlide === 0}
+                            className="rounded-full w-12 h-12 border-gray-200 bg-white hover:bg-[#E87C55] hover:text-white hover:border-[#E87C55] transition-all duration-300 shadow-md flex items-center justify-center p-0 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-300"
+                        >
+                            <ChevronLeft className="w-6 h-6" />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={next}
+                            disabled={currentSlide === slides.length - 1}
+                            className="rounded-full w-12 h-12 border-gray-200 bg-white hover:bg-[#E87C55] hover:text-white hover:border-[#E87C55] transition-all duration-300 shadow-md flex items-center justify-center p-0 disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-gray-300"
+                        >
+                            <ChevronRight className="w-6 h-6" />
+                        </Button>
+                    </div>
                 </div>
 
-                <div className="hidden md:block">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Wezet Breathwork Education • Modul 1</span>
+                {/* Progress Bar */}
+                <div className="absolute bottom-0 left-0 h-1 bg-gray-100 w-full">
+                    <div
+                        className="h-full bg-[#E87C55] transition-all duration-500 ease-out"
+                        style={{ width: `${((currentSlide + 1) / slides.length) * 100}%` }}
+                    />
                 </div>
-
-                <Button variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 text-[10px] tracking-widest uppercase gap-2">
-                    <Maximize2 className="w-3 h-3" /> Fullscreen
-                </Button>
             </div>
         </div>
     );
@@ -337,16 +457,21 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                 // Load Quiz (Isolated to prevent blocking the whole page)
                 try {
                     const q = (await educationAPI.getQuizByLessonId(lessonId)) as Quiz | null;
-                    setQuiz(q);
-
-                    if (q && user) {
-                        const sub = (await educationAPI.getSubmission(q.id, user.id)) as Submission | null;
-                        if (sub) {
-                            setSubmission(sub);
-                            if (sub.is_passed) {
-                                setQuizResult({ score: sub.score, passed: true });
+                    if (q) {
+                        setQuiz(q);
+                        if (user) {
+                            const sub = (await educationAPI.getSubmission(q.id, user.id)) as Submission | null;
+                            if (sub) {
+                                setSubmission(sub);
+                                if (sub.is_passed) {
+                                    setQuizResult({ score: sub.score, passed: true });
+                                }
                             }
                         }
+                    } else if (lessonId && lesson?.title?.toLowerCase().includes("1.1")) {
+                        // Fallback to DEMO QUIZ only for Lesson 1.1 if no DB quiz exists
+                        console.log("Using Demo Quiz");
+                        setQuiz(DEMO_QUIZ as any);
                     }
                 } catch (quizError) {
                     console.error("Quiz load error:", quizError);
