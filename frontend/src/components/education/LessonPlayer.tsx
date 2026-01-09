@@ -2,9 +2,249 @@ import React, { useEffect, useState } from 'react';
 import { educationAPI } from '../../utils/api';
 import { EducationSidebar } from './EducationSidebar';
 import { Button } from "../ui/button";
-import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo, HelpCircle, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle, ChevronRight, FileText, FileVideo, HelpCircle, AlertCircle, CheckCircle2, ChevronLeft, Maximize2 } from "lucide-react";
 import { cn } from "../ui/utils";
 import { useAuth } from '../../hooks/useAuth';
+
+// --- NATIVE SLIDE CONTENT (Module 1, Lesson 1) ---
+const SLIDES_CONTENT: Record<string, any[]> = {
+    // Mapping lesson titles/ids to slide arrays
+    "default": [
+        {
+            title: "Modul 1, lektion 1",
+            subtitle: "GRUNDLAG, RAMME & BEVIDSTHED",
+            content: "Breathwork Facilitator Uddannelsen\nWezet Breathwork Education\nUdgave 2026",
+            type: "title"
+        },
+        {
+            title: "1. Foremål med Modul 1",
+            point: "Modul 1 er dit landingspunkt og fundament.",
+            details: [
+                "Inner understanding (Indre forståelse)",
+                "Safety principles (Sikkerhedsprincipper)",
+                "Session structure (Sessionsstruktur)",
+                "Somatic orientation (Somatisk orientering)"
+            ],
+            type: "content"
+        },
+        {
+            title: "2. Lektionsoversigt – Modul 1",
+            items: [
+                "1.1: Welcome, tradition & platform navigation",
+                "1.2: Why breathwork works (Physiology, ANS)",
+                "1.3: Natural patterns (Diaphragmatic vs Chest)",
+                "1.4: Wezet 10-step session frame architecture",
+                "1.5: The 4 Pillars (Awareness, Technique, Capacity, Integration)",
+                "1.6: Safety and self-regulation (Contraindications)"
+            ],
+            type: "list"
+        },
+        {
+            title: "3. Hvad denne uddannelse handler om",
+            content: "Disciplin, metode og relation. Ikke blot øvelser, men videnskabelige principper, historie og moderne fysiologi.",
+            emphasis: "Målet er at guide andre sikkert, etisk og ansvarligt.",
+            type: "content"
+        },
+        {
+            title: "4. Grundlaget for åndedrætsarbejde",
+            content: "Forstå åndedrættet udover trends.",
+            focus: ["Somatisk bevidsthed", "Indre sikkerhed", "Nervesystemsorientering"],
+            type: "content"
+        },
+        {
+            title: "5. Åndedrættet som bro",
+            bridges: [
+                "Body / Mind",
+                "Conscious / Unconscious",
+                "Physiology / Emotions",
+                "Activation / Regulation",
+                "Trauma / Integration"
+            ],
+            type: "list"
+        },
+        {
+            title: "6. Åndedrættet afspejler din tilstand",
+            patterns: [
+                { state: "Stress", pattern: "Fast, shallow, chest-based" },
+                { state: "Calm", pattern: "Long exhale, diaphragmatic" },
+                { state: "Freeze", pattern: "Little to no breathing" },
+                { state: "Anxiety", pattern: "Short inhale, high chest" },
+                { state: "Grief", pattern: "Long, heavy exhale" }
+            ],
+            type: "table"
+        },
+        {
+            title: "8. Ravene krav (Hvad uddannelsen kræver af dig)",
+            pillars: [
+                { name: "Ærlighed", desc: "Møde dig selv som du er" },
+                { name: "Konsistens", desc: "Ét åndedrag ad gangen" },
+                { name: "Ansvar", desc: "Selvregulering før facilitering" }
+            ],
+            type: "pillars"
+        },
+        {
+            title: "9. Misforståelser",
+            not: ["Præstation", "Intensitet", "Genvej til oplysning", "Flugt fra følelser"],
+            is: "En relationspraksis med din krop og historie.",
+            type: "misconceptions"
+        },
+        {
+            title: "10. Sådan arbejder du",
+            progression: ["Awareness", "Technique", "Capacity", "Integration", "Facilitation"],
+            type: "progression"
+        },
+        {
+            title: "Et øjeblik til at lande",
+            exercise: "Observér åndedrættets bevægelse, luftens temperatur og tempo. Uden at ændre noget.",
+            type: "landing"
+        }
+    ]
+};
+
+function NativeSlideViewer({ lessonId }: { lessonId: string }) {
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const slides = SLIDES_CONTENT["default"]; // Can be specialized by lessonId later
+
+    const next = () => setCurrentSlide(prev => Math.min(prev + 1, slides.length - 1));
+    const prev = () => setCurrentSlide(prev => Math.max(prev - 1, 0));
+
+    const slide = slides[currentSlide];
+
+    return (
+        <div className="aspect-[16/10] bg-[#1A1A1A] rounded-3xl overflow-hidden relative group shadow-2xl flex flex-col">
+            {/* Slide Content */}
+            <div className="flex-1 p-8 md:p-16 flex flex-col justify-center text-white relative">
+                {/* Background Symbol */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.03] pointer-events-none">
+                    <div className="w-[400px] h-[400px] border-[40px] border-white rounded-full flex items-center justify-center">
+                        <div className="w-0 h-0 border-l-[100px] border-l-transparent border-r-[100px] border-r-transparent border-b-[173px] border-b-white" />
+                    </div>
+                </div>
+
+                <div className="relative z-10 space-y-8 max-w-3xl mx-auto w-full">
+                    {slide.type === "title" && (
+                        <div className="text-center space-y-6">
+                            <span className="text-[#E87C55] font-bold tracking-[0.3em] uppercase text-xs">{slide.title}</span>
+                            <h2 className="text-4xl md:text-6xl font-black tracking-tight">{slide.subtitle}</h2>
+                            <p className="text-gray-400 font-light leading-relaxed whitespace-pre-line text-lg">{slide.content}</p>
+                        </div>
+                    )}
+
+                    {slide.type === "content" && (
+                        <div className="space-y-6">
+                            <h2 className="text-3xl md:text-4xl font-bold border-b border-white/10 pb-4">{slide.title}</h2>
+                            {slide.point && <p className="text-[#E87C55] text-xl font-medium">{slide.point}</p>}
+                            {slide.content && <p className="text-gray-300 text-lg leading-relaxed">{slide.content}</p>}
+                            {slide.details && (
+                                <ul className="grid grid-cols-2 gap-4">
+                                    {slide.details.map((d: string, i: number) => (
+                                        <li key={i} className="flex items-center gap-3 text-sm text-gray-400 bg-white/5 p-4 rounded-xl">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#E87C55]" />
+                                            {d}
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {slide.emphasis && <p className="text-white italic text-lg border-l-2 border-[#E87C55] pl-6 py-2">{slide.emphasis}</p>}
+                        </div>
+                    )}
+
+                    {slide.type === "list" && (
+                        <div className="space-y-8">
+                            <h2 className="text-3xl font-bold">{slide.title}</h2>
+                            <div className="space-y-3">
+                                {(slide.items || slide.bridges).map((item: string, i: number) => (
+                                    <div key={i} className="flex items-center gap-4 group/item">
+                                        <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[#E87C55] font-bold text-xs group-hover/item:bg-[#E87C55] group-hover/item:text-white transition-all">
+                                            {i + 1}
+                                        </div>
+                                        <span className="text-lg text-gray-300">{item}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {slide.type === "table" && (
+                        <div className="space-y-8">
+                            <h2 className="text-3xl font-bold">{slide.title}</h2>
+                            <div className="grid gap-2">
+                                {slide.patterns.map((p: any, i: number) => (
+                                    <div key={i} className="grid grid-cols-3 p-4 rounded-xl bg-white/5 border border-white/5 items-center">
+                                        <span className="font-bold text-[#E87C55] uppercase tracking-widest text-xs">{p.state}</span>
+                                        <span className="col-span-2 text-gray-300">{p.pattern}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {slide.type === "progression" && (
+                        <div className="space-y-12">
+                            <h2 className="text-3xl font-bold text-center">{slide.title}</h2>
+                            <div className="flex items-center justify-between relative px-4">
+                                <div className="absolute top-1/2 left-0 right-0 h-px bg-white/10 -translate-y-1/2 z-0" />
+                                {slide.progression.map((p: string, i: number) => (
+                                    <div key={i} className="relative z-10 flex flex-col items-center gap-3">
+                                        <div className="w-4 h-4 rounded-full bg-[#E87C55] shadow-[0_0_15px_rgba(232,124,85,0.5)]" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{p}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {slide.type === "landing" && (
+                        <div className="text-center space-y-10">
+                            <div className="w-20 h-20 rounded-full border border-[#E87C55]/30 flex items-center justify-center mx-auto mb-8 animate-pulse">
+                                <div className="w-3 h-3 rounded-full bg-[#E87C55]" />
+                            </div>
+                            <h2 className="text-4xl font-bold">{slide.title}</h2>
+                            <p className="text-xl text-gray-400 font-light italic leading-relaxed max-w-xl mx-auto">
+                                "{slide.exercise}"
+                            </p>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div className="p-6 bg-white/5 backdrop-blur-md border-t border-white/5 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={prev}
+                        disabled={currentSlide === 0}
+                        className="text-white hover:bg-white/10 disabled:opacity-20"
+                    >
+                        <ChevronLeft className="w-6 h-6" />
+                    </Button>
+                    <div className="text-xs font-bold tracking-widest text-gray-500">
+                        <span className="text-white">{currentSlide + 1}</span> / {slides.length}
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={next}
+                        disabled={currentSlide === slides.length - 1}
+                        className="text-white hover:bg-white/10 disabled:opacity-20"
+                    >
+                        <ChevronRight className="w-6 h-6" />
+                    </Button>
+                </div>
+
+                <div className="hidden md:block">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500">Wezet Breathwork Education • Modul 1</span>
+                </div>
+
+                <Button variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5 text-[10px] tracking-widest uppercase gap-2">
+                    <Maximize2 className="w-3 h-3" /> Fullscreen
+                </Button>
+            </div>
+        </div>
+    );
+}
 
 interface LessonPlayerProps {
     lessonId: string;
@@ -13,14 +253,14 @@ interface LessonPlayerProps {
 
 export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
     const { user } = useAuth();
-    const [lesson, setLesson] = useState<any>(null);
+    const [lesson, setLesson] = useState<any | null>(null);
     const [modulesList, setModulesList] = useState<any[]>([]);
     const [activeModuleId, setActiveModuleId] = useState<string>('');
     const [loading, setLoading] = useState(true);
     const [marking, setMarking] = useState(false);
     const [isCompleted, setIsCompleted] = useState(false);
-    const [quiz, setQuiz] = useState<any>(null);
-    const [submission, setSubmission] = useState<any>(null);
+    const [quiz, setQuiz] = useState<any | null>(null);
+    const [submission, setSubmission] = useState<any | null>(null);
     const [quizAnswers, setQuizAnswers] = useState<number[]>([]);
     const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null);
 
@@ -30,8 +270,10 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                 setLoading(true);
                 // Load Lesson Details
                 const l = await educationAPI.getLesson(lessonId);
-                setLesson(l);
-                setActiveModuleId(l.module_id);
+                if (l) {
+                    setLesson(l);
+                    setActiveModuleId(l.module_id);
+                }
 
                 // Load Quiz
                 const q = await educationAPI.getQuizByLessonId(lessonId);
@@ -39,23 +281,25 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
 
                 if (q && user) {
                     const sub = await educationAPI.getSubmission(q.id, user.id);
-                    setSubmission(sub);
-                    if (sub?.is_passed) {
-                        setQuizResult({ score: sub.score, passed: true });
+                    if (sub) {
+                        setSubmission(sub);
+                        if (sub.is_passed) {
+                            setQuizResult({ score: sub.score, passed: true });
+                        }
                     }
                 }
 
                 // Load Sidebar
-                const courses = await educationAPI.getCourses();
-                if (courses[0]) {
-                    const m = await educationAPI.getModules(courses[0].id);
+                const coursesData = await educationAPI.getCourses();
+                if (coursesData && coursesData[0]) {
+                    const m = await educationAPI.getModules(coursesData[0].id);
                     const modulesWithLessons = await Promise.all(m.map(async (mod: any) => {
-                        const lessons = await educationAPI.getLessons(mod.id);
-                        if (mod.id === l.module_id) {
-                            const currentL = lessons.find((x: any) => x.id === lessonId);
+                        const lessonsData = await educationAPI.getLessons(mod.id);
+                        if (l && mod.id === l.module_id) {
+                            const currentL = lessonsData.find((x: any) => x.id === lessonId);
                             if (currentL?.isCompleted) setIsCompleted(true);
                         }
-                        return { ...mod, lessons };
+                        return { ...mod, lessons: lessonsData };
                     }));
                     setModulesList(modulesWithLessons);
                 }
@@ -73,11 +317,12 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
         if (!quiz || !user) return;
 
         let correctCount = 0;
-        quiz.questions.forEach((q: any, idx: number) => {
+        const questions = quiz.questions || [];
+        questions.forEach((q: any, idx: number) => {
             if (quizAnswers[idx] === q.correctAnswerIndex) correctCount++;
         });
 
-        const score = Math.round((correctCount / quiz.questions.length) * 100);
+        const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0;
         const passed = score >= (quiz.passing_score || 80);
 
         try {
@@ -95,6 +340,11 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
             if (passed) {
                 await educationAPI.markLessonComplete(lessonId, user.id, true);
                 setIsCompleted(true);
+                // Also update local modules list for sidebar
+                setModulesList(prev => prev.map(m => ({
+                    ...m,
+                    lessons: m.lessons.map((l: any) => l.id === lessonId ? { ...l, isCompleted: true } : l)
+                })));
             }
         } catch (e) {
             console.error(e);
@@ -206,28 +456,34 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                 </div>
                             </div>
 
-                            {/* PPTX Viewer - Image 2 Style */}
+                            {/* PPTX Viewer or Native Slide Viewer */}
                             {lesson.presentation_url && (
                                 <div className="space-y-6 pt-12 border-t border-gray-100">
                                     <div className="flex items-center gap-3">
                                         <div className="w-1.5 h-6 bg-[#E87C55] rounded-full" />
                                         <h3 className="text-xl font-bold text-[#1A1A1A]">Lesson Presentation</h3>
                                     </div>
-                                    <div className="aspect-[16/10] bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden relative group">
-                                        <iframe
-                                            src={`https://docs.google.com/viewer?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
-                                            className="w-full h-full border-none"
-                                            title="Presentation Viewer"
-                                        />
-                                        <a
-                                            href={lesson.presentation_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="absolute bottom-6 right-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-widest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
-                                        >
-                                            View Fullscreen
-                                        </a>
-                                    </div>
+
+                                    {/* Use Native Viewer for Module 1 Lesson 1 specifically, or if flagged */}
+                                    {(lesson.title?.toLowerCase().includes("1.1") || lesson.id === "69177a6a-d9de-4475-802c-559d877a5e8c") ? (
+                                        <NativeSlideViewer lessonId={lesson.id} />
+                                    ) : (
+                                        <div className="aspect-[16/10] bg-white rounded-3xl border border-gray-100 shadow-2xl overflow-hidden relative group">
+                                            <iframe
+                                                src={`https://docs.google.com/viewer?url=${encodeURIComponent(lesson.presentation_url)}&embedded=true`}
+                                                className="w-full h-full border-none"
+                                                title="Presentation Viewer"
+                                            />
+                                            <a
+                                                href={lesson.presentation_url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="absolute bottom-6 right-6 px-4 py-2 bg-[#1A1A1A] text-white text-[10px] font-bold uppercase tracking-widest rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-xl"
+                                            >
+                                                View Fullscreen
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

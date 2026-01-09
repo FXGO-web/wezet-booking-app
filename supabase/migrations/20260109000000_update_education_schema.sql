@@ -44,8 +44,8 @@ foreign key (quiz_id) references public.education_quizzes(id) on delete set null
 
 -- 6. Storage Setup
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('education', 'education', true, 52428800) -- 50MB limit
-on conflict (id) do update set file_size_limit = 52428800;
+values ('education', 'education', true, 209715200) -- 200MB limit
+on conflict (id) do update set file_size_limit = 209715200;
 
 -- Storage Policies for 'education' bucket
 drop policy if exists "Public Access Education" on storage.objects;
