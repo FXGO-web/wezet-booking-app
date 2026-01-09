@@ -113,7 +113,7 @@ function NativeSlideViewer({ lessonId }: { lessonId: string }) {
     return (
         <div
             className="aspect-[16/10] rounded-3xl overflow-hidden relative group shadow-2xl flex flex-col"
-            style={{ backgroundColor: '#1A1A1A' }}
+            style={{ backgroundColor: '#1A1A1A', color: '#FFFFFF' }}
         >
             {/* Slide Content */}
             <div className="flex-1 p-8 md:p-16 flex flex-col justify-center text-white relative">
@@ -218,25 +218,27 @@ function NativeSlideViewer({ lessonId }: { lessonId: string }) {
             >
                 <div className="flex items-center gap-4">
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={prev}
                         disabled={currentSlide === 0}
-                        className="text-white bg-white/5 hover:bg-white/20 disabled:opacity-20 size-10 md:size-12 rounded-full transition-all"
+                        className="text-white border-white/20 hover:bg-white/20 disabled:opacity-20 size-12 md:size-14 rounded-full transition-all flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)' }}
                     >
-                        <ChevronLeft className="w-6 h-6" />
+                        <ChevronLeft className="w-8 h-8" />
                     </Button>
-                    <div className="text-xs font-black tracking-[0.2em] text-gray-500 bg-black/20 px-4 py-2 rounded-full">
-                        <span className="text-white">{currentSlide + 1}</span> / {slides.length}
+                    <div className="text-sm font-black tracking-[0.2em] text-white/60 bg-black/40 px-6 py-3 rounded-full">
+                        <span className="text-white text-base">{currentSlide + 1}</span> / {slides.length}
                     </div>
                     <Button
-                        variant="ghost"
+                        variant="outline"
                         size="icon"
                         onClick={next}
                         disabled={currentSlide === slides.length - 1}
-                        className="text-white bg-white/5 hover:bg-white/20 disabled:opacity-20 size-10 md:size-12 rounded-full transition-all"
+                        className="text-white border-white/20 hover:bg-white/20 disabled:opacity-20 size-12 md:size-14 rounded-full transition-all flex items-center justify-center shrink-0"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.3)' }}
                     >
-                        <ChevronRight className="w-6 h-6" />
+                        <ChevronRight className="w-8 h-8" />
                     </Button>
                 </div>
 
