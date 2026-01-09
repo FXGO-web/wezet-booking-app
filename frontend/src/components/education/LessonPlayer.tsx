@@ -326,33 +326,42 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                     setActiveModuleId(l.module_id);
                 }
 
-                // Load Quiz
-                const q = (await educationAPI.getQuizByLessonId(lessonId)) as Quiz | null;
-                setQuiz(q);
+                // Load Quiz (Isolated to prevent blocking the whole page)
+                try {
+                    const q = (await educationAPI.getQuizByLessonId(lessonId)) as Quiz | null;
+                    setQuiz(q);
 
-                if (q && user) {
-                    const sub = (await educationAPI.getSubmission(q.id, user.id)) as Submission | null;
-                    if (sub) {
-                        setSubmission(sub);
-                        if (sub.is_passed) {
-                            setQuizResult({ score: sub.score, passed: true });
+                    if (q && user) {
+                        const sub = (await educationAPI.getSubmission(q.id, user.id)) as Submission | null;
+                        if (sub) {
+                            setSubmission(sub);
+                            if (sub.is_passed) {
+                                setQuizResult({ score: sub.score, passed: true });
+                            }
                         }
                     }
+                } catch (quizError) {
+                    console.error("Quiz load error:", quizError);
+                    setQuiz(null);
                 }
 
                 // Load Sidebar
-                const coursesData = (await educationAPI.getCourses()) as any[];
-                if (coursesData && coursesData[0]) {
-                    const m = (await educationAPI.getModules(coursesData[0].id)) as any[];
-                    const modulesWithLessons = await Promise.all(m.map(async (mod: any) => {
-                        const lessonsData = (await educationAPI.getLessons(mod.id)) as any[];
-                        if (l && mod.id === l.module_id) {
-                            const currentL = lessonsData.find((x: any) => x.id === lessonId);
-                            if (currentL?.isCompleted) setIsCompleted(true);
-                        }
-                        return { ...mod, lessons: lessonsData };
-                    }));
-                    setModulesList(modulesWithLessons);
+                try {
+                    const coursesData = (await educationAPI.getCourses()) as any[];
+                    if (coursesData && coursesData[0]) {
+                        const m = (await educationAPI.getModules(coursesData[0].id)) as any[];
+                        const modulesWithLessons = await Promise.all(m.map(async (mod: any) => {
+                            const lessonsData = (await educationAPI.getLessons(mod.id)) as any[];
+                            if (l && mod.id === l.module_id) {
+                                const currentL = lessonsData.find((x: any) => x.id === lessonId);
+                                if (currentL?.isCompleted) setIsCompleted(true);
+                            }
+                            return { ...mod, lessons: lessonsData };
+                        }));
+                        setModulesList(modulesWithLessons);
+                    }
+                } catch (sidebarError) {
+                    console.error("Sidebar load error:", sidebarError);
                 }
 
             } catch (e) {
