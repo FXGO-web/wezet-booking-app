@@ -111,7 +111,10 @@ function NativeSlideViewer({ lessonId }: { lessonId: string }) {
     const slide = slides[currentSlide];
 
     return (
-        <div className="aspect-[16/10] bg-[#1A1A1A] rounded-3xl overflow-hidden relative group shadow-2xl flex flex-col">
+        <div
+            className="aspect-[16/10] rounded-3xl overflow-hidden relative group shadow-2xl flex flex-col"
+            style={{ backgroundColor: '#1A1A1A' }}
+        >
             {/* Slide Content */}
             <div className="flex-1 p-8 md:p-16 flex flex-col justify-center text-white relative">
                 {/* Background Symbol */}
@@ -209,18 +212,21 @@ function NativeSlideViewer({ lessonId }: { lessonId: string }) {
             </div>
 
             {/* Controls */}
-            <div className="p-6 bg-white/5 backdrop-blur-md border-t border-white/5 flex items-center justify-between">
+            <div
+                className="p-6 backdrop-blur-md border-t border-white/5 flex items-center justify-between"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+            >
                 <div className="flex items-center gap-4">
                     <Button
                         variant="ghost"
                         size="icon"
                         onClick={prev}
                         disabled={currentSlide === 0}
-                        className="text-white hover:bg-white/10 disabled:opacity-20"
+                        className="text-white bg-white/5 hover:bg-white/20 disabled:opacity-20 size-10 md:size-12 rounded-full transition-all"
                     >
                         <ChevronLeft className="w-6 h-6" />
                     </Button>
-                    <div className="text-xs font-bold tracking-widest text-gray-500">
+                    <div className="text-xs font-black tracking-[0.2em] text-gray-500 bg-black/20 px-4 py-2 rounded-full">
                         <span className="text-white">{currentSlide + 1}</span> / {slides.length}
                     </div>
                     <Button
@@ -228,7 +234,7 @@ function NativeSlideViewer({ lessonId }: { lessonId: string }) {
                         size="icon"
                         onClick={next}
                         disabled={currentSlide === slides.length - 1}
-                        className="text-white hover:bg-white/10 disabled:opacity-20"
+                        className="text-white bg-white/5 hover:bg-white/20 disabled:opacity-20 size-10 md:size-12 rounded-full transition-all"
                     >
                         <ChevronRight className="w-6 h-6" />
                     </Button>
@@ -416,6 +422,13 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
 
     const handleComplete = async () => {
         if (!user) return;
+
+        // Final safety check: if lesson is 1.1 and not completed, require quiz
+        if (lesson?.title?.toLowerCase().includes("1.1") && !isCompleted && !quizResult?.passed) {
+            document.getElementById('lesson-quiz')?.scrollIntoView({ behavior: 'smooth' });
+            return;
+        }
+
         try {
             setMarking(true);
             await educationAPI.markLessonComplete(lessonId, user.id, !isCompleted);
@@ -597,7 +610,8 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
 
                                             <Button
                                                 size="lg"
-                                                className="w-full h-16 rounded-2xl bg-[#1A1A1A] hover:bg-[#E87C55] text-white font-bold tracking-[0.2em] uppercase transition-all duration-500 mt-8 disabled:opacity-30"
+                                                className="w-full h-16 rounded-2xl hover:bg-[#E87C55] text-white font-bold tracking-[0.2em] uppercase transition-all duration-500 mt-8 disabled:opacity-30"
+                                                style={{ backgroundColor: '#1A1A1A' }}
                                                 disabled={quizAnswers.length < quiz.questions.length || marking}
                                                 onClick={handleSubmitQuiz}
                                             >
@@ -630,7 +644,7 @@ export function LessonPlayer({ lessonId, onNavigate }: LessonPlayerProps) {
                                         : "bg-white border-2 border-green-100 text-green-600 shadow-none hover:bg-green-50 cursor-default"
                                 )}
                                 onClick={quiz && !isCompleted ? () => document.getElementById('lesson-quiz')?.scrollIntoView({ behavior: 'smooth' }) : handleComplete}
-                                disabled={marking || (quiz && !isCompleted && !quizResult?.passed)}
+                                disabled={marking || (quiz && !isCompleted && !quizResult?.passed) || (lesson?.title?.toLowerCase().includes("1.1") && !isCompleted && !quizResult?.passed)}
                             >
                                 {marking ? (
                                     <Loader2 className="animate-spin w-5 h-5 text-white" />
