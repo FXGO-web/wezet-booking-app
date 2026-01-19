@@ -88,11 +88,28 @@ function AppContent() {
   const [activeView, setActiveView] = useState(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") return "booking-success";
+    // Check for direct booking link parameters
+    if (params.get("serviceId")) return "booking";
     return params.get("view") || "home";
   });
 
   const [initializingData, setInitializingData] = useState(false);
-  const [bookingPreselection, setBookingPreselection] = useState<any>(null);
+
+  const [bookingPreselection, setBookingPreselection] = useState<any>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const serviceId = params.get("serviceId");
+
+    if (serviceId) {
+      return {
+        preselectedService: serviceId,
+        preselectedTeamMember: params.get("teamMemberId"),
+        preselectedDate: params.get("date"), // Expecting YYYY-MM-DD
+        preselectedTime: params.get("time"), // Expecting HH:MM
+        // Provide defaults or minimal info so BookingFlow can fetch the rest
+      };
+    }
+    return null;
+  });
 
   const [selectedProgramId, setSelectedProgramId] = useState<string | null>(() => {
     const params = new URLSearchParams(window.location.search);
@@ -139,6 +156,29 @@ function AppContent() {
       setActiveView("home");
     }
   }, [user, activeView]);
+
+  // Force Booking View if URL parameters are present (Safe-guard against redirects)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const serviceId = params.get("serviceId");
+
+    if (serviceId) {
+      if (activeView !== "booking") {
+        console.log("Direct Link: Enforcing booking view");
+        setActiveView("booking");
+      }
+
+      if (!bookingPreselection) {
+        console.log("Direct Link: Setting preselection data");
+        setBookingPreselection({
+          preselectedService: serviceId,
+          preselectedTeamMember: params.get("teamMemberId"),
+          preselectedDate: params.get("date"),
+          preselectedTime: params.get("time"),
+        });
+      }
+    }
+  }, [activeView, bookingPreselection]);
 
   // Role Helpers
   // Derived state for roles
