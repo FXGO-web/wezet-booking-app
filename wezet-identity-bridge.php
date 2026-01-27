@@ -42,6 +42,9 @@ class Wezet_Identity_Bridge
         // Redirect Login/Register pages to Booking SSO
         add_action('template_redirect', array($this, 'redirect_login_pages'));
 
+        // FORCE CENTRAL LOGIN: Redirect wp-login.php also
+        add_action('login_init', array($this, 'redirect_wp_login'));
+
         // Optional: Shortcode for Login Button
         add_shortcode('wezet_login_button', array($this, 'render_login_button'));
     }
@@ -230,6 +233,29 @@ class Wezet_Identity_Bridge
             wp_redirect($sso_link);
             exit;
         }
+    }
+
+    public function redirect_login_pages()
+    {
+        // ... (existing code for redirect_login_pages is fine, keeping it separate for page slugs) ...
+        // We need to keep the existing implementation but I am adding the new function below it.
+        // But since I am replacing a chunk, let me just add the function *after* redirect_login_pages
+    }
+
+    /**
+     * Force WP Login PHP to SSO
+     */
+    public function redirect_wp_login()
+    {
+        if (isset($_GET['action']) && $_GET['action'] == 'logout')
+            return;
+        if (isset($_POST['log']))
+            return; // Allow normal login attempts (for admin backdoors if needed)
+
+        $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
+        $current_url = home_url();
+        wp_redirect($booking_app_url . '&redirect=' . urlencode($current_url));
+        exit;
     }
 
     public function render_login_button()

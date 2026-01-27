@@ -30,8 +30,8 @@ class Wezet_Learn_SSO
         // Add "Login with Wezet" shortcode [wezet_login_button]
         add_shortcode('wezet_login_button', array($this, 'render_login_button'));
 
-        // Redirect wp-login.php to SSO (Optional, uncomment to force)
-        // add_action('login_init', array($this, 'redirect_wp_login'));
+        // Redirect wp-login.php to SSO (FORCE CENTRAL LOGIN)
+        add_action('login_init', array($this, 'redirect_wp_login'));
     }
 
     /**
