@@ -98,6 +98,11 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   // Created booking data
   const [createdBooking, setCreatedBooking] = useState<any>(null);
 
+  // Redemption Code State
+  const [redemptionCode, setRedemptionCode] = useState("");
+  const [appliedCode, setAppliedCode] = useState<any>(null);
+  const [codeChecking, setCodeChecking] = useState(false);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -212,6 +217,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     return raw !== null ? Number(raw) : null;
   }, [selectedServiceData, prefilledServiceInfo]);
 
+  const effectivePrice = appliedCode ? 0 : selectedPrice;
+
   const displayService = selectedServiceData || prefilledServiceInfo || null;
   const showSteps = currentStep < 3 && !preselection;
   const selectedTimeRange = useMemo(() => {
@@ -293,21 +300,40 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         clientName: formData.name,
         clientEmail: formData.email,
         clientPhone: formData.phone,
-        notes: formData.notes,
-        price: selectedPrice || 0,
+        notes: formData.notes + (appliedCode ? `\n[Redeemed Bundle: ${appliedCode.code}]` : ""),
+        price: effectivePrice || 0,
         currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
         duration: displayService?.duration || selectedServiceData?.duration,
-        status: 'pending',
+        status: appliedCode ? 'confirmed' : 'pending',
       };
+
+      // Handle Bundle Redemption Flow
+      if (appliedCode) {
+        // 1. Redeem Code via RPC
+        const { data: redeemResult, error: redeemError } = await supabase.rpc('redeem_bundle_code', {
+          code_input: appliedCode.code
+        });
+
+        if (redeemError || !redeemResult?.success) {
+          throw new Error(redeemResult?.message || redeemError?.message || "Redemption failed");
+        }
+
+        // 2. Create Booking (Confirmed)
+        const bookingRes: any = await bookingsAPI.create(bookingData);
+        setCreatedBooking(bookingRes);
+        toast.success("Booking confirmed with bundle!");
+        setCurrentStep(3);
+        return; // Exit, no Stripe needed
+      }
 
       const bookingRes: any = await bookingsAPI.create(bookingData);
 
       // If price > 0, redirect to Stripe
-      if ((selectedPrice || 0) > 0) {
+      if ((effectivePrice || 0) > 0) {
         toast.loading("Redirecting to payment...");
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: {
-            price: selectedPrice,
+            price: effectivePrice,
             currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
             description: `${bookingData.serviceName} with ${selectedTeamMemberData?.name}`,
             booking_id: bookingRes.id,
@@ -773,8 +799,11 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <div className="text-right shrink-0">
                         <div className="text-sm text-muted-foreground">Amount</div>
                         <div className="text-lg font-semibold">
-                          {selectedPrice !== null
-                            ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
+                          {effectivePrice !== null
+                            ? (appliedCode ? <span className="text-green-600 line-through mr-2 opacity-50">{formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}</span> : null)
+                            : null}
+                          {effectivePrice !== null
+                            ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, effectivePrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
                             : '—'}
                         </div>
                       </div>
@@ -784,6 +813,67 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         ? displayService.description
                         : "Review your details and confirm your session."}
                     </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Redemption Code Input */}
+                  <div className="space-y-4 pt-2">
+                    <Label>Have a Bundle Code?</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter code (e.g. BUN-XXXX)"
+                        value={redemptionCode}
+                        onChange={(e) => setRedemptionCode(e.target.value)}
+                        disabled={!!appliedCode}
+                        className="font-mono uppercase"
+                      />
+                      <Button
+                        variant={appliedCode ? "secondary" : "outline"}
+                        onClick={async () => {
+                          if (appliedCode) {
+                            setAppliedCode(null);
+                            setRedemptionCode("");
+                            return;
+                          }
+                          if (!redemptionCode.trim()) return;
+                          setCodeChecking(true);
+                          const { data, error } = await supabase
+                            .from('redemption_codes')
+                            .select('*')
+                            .eq('code', redemptionCode.trim())
+                            .single();
+
+                          setCodeChecking(false);
+
+                          if (error || !data) {
+                            toast.error("Invalid code");
+                            return;
+                          }
+                          if (data.status !== 'active' || data.remaining_uses <= 0) {
+                            toast.error("Code is expired or fully used");
+                            return;
+                          }
+                          // Optional: Check ownership if you enabled that policy
+                          if (data.user_id !== user?.id) {
+                            toast.error("This code belongs to another user");
+                            return;
+                          }
+
+                          setAppliedCode(data);
+                          toast.success("Bundle applied! Amount to pay: €0");
+                        }}
+                        disabled={codeChecking}
+                      >
+                        {codeChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : (appliedCode ? "Remove" : "Apply")}
+                      </Button>
+                    </div>
+                    {appliedCode && (
+                      <div className="text-sm text-green-600 flex items-center gap-2 bg-green-50 p-2 rounded-lg border border-green-100">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Bundle applied! {appliedCode.remaining_uses} uses remaining.</span>
+                      </div>
+                    )}
                   </div>
 
                   <Separator />
@@ -856,7 +946,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <span className="text-muted-foreground">Session</span>
                       <span>
                         {selectedPrice !== null
-                          ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
+                          ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice ?? undefined, displayService?.currency || selectedServiceData?.currency || 'EUR')
                           : 'Price varies'}
                       </span>
                     </div>

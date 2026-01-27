@@ -611,12 +611,52 @@ export interface Database {
                     updated_at?: string
                 }
             }
+            redemption_codes: {
+                Row: {
+                    id: string
+                    code: string
+                    bundle_purchase_id: string | null
+                    user_id: string
+                    total_uses: number
+                    remaining_uses: number
+                    status: 'active' | 'completed' | 'expired'
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    code: string
+                    bundle_purchase_id?: string | null
+                    user_id: string
+                    total_uses?: number
+                    remaining_uses?: number
+                    status?: 'active' | 'completed' | 'expired'
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    code?: string
+                    bundle_purchase_id?: string | null
+                    user_id?: string
+                    total_uses?: number
+                    remaining_uses?: number
+                    status?: 'active' | 'completed' | 'expired'
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
         }
         Views: {
             [_: string]: never
         }
         Functions: {
-            [_: string]: never
+            redeem_bundle_code: {
+                Args: {
+                    code_input: string
+                }
+                Returns: Json
+            }
         }
         Enums: {
             [_: string]: never
