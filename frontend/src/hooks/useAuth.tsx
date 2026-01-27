@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name: string, role?: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, name: string, role?: string) => Promise<{ error: any; confirmationRequired?: boolean }>;
   signOut: () => Promise<void>;
   getAccessToken: () => string | null;
   resetPassword: (email: string) => Promise<{ error: any }>;
@@ -126,9 +126,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // because we need to set user_metadata which requires admin privileges
 
     try {
-      await authAPI.signup(email, password, name, role as "admin" | "instructor" | "client");
+      const data = await authAPI.signup(email, password, name, role as "admin" | "instructor" | "client");
 
-      // After signup, sign them in
+      // Check if email confirmation is required (User created but no session)
+      if (data.user && !data.session) {
+        return { error: null, confirmationRequired: true };
+      }
+
+      // If we have a session, we are effectively signed in.
+      if (data.session) {
+        return { error: null };
+      }
+
+      // Fallback: try sign in manually if for some reason session wasn't returned but no confirmation needed?
+      // (This path is unlikely if Supabase behaves correctly)
       return await signIn(email, password);
     } catch (error) {
       console.error('Sign up error:', error);

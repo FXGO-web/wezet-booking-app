@@ -95,9 +95,11 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
       const adminEmails = ['fx@fxcreativestudio.com', 'fx_dev@wezet.xyz', 'hanna@wezet.xyz', 'saszeline@theassana.com'];
       const role = adminEmails.includes(signUpEmail.toLowerCase()) ? 'Admin' : 'client';
 
-      const { error } = await signUp(signUpEmail, signUpPassword, signUpName, role);
+      const { error, confirmationRequired } = await signUp(signUpEmail, signUpPassword, signUpName, role);
       if (error) {
         setError(error.message || 'Failed to sign up');
+      } else if (confirmationRequired) {
+        setSuccess('Account created! Please check your email to verify your account.');
       } else {
         setSuccess('Account created successfully! You are now logged in.');
       }
