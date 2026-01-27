@@ -28,6 +28,9 @@ class Wezet_Identity_Bridge
         // Hook into standard WP User registration
         add_action('user_register', array($this, 'sync_wp_user'), 10, 1);
 
+        // Sync on Login (Legacy Migration)
+        add_action('wp_login', array($this, 'sync_wp_user_on_login'), 10, 2);
+
         // --- INBOUND LOGIC (Supabase -> WP) ---
         // Intercept requests to check for SSO token
         add_action('init', array($this, 'handle_sso_callback'));
@@ -57,6 +60,14 @@ class Wezet_Identity_Bridge
     public function sync_wp_user($user_id)
     {
         $this->sync_user_to_supabase($user_id, 'wp_register');
+    }
+
+    /**
+     * Sync on WP Login
+     */
+    public function sync_wp_user_on_login($user_login, $user)
+    {
+        $this->sync_user_to_supabase($user->ID, 'shop_login');
     }
 
     /**

@@ -11,8 +11,9 @@ if (!defined('ABSPATH')) {
 }
 
 // CONFIGURATION
-// TODO: Replace with your actual Service Role Key (Same as Shop Bridge)
+// Replace with your actual URL and Service Role Key from Supabase Dashboard > Settings > API
 define('WEZET_LEARN_SUPABASE_URL', 'https://aadzzhdouuxkvelxyoyf.supabase.co');
+define('WEZET_LEARN_SUPABASE_FUNCTION_URL', 'https://aadzzhdouuxkvelxyoyf.supabase.co/functions/v1/sync-user');
 define('WEZET_LEARN_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhZHp6aGRvdXV4a3ZlbHh5b3lmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzcxNzM2OSwiZXhwIjoyMDc5MjkzMzY5fQ.AUVvOxgVg2zxO4M97CPLG9lyvcqUYda5alB3KiNFPFI');
 
 class Wezet_Learn_SSO
@@ -20,14 +21,56 @@ class Wezet_Learn_SSO
 
     public function __construct()
     {
-        // Intercept requests to check for SSO token
+        // 1. INBOUND SSO: Intercept requests to check for SSO token
         add_action('init', array($this, 'handle_sso_callback'));
+
+        // 2. OUTBOUND SYNC: Sync user when they log in to Learn (Legacy Migration)
+        add_action('wp_login', array($this, 'sync_wp_user_on_login'), 10, 2);
 
         // Add "Login with Wezet" shortcode [wezet_login_button]
         add_shortcode('wezet_login_button', array($this, 'render_login_button'));
 
         // Redirect wp-login.php to SSO (Optional, uncomment to force)
         // add_action('login_init', array($this, 'redirect_wp_login'));
+    }
+
+    /**
+     * Sync WP User to Supabase on Login
+     */
+    public function sync_wp_user_on_login($user_login, $user)
+    {
+        $this->sync_user_to_supabase($user->ID, 'learn_login');
+    }
+
+    /**
+     * Core Sync Logic (Outbound)
+     */
+    private function sync_user_to_supabase($user_id, $source)
+    {
+        $user_info = get_userdata($user_id);
+        if (!$user_info)
+            return;
+
+        // Prepare Payload
+        $payload = array(
+            'email' => $user_info->user_email,
+            'firstName' => $user_info->first_name,
+            'lastName' => $user_info->last_name,
+            'role' => in_array('administrator', $user_info->roles) ? 'Admin' : 'Student',
+            'source' => $source,
+            'wp_user_id' => $user_id
+        );
+
+        // Send to Supabase Edge Function
+        wp_remote_post(WEZET_LEARN_SUPABASE_FUNCTION_URL, array(
+            'headers' => array(
+                'Content-Type' => 'application/json',
+                'Authorization' => 'Bearer ' . WEZET_LEARN_SERVICE_KEY
+            ),
+            'body' => json_encode($payload),
+            'blocking' => false, // Async
+            'timeout' => 15
+        ));
     }
 
     /**
