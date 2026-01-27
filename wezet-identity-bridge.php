@@ -235,12 +235,7 @@ class Wezet_Identity_Bridge
         }
     }
 
-    public function redirect_login_pages()
-    {
-        // ... (existing code for redirect_login_pages is fine, keeping it separate for page slugs) ...
-        // We need to keep the existing implementation but I am adding the new function below it.
-        // But since I am replacing a chunk, let me just add the function *after* redirect_login_pages
-    }
+
 
     /**
      * Force WP Login PHP to SSO
