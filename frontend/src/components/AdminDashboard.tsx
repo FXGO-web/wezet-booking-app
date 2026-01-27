@@ -24,6 +24,7 @@ import {
   TrendingUp,
   Layers,
   GraduationCap,
+  Package,
 } from "lucide-react";
 import { CurrencySelector } from "./CurrencySelector";
 import { statsAPI, bookingsAPI, settingsAPI } from "../utils/api";
@@ -104,6 +105,12 @@ const navigationCards: NavigationCard[] = [
     description: "Manage courses, modules and lessons",
     icon: GraduationCap,
     route: "admin-education",
+  },
+  {
+    title: "Bundles",
+    description: "Create and manage package bundles",
+    icon: Package,
+    route: "bundle-management",
   },
   {
     title: "Analytics & Reports",

@@ -44,7 +44,10 @@ import { BookingSuccess } from "./components/BookingSuccess";
 import { EducationDashboard } from "./components/education/EducationDashboard";
 import { ModuleOverview } from "./components/education/ModuleOverview";
 import { LessonPlayer } from "./components/education/LessonPlayer";
+import { BundlesList } from "./components/BundlesList";
+import { BundleCheckout } from "./components/BundleCheckout";
 import { EducationAdmin } from "./components/admin/EducationAdmin";
+import { BundleManagement } from "./components/BundleManagement";
 import {
   Wind,
   Sparkles,
@@ -73,7 +76,8 @@ import {
   Mountain,
   Grid3x3,
   Settings,
-  GraduationCap
+  GraduationCap,
+  Package
 } from "lucide-react";
 
 function AppContent() {
@@ -123,6 +127,7 @@ function AppContent() {
   });
 
   const [selectedEducationId, setSelectedEducationId] = useState<string | null>(null);
+  const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null);
 
   const [embedMode, setEmbedMode] = useState(() => {
     const params = new URLSearchParams(window.location.search);
@@ -698,6 +703,30 @@ function AppContent() {
     );
   }
 
+  if (activeView === "bundles-directory") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("home")} />
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <h1 className="text-3xl font-bold mb-8">Packages & Bundles</h1>
+          <BundlesList onBuy={(id) => {
+            setSelectedBundleId(id);
+            setActiveView('bundle-checkout');
+          }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (activeView === "bundle-checkout") {
+    return (
+      <BundleCheckout
+        bundleId={selectedBundleId}
+        onBack={() => setActiveView('bundles-directory')}
+      />
+    );
+  }
+
   if (activeView === "digital-content-management") {
     return (
       <div>
@@ -730,6 +759,15 @@ function AppContent() {
       <div>
         <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
         <ProductsOnDemand onBack={() => setActiveView("admin-dashboard")} />
+      </div>
+    );
+  }
+
+  if (activeView === "bundle-management") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
+        <BundleManagement onBack={() => setActiveView("admin-dashboard")} />
       </div>
     );
   }
@@ -986,6 +1024,26 @@ function AppContent() {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Explore our products, retreats, and offerings.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Packages & Bundles - Everyone */}
+            <button
+              onClick={() => setActiveView("bundles-directory")}
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center transition-colors bg-primary/10 group-hover:bg-primary/20">
+                  <Package className="h-6 w-6 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3>Packages & Bundles</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    View and purchase session packages
                   </p>
                 </div>
               </div>

@@ -49,20 +49,63 @@ Deno.serve(async (req) => {
     }
 
     try {
-        const { price, currency, description, booking_id, return_url, customer_email } = await req.json()
+        const { price, currency, description, booking_id, bundle_purchase_id, return_url, customer_email } = await req.json()
 
-        console.log(`Creating checkout session for booking ${booking_id}: ${price} ${currency}`);
+        console.log(`Creating checkout session. Booking: ${booking_id}, BundlePurchase: ${bundle_purchase_id}`);
+
+        let finalPrice = price;
+        let finalCurrency = currency || 'eur';
+        let finalDescription = description || 'Wezet Booking';
+
+        // If bundle_purchase_id is present, validate price against DB
+        if (bundle_purchase_id) {
+            const supabase = createClient(
+                Deno.env.get("SUPABASE_URL") ?? "",
+                Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+            );
+
+            // 1. Get the purchase record to find the bundle_id
+            const { data: purchase, error: purchaseError } = await supabase
+                .from('bundle_purchases')
+                .select('bundle_id')
+                .eq('id', bundle_purchase_id)
+                .single();
+
+            if (purchaseError || !purchase) {
+                console.error("Error fetching bundle purchase:", purchaseError);
+                throw new Error("Invalid bundle purchase ID");
+            }
+
+            if (purchase.bundle_id) {
+                // 2. Get the bundle details
+                const { data: bundle, error: bundleError } = await supabase
+                    .from('bundles')
+                    .select('price, currency, name')
+                    .eq('id', purchase.bundle_id)
+                    .single();
+
+                if (bundleError || !bundle) {
+                    console.error("Error fetching bundle:", bundleError);
+                    throw new Error("Bundle not found");
+                }
+
+                // Override client-provided values with DB values
+                finalPrice = bundle.price;
+                finalCurrency = bundle.currency;
+                finalDescription = `Bundle: ${bundle.name}`;
+            }
+        }
 
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: [
                 {
                     price_data: {
-                        currency: currency || 'eur',
+                        currency: finalCurrency,
                         product_data: {
-                            name: description || 'Wezet Booking',
+                            name: finalDescription,
                         },
-                        unit_amount: Math.round(Number(price) * 100),
+                        unit_amount: Math.round(Number(finalPrice) * 100),
                     },
                     quantity: 1,
                 },
@@ -73,6 +116,7 @@ Deno.serve(async (req) => {
             customer_email: customer_email,
             metadata: {
                 booking_id: booking_id,
+                bundle_purchase_id: bundle_purchase_id,
             },
         })
 
