@@ -4,6 +4,7 @@ import { supabase } from '../../utils/supabase/client';
 import { Loader2, ShieldCheck, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../ui/card';
+import { AuthPage } from '../AuthPage';
 
 export function SSOHandler() {
     const { session, loading: authLoading } = useAuth();
@@ -99,18 +100,10 @@ export function SSOHandler() {
         );
     }
 
-    // If session is missing, we render nothing (or a prompt), primarily assuming App.tsx will show AuthPage.
-    // But if we are inside a protected route wrapper, we won't get here unless logged in.
-    // If we are NOT in a protected route, we should show a manual "Login" button or auto-redirect?
-    // Let's assume this component is used in a specific route that might handle its own Auth UI if needed.
+    // If session is missing, we render the AuthPage directly so the user can sign in.
+    // Once they sign in, `session` will update, and the useEffect above will trigger the redirect.
     if (!session && !authLoading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center p-6 space-y-4 text-center">
-                <h1 className="text-2xl font-bold">Sign In Required</h1>
-                <p className="text-muted-foreground">Please sign in to access {new URLSearchParams(window.location.search).get('redirect') || 'the application'}</p>
-                {/* The App's main layout will likely show the login form if we return null here but handle 'view' state */}
-            </div>
-        );
+        return <AuthPage mode="signin" />;
     }
 
     return (
