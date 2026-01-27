@@ -54,6 +54,7 @@ import {
   Loader2,
   Database,
 } from "lucide-react";
+import { SSOHandler } from "./components/auth/SSOHandler";
 
 import { Card, CardContent } from "./components/ui/card";
 import {
@@ -338,6 +339,10 @@ function AppContent() {
     }
     setInitializingData(false);
   };
+
+  if (activeView === "sso-authorize") {
+    return <SSOHandler />;
+  }
 
   // Show loading state
   if (loading) {
