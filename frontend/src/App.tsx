@@ -77,7 +77,8 @@ import {
   Grid3x3,
   Settings,
   GraduationCap,
-  Package
+  Package,
+  Home
 } from "lucide-react";
 
 function AppContent() {
@@ -289,6 +290,16 @@ function AppContent() {
               )}
             </>
           )}
+          {/* Home Button linking to Shop */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-xs md:text-sm gap-2 ml-2"
+            onClick={() => window.location.href = 'https://shop.wezet.xyz'}
+          >
+            <Home className="h-4 w-4" />
+            HOME
+          </Button>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
           <CurrencySelector />
