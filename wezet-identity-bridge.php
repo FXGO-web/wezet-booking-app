@@ -36,6 +36,9 @@ class Wezet_Identity_Bridge
         // Redirect WooCommerce "My Account" to Booking Dashboard
         add_action('template_redirect', array($this, 'redirect_my_account'));
 
+        // Redirect Login/Register pages to Booking SSO
+        add_action('template_redirect', array($this, 'redirect_login_pages'));
+
         // Optional: Shortcode for Login Button
         add_shortcode('wezet_login_button', array($this, 'render_login_button'));
     }
@@ -187,6 +190,33 @@ class Wezet_Identity_Bridge
         // Check for common slugs used by account plugins (English & Spanish)
         if (is_user_logged_in() && is_page(array('account', 'profile', 'my-account', 'mi-cuenta', 'usuario', 'perfil'))) {
             wp_redirect('https://booking.wezet.xyz/?view=client-dashboard');
+            exit;
+        }
+    }
+
+    /**
+     * Redirect Login & Register Pages to SSO
+     */
+    public function redirect_login_pages()
+    {
+        // If user is already logged in, do nothing (or let redirect_my_account handle it)
+        if (is_user_logged_in())
+            return;
+
+        // Check for Login/Register pages
+        // Adjust these slugs to match your actual pages in Shop
+        $login_slugs = array('login', 'signin', 'iniciar-sesion', 'register', 'signup', 'registro', 'acceder');
+
+        if (is_page($login_slugs)) {
+            // Build SSO Link
+            $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
+            // Determine where to send them back after login (Home or the page they were trying to visit?)
+            // Usually Home is safer to avoid looping back to /login
+            $redirect_back = home_url();
+
+            $sso_link = $booking_app_url . '&redirect=' . urlencode($redirect_back);
+
+            wp_redirect($sso_link);
             exit;
         }
     }

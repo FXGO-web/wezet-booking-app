@@ -950,26 +950,42 @@ function AppContent() {
 
             {/* Education Module - "Premium" look */}
             {/* Education Module */}
+            {/* Education Module - Public Link */}
             <button
-              onClick={() => isAdmin ? setActiveView("education-dashboard") : null}
-              disabled={!isAdmin}
-              className={`group text-left p-8 rounded-2xl border bg-card transition-all md:col-span-2 relative overflow-hidden ${isAdmin ? "hover:shadow-xl hover:scale-[1.02] cursor-pointer" : "opacity-80 cursor-not-allowed"}`}
+              onClick={() => window.location.href = '/?view=sso-authorize&redirect=https://learn.wezet.xyz'}
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
             >
               <div className="space-y-4">
-                <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-colors ${isAdmin ? "bg-primary/10 group-hover:bg-primary/20" : "bg-muted"}`}>
-                  <GraduationCap className={`h-6 w-6 ${isAdmin ? "text-primary" : "text-muted-foreground"}`} />
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center transition-colors bg-primary/10 group-hover:bg-primary/20">
+                  <GraduationCap className="h-6 w-6 text-primary" />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h3 className={!isAdmin ? "text-muted-foreground" : ""}>Wezet Breathwork Education</h3>
-                    {isAdmin ? (
-                      <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">New</Badge>
-                    ) : (
-                      <Badge variant="outline" className="border-muted-foreground/50 text-muted-foreground">Coming Soon</Badge>
-                    )}
+                    <h3>Wezet Breathwork Education</h3>
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">New</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     Master the art of breathwork. 6 Modules, 20 Weeks.
+                  </p>
+                </div>
+              </div>
+            </button>
+
+            {/* Shop Module - New */}
+            <button
+              onClick={() => window.location.href = '/?view=sso-authorize&redirect=https://shop.wezet.xyz'}
+              className="group text-left p-8 rounded-2xl border bg-card hover:shadow-xl transition-all hover:scale-[1.02] cursor-pointer"
+            >
+              <div className="space-y-4">
+                <div className="h-12 w-12 rounded-xl flex items-center justify-center transition-colors bg-primary/10 group-hover:bg-primary/20">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h3>Wezet Shop</h3>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Explore our products, retreats, and offerings.
                   </p>
                 </div>
               </div>
