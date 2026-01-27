@@ -32,6 +32,9 @@ class Wezet_Learn_SSO
 
         // Redirect wp-login.php to SSO (FORCE CENTRAL LOGIN)
         add_action('login_init', array($this, 'redirect_wp_login'));
+
+        // Also check frontend pages (Tutor LMS Dashboard, etc.)
+        add_action('template_redirect', array($this, 'redirect_wp_login'));
     }
 
     /**
@@ -176,13 +179,37 @@ class Wezet_Learn_SSO
     {
         if (isset($_GET['action']) && $_GET['action'] == 'logout')
             return;
-        if (isset($_POST['log']))
-            return; // Allow normal login attempt
 
-        $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
-        $current_url = home_url();
-        wp_redirect($booking_app_url . '&redirect=' . urlencode($current_url));
-        exit;
+        // 1. Force Redirect on Standard WP Login (POST or GET)
+        // We remove the check for POST['log'] to aggressively force SSO unless it's an AJAX request
+        if (defined('DOING_AJAX') && DOING_AJAX)
+            return;
+
+        // 2. Check for Tutor LMS / Page Slugs
+        $current_uri = $_SERVER['REQUEST_URI'];
+        $force_redirect_slugs = array('login', 'signin', 'dashboard', 'student-registration', 'iniciar-sesion', 'registro');
+
+        $should_redirect = false;
+
+        // Check standard login_init (wp-login.php)
+        if (strpos($_SERVER['SCRIPT_NAME'], 'wp-login.php') !== false) {
+            $should_redirect = true;
+        }
+
+        // Check slugs
+        foreach ($force_redirect_slugs as $slug) {
+            if (strpos($current_uri, $slug) !== false) {
+                $should_redirect = true;
+                break;
+            }
+        }
+
+        if ($should_redirect && !is_user_logged_in()) {
+            $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
+            $current_url = home_url($current_uri); // Persist deep link
+            wp_redirect($booking_app_url . '&redirect=' . urlencode($current_url));
+            exit;
+        }
     }
 }
 
