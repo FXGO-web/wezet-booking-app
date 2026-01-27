@@ -14,6 +14,8 @@ import {
   Zap,
   Sparkles,
   ChevronRight,
+  Mountain,
+  GraduationCap,
   Plus,
   Users,
   Loader2,
@@ -488,12 +490,22 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
               <CardContent className="space-y-3">
                 <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('calendar')}>
                   <Calendar className="mr-2 h-4 w-4" />
-                  View Calendar
+                  Book a Session
                 </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => alert("Favorites feature coming soon")}>
-                  <Heart className="mr-2 h-4 w-4" />
-                  My Favorites
+                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('calendar')}>
+                  <Mountain className="mr-2 h-4 w-4" />
+                  Programs & Retreats
                 </Button>
+                <Separator />
+                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/?view=sso-authorize&redirect=https://shop.wezet.xyz'}>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Wezet Shop (Home)
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/?view=sso-authorize&redirect=https://learn.wezet.xyz'}>
+                  <GraduationCap className="mr-2 h-4 w-4" />
+                  Wezet Learning (Courses)
+                </Button>
+                <Separator />
                 <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('messages')}>
                   <MessageCircle className="mr-2 h-4 w-4" />
                   Messages

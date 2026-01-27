@@ -1,0 +1,146 @@
+<?php
+/**
+ * Plugin Name: Wezet Learn SSO Client
+ * Description: Allows logging in via Wezet Booking App (Supabase).
+ * Version: 1.0
+ * Author: Wezet
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// CONFIGURATION
+// TODO: Replace with your actual Service Role Key (Same as Shop Bridge)
+define('WEZET_LEARN_SUPABASE_URL', 'https://aadzzhdouuxkvelxyoyf.supabase.co');
+define('WEZET_LEARN_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFhZHp6aGRvdXV4a3ZlbHh5b3lmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MzcxNzM2OSwiZXhwIjoyMDc5MjkzMzY5fQ.AUVvOxgVg2zxO4M97CPLG9lyvcqUYda5alB3KiNFPFI');
+
+class Wezet_Learn_SSO
+{
+
+    public function __construct()
+    {
+        // Intercept requests to check for SSO token
+        add_action('init', array($this, 'handle_sso_callback'));
+
+        // Add "Login with Wezet" shortcode [wezet_login_button]
+        add_shortcode('wezet_login_button', array($this, 'render_login_button'));
+
+        // Redirect wp-login.php to SSO (Optional, uncomment to force)
+        // add_action('login_init', array($this, 'redirect_wp_login'));
+    }
+
+    /**
+     * Handle the callback from Booking App
+     * ?wezet_sso_token=ACCESS_TOKEN
+     */
+    public function handle_sso_callback()
+    {
+        if (!isset($_GET['wezet_sso_token'])) {
+            return;
+        }
+
+        $access_token = sanitize_text_field($_GET['wezet_sso_token']);
+
+        // 1. Validate Token with Supabase
+        $user_data = $this->validate_token($access_token);
+
+        if (!$user_data || isset($user_data->error)) {
+            wp_die('SSO Validation Failed: ' . json_encode($user_data));
+        }
+
+        $email = $user_data->email; // The email from Supabase Auth
+
+        // 2. Find or Create WP User
+        $user = get_user_by('email', $email);
+
+        if (!$user) {
+            // Auto-create user if they don't exist in Learn
+            // We use the email as username for simplicity
+            $username = $email;
+            $random_password = wp_generate_password(12, false);
+            $user_id = wp_create_user($username, $random_password, $email);
+
+            if (is_wp_error($user_id)) {
+                wp_die('Could not create user: ' . $user_id->get_error_message());
+            }
+
+            // Set default role (Subscriber/Student)
+            $user = get_user_by('id', $user_id);
+            // Update name from metadata if available
+            if (isset($user_data->user_metadata->full_name)) {
+                $name_parts = explode(' ', $user_data->user_metadata->full_name, 2);
+                wp_update_user(array(
+                    'ID' => $user_id,
+                    'first_name' => $name_parts[0],
+                    'last_name' => isset($name_parts[1]) ? $name_parts[1] : ''
+                ));
+            }
+        }
+
+        // 3. Log the user in
+        wp_set_current_user($user->ID);
+        wp_set_auth_cookie($user->ID);
+
+        // 4. Redirect to home or intended page (remove token from URL)
+        wp_redirect(home_url('/dashboard'));
+        exit;
+    }
+
+    /**
+     * Call Supabase Auth API to get user details from token
+     */
+    private function validate_token($token)
+    {
+        $url = WEZET_LEARN_SUPABASE_URL . '/auth/v1/user';
+
+        $response = wp_remote_get($url, array(
+            'headers' => array(
+                'Authorization' => 'Bearer ' . $token,
+                'apikey' => WEZET_LEARN_SERVICE_KEY // We trust the service key to validate? 
+                // Actually, for /user endpoint, we just pass the Bearer token. 
+                // But providing APIKey header is usually required by Kong gateway.
+                // We use SERVICE KEY here to ensure we bypass RLS if we need to, but for /user simple check is enough.
+            ),
+            'timeout' => 15
+        ));
+
+        if (is_wp_error($response)) {
+            return null;
+        }
+
+        $body = wp_remote_retrieve_body($response);
+        return json_decode($body);
+    }
+
+    public function render_login_button()
+    {
+        if (is_user_logged_in()) {
+            return '<a href="/dashboard-cursos" class="button">Ir a mis Cursos</a>';
+        }
+
+        // This URL points to your Vercel App's SSO route
+        // IMPORTANT: Update this if your production URL is different
+        $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
+        $current_url = 'https://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI']; // or hardcode learn.wezet.xyz
+
+        $sso_link = $booking_app_url . '&redirect=' . urlencode($current_url);
+
+        return '<a href="' . esc_url($sso_link) . '" class="wezet-sso-button" style="background-color: #000; color: #fff; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login con Wezet</a>';
+    }
+
+    public function redirect_wp_login()
+    {
+        if (isset($_GET['action']) && $_GET['action'] == 'logout')
+            return;
+        if (isset($_POST['log']))
+            return; // Allow normal login attempt
+
+        $booking_app_url = 'https://booking.wezet.xyz/?view=sso-authorize';
+        $current_url = home_url();
+        wp_redirect($booking_app_url . '&redirect=' . urlencode($current_url));
+        exit;
+    }
+}
+
+new Wezet_Learn_SSO();
