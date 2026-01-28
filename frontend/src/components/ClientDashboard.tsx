@@ -19,9 +19,10 @@ import {
   Plus,
   Users,
   Loader2,
+  Package, // Added
   ArrowRight
 } from "lucide-react";
-import { bookingsAPI, sessionsAPI, availabilityAPI } from "../utils/api";
+import { bookingsAPI, sessionsAPI, availabilityAPI, bundlesAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { useCurrency } from "../context/CurrencyContext";
 
@@ -46,6 +47,7 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
   const [upcomingSessions, setUpcomingSessions] = useState<any[]>([]);
   const [pastSessions, setPastSessions] = useState<any[]>([]);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [myBundles, setMyBundles] = useState<any[]>([]); // Added
   const [recommendation, setRecommendation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -72,6 +74,10 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
 
         // 3. Fetch Availability (for suggestions)
         const availabilityData = await availabilityAPI.getAvailability(currentYear, currentMonth);
+
+        // 4. Fetch My Bundles
+        const { myBundles } = await bundlesAPI.getMyBundles(user.id);
+        setMyBundles(myBundles);
 
         // Process Bookings
         const upcoming: any[] = [];
@@ -482,6 +488,34 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {myBundles.length > 0 && (
+              <Card className="bg-gradient-to-br from-[#0D7A7A]/5 to-[#4ECDC4]/5 border-[#0D7A7A]/20">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Package className="h-4 w-4 text-[#0D7A7A]" />
+                    Your Active Bundles
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {myBundles.map((purchase) => (
+                    <div key={purchase.id} className="space-y-2">
+                      <div className="flex justify-between items-start">
+                        <p className="font-medium text-sm">{purchase.bundle?.name || "Bundle"}</p>
+                        <Badge variant="secondary" className="bg-[#0D7A7A]/10 text-[#0D7A7A]">
+                          {purchase.remaining_credits} credits
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{purchase.bundle?.description}</p>
+                      <Separator className="bg-[#0D7A7A]/10" />
+                    </div>
+                  ))}
+                  <Button size="sm" variant="ghost" className="w-full h-8 text-xs" onClick={() => onNavigate?.('calendar')}>
+                    Use Credits
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Quick Actions */}
             <Card>
               <CardHeader>
@@ -495,6 +529,10 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
                 <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('calendar')}>
                   <Mountain className="mr-2 h-4 w-4" />
                   Programs & Retreats
+                </Button>
+                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('bundles-directory')}>
+                  <Package className="mr-2 h-4 w-4" />
+                  Buy Packages
                 </Button>
                 <Separator />
                 <Button variant="outline" className="w-full justify-start" onClick={() => window.location.href = '/?view=sso-authorize&redirect=https://shop.wezet.xyz'}>

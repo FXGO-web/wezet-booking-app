@@ -19,7 +19,7 @@ import {
   Loader2,
   MapPin
 } from "lucide-react";
-import { sessionsAPI as servicesAPI, teamMembersAPI, bookingsAPI } from "../utils/api";
+import { sessionsAPI as servicesAPI, teamMembersAPI, bookingsAPI, bundlesAPI } from "../utils/api";
 import { toast } from "sonner";
 import { format, parse, addMinutes, isBefore, startOfDay } from "date-fns";
 import { supabase } from "../utils/supabase/client";
@@ -47,7 +47,7 @@ interface BookingFlowProps {
 }
 
 export function BookingFlow({ preselection }: BookingFlowProps) {
-  const { convertAndFormat, formatFixedPrice } = useCurrency();
+  const { convertAndFormat, formatFixedPrice, currency } = useCurrency();
   const [currentStep, setCurrentStep] = useState<BookingStep>(preselection ? 2 : 1);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -98,20 +98,30 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   // Created booking data
   const [createdBooking, setCreatedBooking] = useState<any>(null);
 
-  // Redemption Code State
+  // Bundle Handling
+  const [myBundles, setMyBundles] = useState<any[]>([]);
+  const [selectedBundleId, setSelectedBundleId] = useState<string | null>(null);
+
+  // Redemption Code State (Legacy/Alternative)
   const [redemptionCode, setRedemptionCode] = useState("");
   const [appliedCode, setAppliedCode] = useState<any>(null);
   const [codeChecking, setCodeChecking] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [user]); // Add user dep to reload bundles if auth changes
 
   useEffect(() => {
     if (preselection?.preselectedService && !selectedService) {
       setSelectedService(preselection.preselectedService);
     }
   }, [preselection?.preselectedService, selectedService]);
+
+  useEffect(() => {
+    if (myBundles.length > 0 && !selectedBundleId && !appliedCode) {
+      // Auto-select first bundle if available? Maybe better to let user choose
+    }
+  }, [myBundles]);
 
   // Auto-advance after login
   useEffect(() => {
@@ -178,10 +188,19 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [servicesRes, teamRes] = await Promise.all([
+      const promises: Promise<any>[] = [
         servicesAPI.getAll(),
         teamMembersAPI.getAll({ status: 'active' })
-      ]);
+      ];
+
+      if (user?.id) {
+        promises.push(bundlesAPI.getMyBundles(user.id));
+      }
+
+      const results = await Promise.all(promises);
+      const servicesRes = results[0];
+      const teamRes = results[1];
+      const bundlesRes = results[2];
 
       // Filter out null values and ensure we have valid data
       const validServices = (servicesRes.services || []).filter((s: any) => s && s.id);
@@ -189,6 +208,10 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
       setServices(validServices);
       setTeamMembers(validTeamMembers);
+
+      if (bundlesRes?.myBundles) {
+        setMyBundles(bundlesRes.myBundles);
+      }
 
     } catch (error) {
       console.error("Error loading booking data:", error);
@@ -217,7 +240,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     return raw !== null ? Number(raw) : null;
   }, [selectedServiceData, prefilledServiceInfo]);
 
-  const effectivePrice = appliedCode ? 0 : selectedPrice;
+  const effectivePrice = (appliedCode || selectedBundleId) ? 0 : selectedPrice;
 
   const displayService = selectedServiceData || prefilledServiceInfo || null;
   const showSteps = currentStep < 3 && !preselection;
@@ -307,15 +330,33 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         status: appliedCode ? 'confirmed' : 'pending',
       };
 
-      // Handle Bundle Redemption Flow
-      if (appliedCode) {
-        // 1. Redeem Code via RPC
-        const { data: redeemResult, error: redeemError } = await supabase.rpc('redeem_bundle_code', {
-          code_input: appliedCode.code
-        });
+      // Handle Bundle Redemption Flow (Legacy Code or Active Bundle)
+      if (appliedCode || selectedBundleId) {
 
-        if (redeemError || !redeemResult?.success) {
-          throw new Error(redeemResult?.message || redeemError?.message || "Redemption failed");
+        if (selectedBundleId) {
+          // 1. Deduct Credit from Bundle Purchase
+          // @ts-ignore - RPC not yet in types
+          const { data: useResult, error: useError } = await supabase.rpc('use_bundle_credit', {
+            p_purchase_id: selectedBundleId
+          });
+
+          const result = useResult as { success: boolean; message: string } | null;
+
+          if (useError || !result?.success) {
+            throw new Error(result?.message || useError?.message || "Failed to use bundle credit");
+          }
+        } else if (appliedCode) {
+          // 1. Redeem Code via RPC
+          // @ts-ignore - RPC not yet in types
+          const { data: redeemResult, error: redeemError } = await supabase.rpc('redeem_bundle_code', {
+            code_input: appliedCode.code
+          });
+
+          const result = redeemResult as { success: boolean; message: string } | null;
+
+          if (redeemError || !result?.success) {
+            throw new Error(result?.message || redeemError?.message || "Redemption failed");
+          }
         }
 
         // 2. Create Booking (Confirmed)
@@ -797,35 +838,84 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         )}
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-sm text-muted-foreground">Amount</div>
-                        <div className="text-lg font-semibold">
-                          {effectivePrice !== null
-                            ? (appliedCode ? <span className="text-green-600 line-through mr-2 opacity-50">{formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}</span> : null)
-                            : null}
-                          {effectivePrice !== null
-                            ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, effectivePrice, displayService?.currency || selectedServiceData?.currency || 'EUR')
-                            : '—'}
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                          <span>{displayService?.duration || selectedServiceData?.duration || "—"} min</span>
+                          <span>•</span>
+                          <span>
+                            {selectedTimeRange || selectedTime || "Time TBD"}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-xs text-muted-foreground leading-relaxed bg-muted/40 rounded-lg p-3">
-                      {displayService?.description
-                        ? displayService.description
-                        : "Review your details and confirm your session."}
-                    </div>
+                    {selectedDate && selectedTime && (
+                      <div className="text-sm text-muted-foreground whitespace-nowrap">
+                        {format(selectedDate, 'PPP')}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 pt-4 border-t flex justify-between items-center md:hidden">
+                    <span className="font-medium text-sm">Total</span>
+                    <span className="font-semibold text-sm">
+                      {effectivePrice !== null
+                        ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, effectivePrice, currency)
+                        : '—'}
+                    </span>
                   </div>
 
                   <Separator />
 
+                  {/* Bundle Usage Options */}
+                  {myBundles.length > 0 && (
+                    <div className="space-y-4 pt-4">
+                      <Label>Use Active Bundle</Label>
+                      <div className="space-y-2">
+                        {myBundles.map(bundle => (
+                          <div
+                            key={bundle.id}
+                            className={`
+                                        flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all
+                                        ${selectedBundleId === bundle.id ? "border-[#0D7A7A] bg-[#0D7A7A]/5 ring-1 ring-[#0D7A7A]" : "border-border hover:border-[#0D7A7A]/50"}
+                                    `}
+                            onClick={() => {
+                              if (selectedBundleId === bundle.id) {
+                                setSelectedBundleId(null);
+                              } else {
+                                setSelectedBundleId(bundle.id);
+                                setAppliedCode(null); // Clear code if bundle is selected
+                              }
+                            }}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`
+                                            h-4 w-4 rounded-full border flex items-center justify-center
+                                            ${selectedBundleId === bundle.id ? "border-[#0D7A7A]" : "border-muted-foreground"}
+                                        `}>
+                                {selectedBundleId === bundle.id && <div className="h-2 w-2 rounded-full bg-[#0D7A7A]" />}
+                              </div>
+                              <div>
+                                <p className="font-medium text-sm">{bundle.bundle?.name}</p>
+                                <p className="text-xs text-muted-foreground">{bundle.remaining_credits} credits remaining</p>
+                              </div>
+                            </div>
+                            <Badge variant="outline" className="text-[#0D7A7A] border-[#0D7A7A]/20">
+                              Free
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                      <Separator />
+                    </div>
+                  )}
+
                   {/* Redemption Code Input */}
                   <div className="space-y-4 pt-2">
-                    <Label>Have a Bundle Code?</Label>
+                    <Label>Have a Bundle Code? (Gift/Promo)</Label>
                     <div className="flex gap-2">
                       <Input
                         placeholder="Enter code (e.g. BUN-XXXX)"
                         value={redemptionCode}
                         onChange={(e) => setRedemptionCode(e.target.value)}
-                        disabled={!!appliedCode}
+                        disabled={!!appliedCode || !!selectedBundleId}
                         className="font-mono uppercase"
                       />
                       <Button
@@ -838,6 +928,9 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                           }
                           if (!redemptionCode.trim()) return;
                           setCodeChecking(true);
+                          // Unselect active bundle if strict code is applied
+                          setSelectedBundleId(null);
+
                           const { data, error } = await supabase
                             .from('redemption_codes')
                             .select('*')
@@ -850,20 +943,21 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                             toast.error("Invalid code");
                             return;
                           }
-                          if (data.status !== 'active' || data.remaining_uses <= 0) {
+                          const codeData = data as any;
+                          if (codeData.status !== 'active' || codeData.remaining_uses <= 0) {
                             toast.error("Code is expired or fully used");
                             return;
                           }
                           // Optional: Check ownership if you enabled that policy
-                          if (data.user_id !== user?.id) {
+                          if (codeData.user_id !== user?.id) {
                             toast.error("This code belongs to another user");
                             return;
                           }
 
-                          setAppliedCode(data);
+                          setAppliedCode(codeData);
                           toast.success("Bundle applied! Amount to pay: €0");
                         }}
-                        disabled={codeChecking}
+                        disabled={codeChecking || !!selectedBundleId}
                       >
                         {codeChecking ? <Loader2 className="h-4 w-4 animate-spin" /> : (appliedCode ? "Remove" : "Apply")}
                       </Button>
@@ -937,42 +1031,45 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
 
               {/* Order Summary */}
               <Card>
-                <CardHeader>
+                <CardHeader className="pb-3">
                   <CardTitle className="text-base">Order Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Session</span>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center text-sm">
+                    <span className="text-muted-foreground">{displayService?.name || "Session"}</span>
+                    <span className="font-medium">
+                      {selectedPrice !== null
+                        ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, currency) // Use global currency
+                        : 'Price varies'}
+                    </span>
+                  </div>
+
+                  {(appliedCode || selectedBundleId) && (
+                    <div className="flex justify-between items-center text-sm text-green-600">
+                      <span className="flex items-center gap-1"><Sparkles className="h-3 w-3" /> Bundle/Code applied</span>
                       <span>
-                        {selectedPrice !== null
-                          ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice ?? undefined, displayService?.currency || selectedServiceData?.currency || 'EUR')
-                          : 'Price varies'}
+                        -{selectedPrice !== null
+                          ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, currency) // Use global currency
+                          : ''}
                       </span>
                     </div>
-                    {selectedPrice !== null && (
-                      <>
-                        <Separator />
-                        <div className="flex justify-between">
-                          <span>Total</span>
-                          <span className="text-lg">
-                            {formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                  )}
 
                   <Separator />
 
-                  <div className="space-y-2 text-xs text-muted-foreground">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Total</span>
+                    <div className="text-lg font-bold">
+                      {effectivePrice !== null
+                        ? formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, effectivePrice, currency) // Use global currency
+                        : '—'}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-muted-foreground pt-2">
                     <p className="flex items-center gap-2">
                       <CheckCircle2 className="h-3 w-3 text-primary" />
                       Free cancellation up to 24h before
-                    </p>
-                    <p className="flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-primary" />
-                      Instant confirmation
                     </p>
                     <p className="flex items-center gap-2">
                       <CheckCircle2 className="h-3 w-3 text-primary" />
@@ -1001,7 +1098,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                   </>
                 ) : (
                   selectedPrice !== null
-                    ? `Confirm & Pay ${formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, selectedPrice, displayService?.currency || selectedServiceData?.currency || 'EUR')}`
+                    ? `Confirm & Pay ${formatFixedPrice(displayService?.fixedPrices || displayService?.fixed_prices || null, effectivePrice!, currency)}`
                     : "Request Booking"
                 )}
               </Button>

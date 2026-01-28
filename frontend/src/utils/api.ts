@@ -659,6 +659,29 @@ export const productsAPI = digitalContentAPI;
 // STATS
 // ===========================================================
 
+// ===========================================================
+// BUNDLES
+// ===========================================================
+
+export const bundlesAPI = {
+  getMyBundles: async (userId: string) => {
+    const { data, error } = await supabase
+      .from("bundle_purchases")
+      .select(
+        `
+        *,
+        bundle:bundle_id ( name, description, credits )
+        `
+      )
+      .eq("user_id", userId)
+      .eq("status", "completed")
+      .gt("remaining_credits", 0);
+
+    if (error) throw error;
+    return { myBundles: data || [] };
+  },
+};
+
 export const statsAPI = {
   getDashboard: async () => {
     const { count: bookingsCount } = await supabase
@@ -1495,11 +1518,11 @@ export const educationAPI = {
       .from('education')
       .upload(path, file, { upsert: true });
     if (error) throw error;
-    
+
     const { data: { publicUrl } } = supabase.storage
       .from('education')
       .getPublicUrl(data.path);
-      
+
     return publicUrl;
   }
 };

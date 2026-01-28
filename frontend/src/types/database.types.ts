@@ -9,6 +9,44 @@ export type Json =
 export interface Database {
     public: {
         Tables: {
+            bundles: {
+                Row: {
+                    id: string
+                    name: string
+                    description: string | null
+                    price: number
+                    currency: string
+                    credits: number // Added
+                    image_url: string | null
+                    is_active: boolean
+                    created_at: string
+                    updated_at: string
+                }
+                Insert: {
+                    id?: string
+                    name: string
+                    description?: string | null
+                    price: number
+                    currency?: string
+                    credits?: number // Added
+                    image_url?: string | null
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+                Update: {
+                    id?: string
+                    name?: string
+                    description?: string | null
+                    price?: number
+                    currency?: string
+                    credits?: number // Added
+                    image_url?: string | null
+                    is_active?: boolean
+                    created_at?: string
+                    updated_at?: string
+                }
+            }
             profiles: {
                 Row: {
                     id: string
@@ -509,41 +547,7 @@ export interface Database {
                     updated_at?: string
                 }
             }
-            bundles: {
-                Row: {
-                    id: string
-                    name: string
-                    description: string | null
-                    price: number
-                    currency: string
-                    image_url: string | null
-                    is_active: boolean
-                    created_at: string
-                    updated_at: string
-                }
-                Insert: {
-                    id?: string
-                    name: string
-                    description?: string | null
-                    price: number
-                    currency?: string
-                    image_url?: string | null
-                    is_active?: boolean
-                    created_at?: string
-                    updated_at?: string
-                }
-                Update: {
-                    id?: string
-                    name?: string
-                    description?: string | null
-                    price?: number
-                    currency?: string
-                    image_url?: string | null
-                    is_active?: boolean
-                    created_at?: string
-                    updated_at?: string
-                }
-            }
+
             bundle_items: {
                 Row: {
                     id: string
@@ -581,6 +585,7 @@ export interface Database {
                     stripe_session_id: string | null
                     amount_paid: number | null
                     currency: string | null
+                    remaining_credits: number // Added
                     created_at: string
                     updated_at: string
                 }
@@ -594,6 +599,7 @@ export interface Database {
                     stripe_session_id?: string | null
                     amount_paid?: number | null
                     currency?: string | null
+                    remaining_credits?: number // Added
                     created_at?: string
                     updated_at?: string
                 }
@@ -607,6 +613,7 @@ export interface Database {
                     stripe_session_id?: string | null
                     amount_paid?: number | null
                     currency?: string | null
+                    remaining_credits?: number // Added
                     created_at?: string
                     updated_at?: string
                 }
