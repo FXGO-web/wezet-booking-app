@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Badge } from "./ui/badge";
-import { Plus, Edit, Eye, Loader2, Download, Trash2 } from "lucide-react";
+import { Plus, Edit, Eye, Loader2, Download, Trash2, Gift } from "lucide-react";
 import { Card, CardContent } from "./ui/card";
 import { teamMembersAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { TeamMemberModal } from "./TeamMemberModal";
+import { AssignBundleModal } from "./AssignBundleModal";
 import { AdvancedFilters, FilterConfig, FilterValues } from "./AdvancedFilters";
 import { SortableTable, Column } from "./SortableTable";
 import { toast } from "sonner";
@@ -27,10 +28,16 @@ export function CustomerList() {
   const [filterValues, setFilterValues] = useState<FilterValues>({});
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Edit Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | undefined>(undefined);
-  const { getAccessToken } = useAuth();
 
+  // Assign Bundle Modal State
+  const [isAssignBundleOpen, setIsAssignBundleOpen] = useState(false);
+  const [assignTarget, setAssignTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const { getAccessToken } = useAuth();
   // Filter configuration
   const filterConfig: FilterConfig[] = [
     {
@@ -83,6 +90,11 @@ export function CustomerList() {
     };
     setSelectedCustomer(memberData as any);
     setIsModalOpen(true);
+  };
+
+  const handleAssignClick = (customer: Customer) => {
+    setAssignTarget({ id: customer.id, name: customer.name });
+    setIsAssignBundleOpen(true);
   };
 
   const handleModalSuccess = () => {
@@ -184,6 +196,17 @@ export function CustomerList() {
           <Button
             variant="ghost"
             size="sm"
+            title="Assign Bundle"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleAssignClick(row);
+            }}
+          >
+            <Gift className="h-4 w-4 text-[#ef7c48]" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={(e: React.MouseEvent) => {
               e.stopPropagation();
               handleEditClick(row);
@@ -199,12 +222,9 @@ export function CustomerList() {
               e.stopPropagation();
               if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
                 try {
-                  const accessToken = getAccessToken();
-                  if (accessToken) {
-                    await teamMembersAPI.delete(row.id, accessToken);
-                    toast.success('User deleted successfully');
-                    fetchCustomers();
-                  }
+                  await teamMembersAPI.delete(row.id);
+                  toast.success('User deleted successfully');
+                  fetchCustomers();
                 } catch (error) {
                   console.error('Error deleting user:', error);
                   toast.error('Failed to delete user');
@@ -277,6 +297,15 @@ export function CustomerList() {
         onClose={() => setIsModalOpen(false)}
         member={selectedCustomer}
         onSuccess={handleModalSuccess}
+      />
+
+      {/* Assign Bundle Modal */}
+      <AssignBundleModal
+        isOpen={isAssignBundleOpen}
+        onClose={() => setIsAssignBundleOpen(false)}
+        userId={assignTarget?.id || null}
+        userName={assignTarget?.name || null}
+        onSuccess={() => { }}
       />
     </div>
   );
