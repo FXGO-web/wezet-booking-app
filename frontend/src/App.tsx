@@ -81,6 +81,8 @@ import {
   Home
 } from "lucide-react";
 
+import { supabase } from "./utils/supabase/client";
+
 function AppContent() {
   const EMBED_ALLOWED_VIEWS = [
     "calendar",
@@ -90,14 +92,30 @@ function AppContent() {
     "program-checkout",
   ];
   const { user, loading, signOut, getAccessToken } = useAuth();
+
   // Initialize state from URL to prevent race conditions
   const [activeView, setActiveView] = useState(() => {
+    // Check for password recovery hash in URL first
+    if (window.location.hash && window.location.hash.includes('type=recovery')) {
+      return "update-password";
+    }
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("success") === "true") return "booking-success";
     // Check for direct booking link parameters
     if (params.get("serviceId")) return "booking";
     return params.get("view") || "home";
   });
+
+  // Listen for Supabase Password Recovery Event
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "PASSWORD_RECOVERY") {
+        setActiveView("update-password");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const [initializingData, setInitializingData] = useState(false);
 
@@ -156,9 +174,9 @@ function AppContent() {
     }
   }, []);
 
-
-
   useEffect(() => {
+    // Only redirect from auth to home if NOT in update-password flow
+    // and if the event logic hasn't already intervened
     if (user && activeView === "auth") {
       setActiveView("home");
     }

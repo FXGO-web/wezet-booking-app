@@ -173,7 +173,7 @@ export const teamMembersAPI = {
 
   sendPasswordReset: async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth`,
+      redirectTo: `${window.location.origin}/?view=update-password`,
     });
     if (error) throw error;
     return { success: true };
