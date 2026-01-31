@@ -45,7 +45,6 @@ const availableSpecialties = [
 export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemberModalProps) {
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
@@ -105,6 +104,25 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
       ...formData,
       specialties: formData.specialties.filter((s) => s !== specialty),
     });
+  };
+
+  const handleSendPasswordReset = async () => {
+    if (!member?.email) return;
+
+    if (!window.confirm(`Send password reset email to ${member.email}?`)) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await teamMembersAPI.sendPasswordReset(member.email);
+      toast.success("Password reset email sent successfully");
+    } catch (error) {
+      console.error("Error sending reset email:", error);
+      toast.error("Failed to send reset email");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -178,36 +196,23 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
             </div>
           </div>
 
-          {/* Password Field - Only for new members */}
-          {/* Password Field */}
-          {(showPassword || !member) && (
+          {/* Password Field - Only for NEW members */}
+          {!member && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password {member ? "(New)" : "*"}</Label>
-                {member && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-auto p-0 text-muted-foreground hover:text-foreground"
-                    onClick={() => setShowPassword(false)}
-                  >
-                    Cancel
-                  </Button>
-                )}
-              </div>
+              <Label htmlFor="password">Password *</Label>
               <Input
                 id="password"
                 type="password"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder={member ? "Enter new password to change" : "Secret password"}
-                required={!member}
+                placeholder="Secret password"
+                required
               />
             </div>
           )}
 
-          {member && !showPassword && (
+          {/* Password Reset - Only for EXISTING members */}
+          {member && (
             <div className="space-y-2">
               <Label>Password</Label>
               <div>
@@ -215,13 +220,14 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    setShowPassword(true);
-                    setFormData({ ...formData, password: "" });
-                  }}
+                  onClick={handleSendPasswordReset}
+                  disabled={loading}
                 >
-                  Change Password
+                  Send Password Reset Email
                 </Button>
+                <p className="text-xs text-muted-foreground mt-1">
+                  This will send an email to {member.email} with instructions to reset their password.
+                </p>
               </div>
             </div>
           )}

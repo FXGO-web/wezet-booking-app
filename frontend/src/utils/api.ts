@@ -170,6 +170,14 @@ export const teamMembersAPI = {
     if (error) throw error;
     return { success: true };
   },
+
+  sendPasswordReset: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth`,
+    });
+    if (error) throw error;
+    return { success: true };
+  },
 };
 
 // ===========================================================
