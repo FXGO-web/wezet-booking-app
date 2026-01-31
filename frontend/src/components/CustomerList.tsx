@@ -81,6 +81,11 @@ export function CustomerList() {
     fetchCustomers();
   }, [filterValues]);
 
+  const handleAddClick = () => {
+    setSelectedCustomer(undefined);
+    setIsModalOpen(true);
+  };
+
   const handleEditClick = (customer: Customer) => {
     // Map customer to team member format for the modal
     const memberData = {
@@ -252,6 +257,10 @@ export function CustomerList() {
           <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export CSV
+          </Button>
+          <Button onClick={handleAddClick}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Customer
           </Button>
         </div>
       </div>
