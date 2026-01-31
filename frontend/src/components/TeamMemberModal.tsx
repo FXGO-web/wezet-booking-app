@@ -188,17 +188,50 @@ return (
         </div>
 
         {/* Password Field - Only for new members */}
-        {!member && (
+        {/* Password Field */}
+        {(showPassword || !member) && (
           <div className="space-y-2">
-            <Label htmlFor="password">Password *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password {member ? "(New)" : "*"}</Label>
+              {member && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-0 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowPassword(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
             <Input
               id="password"
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              placeholder="Secret password"
-              required
+              placeholder={member ? "Enter new password to change" : "Secret password"}
+              required={!member}
             />
+          </div>
+        )}
+
+        {member && !showPassword && (
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowPassword(true);
+                  setFormData({ ...formData, password: "" });
+                }}
+              >
+                Change Password
+              </Button>
+            </div>
           </div>
         )}
 
