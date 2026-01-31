@@ -88,15 +88,6 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
         status: "active",
         password: "",
       });
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        role: "Teacher",
-        bio: "",
-        specialties: [],
-        status: "active",
-      });
     }
   }, [member, isOpen]);
 
