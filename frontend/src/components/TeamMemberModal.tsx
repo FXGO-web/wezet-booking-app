@@ -333,6 +333,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
         </DialogFooter>
       </form>
     </DialogContent>
+    {/* Fixed Closing Tag */ }
     </Dialog >
   );
 }
