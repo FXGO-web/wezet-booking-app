@@ -141,7 +141,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{member ? "Edit Team Member (Verified)" : "Add New Team Member"}</DialogTitle>
+          <DialogTitle>{member ? "Edit Team Member" : "Add New Team Member"}</DialogTitle>
           <DialogDescription>
             {member
               ? "Update team member information and specialties"
@@ -220,7 +220,7 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
                     setFormData({ ...formData, password: "" });
                   }}
                 >
-                  Reset Password
+                  Change Password
                 </Button>
               </div>
             </div>
