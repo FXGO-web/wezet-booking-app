@@ -109,17 +109,17 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
   const handleSendPasswordReset = async () => {
     if (!member?.email) return;
 
-    if (!window.confirm(`Send password reset email to ${member.email}?`)) {
-      return;
-    }
+    // Removed confirmation for smoother debugging
 
     try {
       setLoading(true);
       await teamMembersAPI.sendPasswordReset(member.email);
-      toast.success("Password reset email sent successfully");
-    } catch (error) {
-      console.error("Error sending reset email:", error);
-      toast.error("Failed to send reset email");
+      toast.success("✅ Email sent! Check inbox.");
+    } catch (error: any) {
+      console.error("Reset error:", error);
+      // Forcefully show error to user for debugging
+      window.alert(`Error: ${error.message || JSON.stringify(error)}`);
+      toast.error(error.message || "Failed to send reset email");
     } finally {
       setLoading(false);
     }
