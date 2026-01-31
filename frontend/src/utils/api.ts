@@ -172,10 +172,22 @@ export const teamMembersAPI = {
   },
 
   sendPasswordReset: async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/?view=update-password`,
+    const redirectTo = `${window.location.origin}/?view=update-password`;
+
+    // Use the same Custom Edge Function as useAuth.tsx for consistency
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: {
+        type: 'password_recovery',
+        to: email,
+        payload: { redirectTo }
+      }
     });
+
     if (error) throw error;
+    if (data && !data.success) {
+      throw new Error(data.error || 'Failed to send reset email via Edge Function');
+    }
+
     return { success: true };
   },
 };
