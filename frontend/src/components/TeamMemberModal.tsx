@@ -45,6 +45,7 @@ const availableSpecialties = [
 export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemberModalProps) {
   const { getAccessToken } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState<{
     name: string;
     email: string;
@@ -61,226 +62,253 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
     bio: "",
     specialties: [],
     status: "active",
+    password: "",
   });
+});
 
-  useEffect(() => {
-    if (member) {
-      setFormData({
-        name: member.name || member.full_name || "",
-        email: member.email || "",
-        phone: member.phone || "",
-        role: member.role || "Teacher",
-        bio: member.bio || "",
-        specialties: member.specialties || [],
-        status: member.status || "active",
-      });
-    } else {
-      // Reset form for new member
-      setFormData({
-        name: "",
-        email: "",
-        phone: "",
-        role: "Teacher",
-        bio: "",
-        specialties: [],
-        status: "active",
-      });
-    }
-  }, [member, isOpen]);
+useEffect(() => {
+  if (member) {
+    setFormData({
+      name: member.name || member.full_name || "",
+      email: member.email || "",
+      phone: member.phone || "",
+      role: member.role || "Teacher",
+      bio: member.bio || "",
+      specialties: member.specialties || [],
+      status: member.status || "active",
+    });
+  } else {
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      role: "Teacher",
+      bio: "",
+      specialties: [],
+      status: "active",
+      password: "",
+    });
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      role: "Teacher",
+      bio: "",
+      specialties: [],
+      status: "active",
+    });
+  }
+}, [member, isOpen]);
 
-  const handleAddSpecialty = (specialty: string) => {
-    if (!formData.specialties.includes(specialty)) {
-      setFormData({
-        ...formData,
-        specialties: [...formData.specialties, specialty],
-      });
-    }
-  };
-
-  const handleRemoveSpecialty = (specialty: string) => {
+const handleAddSpecialty = (specialty: string) => {
+  if (!formData.specialties.includes(specialty)) {
     setFormData({
       ...formData,
-      specialties: formData.specialties.filter((s) => s !== specialty),
+      specialties: [...formData.specialties, specialty],
     });
-  };
+  }
+};
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+const handleRemoveSpecialty = (specialty: string) => {
+  setFormData({
+    ...formData,
+    specialties: formData.specialties.filter((s) => s !== specialty),
+  });
+};
 
-    try {
-      const accessToken = getAccessToken();
-      if (!accessToken) {
-        alert("Please log in to continue");
-        return;
-      }
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-      if (member) {
-        // Update existing member
-        await teamMembersAPI.update(member.id, formData);
-      } else {
-        // Create new member
-        await teamMembersAPI.create(formData);
-      }
-
-      onSuccess();
-      onClose();
-      toast.success(member ? "Team member updated successfully" : "Team member created successfully");
-    } catch (error) {
-      console.error("Error saving team member:", error);
-      alert("Failed to save team member. Please try again.");
-    } finally {
-      setLoading(false);
+  try {
+    const accessToken = getAccessToken();
+    if (!accessToken) {
+      alert("Please log in to continue");
+      return;
     }
-  };
 
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{member ? "Edit Team Member" : "Add New Team Member"}</DialogTitle>
-          <DialogDescription>
-            {member
-              ? "Update team member information and specialties"
-              : "Fill in the details to add a new team member to your WEZET platform"}
-          </DialogDescription>
-        </DialogHeader>
+    if (member) {
+      // Update existing member
+      await teamMembersAPI.update(member.id, formData);
+    } else {
+      // Create new member
+      await teamMembersAPI.create(formData);
+    }
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Basic Info */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name *</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Sarah Chen"
-                  required
-                />
-              </div>
+    onSuccess();
+    onClose();
+    toast.success(member ? "Team member updated successfully" : "Team member created successfully");
+  } catch (error) {
+    console.error("Error saving team member:", error);
+    alert("Failed to save team member. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="sarah@wezet.com"
-                  required
-                />
-              </div>
-            </div>
+return (
+  <Dialog open={isOpen} onOpenChange={onClose}>
+    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogHeader>
+        <DialogTitle>{member ? "Edit Team Member" : "Add New Team Member"}</DialogTitle>
+        <DialogDescription>
+          {member
+            ? "Update team member information and specialties"
+            : "Fill in the details to add a new team member to your WEZET platform"}
+        </DialogDescription>
+      </DialogHeader>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="+1 (555) 123-4567"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="role">Role *</Label>
-                <Select value={formData.role} onValueChange={(value: string) => setFormData({ ...formData, role: value })}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Team Member">Team Member</SelectItem>
-                    <SelectItem value="Teacher">Teacher</SelectItem>
-                    <SelectItem value="Facilitator">Facilitator</SelectItem>
-                    <SelectItem value="Client">Client</SelectItem>
-                    <SelectItem value="Subscriber">Subscriber</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Basic Info */}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="bio">Bio</Label>
-              <Textarea
-                id="bio"
-                value={formData.bio}
-                onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-                placeholder="Tell us about this team member..."
-                rows={4}
+              <Label htmlFor="name">Full Name *</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Sarah Chen"
+                required
               />
             </div>
 
-            {/* Specialties */}
             <div className="space-y-2">
-              <Label>Specialties</Label>
-              <Select onValueChange={handleAddSpecialty}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Add specialty..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableSpecialties.map((specialty) => (
-                    <SelectItem key={specialty} value={specialty}>
-                      {specialty}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {formData.specialties.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.specialties.map((specialty) => (
-                    <Badge key={specialty} variant="secondary" className="gap-1">
-                      {specialty}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSpecialty(specialty)}
-                        className="ml-1 hover:text-destructive"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Status */}
-            <div className="space-y-2">
-              <Label htmlFor="status">Status</Label>
-              <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="inactive">Inactive</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="sarah@wezet.com"
+                required
+              />
             </div>
           </div>
+        </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>{member ? "Update" : "Create"} Team Member</>
-              )}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        {/* Password Field - Only for new members */}
+        {!member && (
+          <div className="space-y-2">
+            <Label htmlFor="password">Password *</Label>
+            <Input
+              id="password"
+              type="password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              placeholder="Secret password"
+              required
+            />
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">Role *</Label>
+            <Select value={formData.role} onValueChange={(value: string) => setFormData({ ...formData, role: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Admin">Admin</SelectItem>
+                <SelectItem value="Team Member">Team Member</SelectItem>
+                <SelectItem value="Teacher">Teacher</SelectItem>
+                <SelectItem value="Facilitator">Facilitator</SelectItem>
+                <SelectItem value="Client">Client</SelectItem>
+                <SelectItem value="Subscriber">Subscriber</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="bio">Bio</Label>
+          <Textarea
+            id="bio"
+            value={formData.bio}
+            onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+            placeholder="Tell us about this team member..."
+            rows={4}
+          />
+        </div>
+
+        {/* Specialties */}
+        <div className="space-y-2">
+          <Label>Specialties</Label>
+          <Select onValueChange={handleAddSpecialty}>
+            <SelectTrigger>
+              <SelectValue placeholder="Add specialty..." />
+            </SelectTrigger>
+            <SelectContent>
+              {availableSpecialties.map((specialty) => (
+                <SelectItem key={specialty} value={specialty}>
+                  {specialty}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {formData.specialties.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {formData.specialties.map((specialty) => (
+                <Badge key={specialty} variant="secondary" className="gap-1">
+                  {specialty}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSpecialty(specialty)}
+                    className="ml-1 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Status */}
+        <div className="space-y-2">
+          <Label htmlFor="status">Status</Label>
+          <Select value={formData.status} onValueChange={(value: string) => setFormData({ ...formData, status: value })}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="inactive">Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <DialogFooter>
+        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button type="submit" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Saving...
+            </>
+          ) : (
+            <>{member ? "Update" : "Create"} Team Member</>
+          )}
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+    </Dialog >
   );
 }

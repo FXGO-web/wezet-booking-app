@@ -98,7 +98,7 @@ export const teamMembersAPI = {
     const { data, error } = await supabase.functions.invoke("create_user", {
       body: {
         email: member.email,
-        password: "TempPassword123!", // You might want to generate this or let the user set it
+        password: member.password || "TempPassword123!", // Use provided password or fallback
         fullName: member.fullName || member.name || member.full_name,
         role: member.role || "instructor",
         phone: member.phone || null,
@@ -119,6 +119,23 @@ export const teamMembersAPI = {
   },
 
   update: async (id: string, updates: any) => {
+    // If password is being updated, we MUST use the Edge Function
+    if (updates.password) {
+      console.log("Using Edge Function for user update (password change detected)");
+      const { data, error } = await supabase.functions.invoke("update_user", {
+        body: {
+          id,
+          updates: updates
+        }
+      });
+
+      if (error) {
+        console.error("Error updating user via Edge Function:", error);
+        throw error;
+      }
+      return data;
+    }
+
     const mapped: any = {};
     if (updates.full_name) mapped.full_name = updates.full_name;
     if (updates.fullName) mapped.full_name = updates.fullName;
