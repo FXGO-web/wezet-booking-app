@@ -61,16 +61,44 @@ Deno.serve(async (req) => {
                 // Generate Recovery Link
                 // Note: For this to work, the function needs Service Role Key.
                 // And we assume the request to this function is authorized or public (limited).
-                // If public, we should be careful about spamming.
-                // Ideally, this is called by the frontend which requires no auth for "forgot password".
 
-                const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+                let linkData, linkError;
+
+                // Try to generate link first
+                ({ data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
                     type: 'recovery',
                     email: to,
                     options: {
                         redirectTo: payload?.redirectTo || "https://booking.wezet.xyz/update-password"
                     }
-                });
+                }));
+
+                // Lazy Sync: If user not found, create them and retry
+                if (linkError && linkError.message && (linkError.message.includes("User not found") || linkError.status === 422)) {
+                    console.log(`[Send-Email] User ${to} not found. Attempting Lazy Sync creation...`);
+
+                    const { error: createError } = await supabase.auth.admin.createUser({
+                        email: to,
+                        email_confirm: true, // Auto-confirm since we are sending a magic link/recovery immediately
+                        user_metadata: {
+                            source: 'lazy_sync_password_reset'
+                        }
+                    });
+
+                    if (createError) {
+                        console.error("[Send-Email] Lazy Sync failed:", createError);
+                        throw createError;
+                    }
+
+                    // Retry generating link
+                    ({ data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+                        type: 'recovery',
+                        email: to,
+                        options: {
+                            redirectTo: payload?.redirectTo || "https://booking.wezet.xyz/update-password"
+                        }
+                    }));
+                }
 
                 if (linkError) throw linkError;
 
@@ -115,12 +143,14 @@ Deno.serve(async (req) => {
 
         return new Response(JSON.stringify({ success: true, data }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200, // Explicitly successful
         });
 
     } catch (error: any) {
         console.error("Error in send-email function:", error);
+        // RETURN 200 OK WITH ERROR so frontend can parse it
         return new Response(JSON.stringify({ success: false, error: error.message }), {
-            status: 400,
+            status: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
     }

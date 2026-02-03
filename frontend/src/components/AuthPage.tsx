@@ -62,7 +62,11 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
     try {
       const { error } = await signIn(signInEmail, signInPassword);
       if (error) {
-        setError(error.message || 'Failed to sign in');
+        if (error.message === "Invalid login credentials") {
+          setError("Invalid login credentials. If you are migrating from Learn or Shop, please select 'Sign Up' and create a new account with the same email to access your data.");
+        } else {
+          setError(error.message || 'Failed to sign in');
+        }
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
