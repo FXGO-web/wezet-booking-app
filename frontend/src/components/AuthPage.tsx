@@ -63,7 +63,7 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
       const { error } = await signIn(signInEmail, signInPassword);
       if (error) {
         if (error.message === "Invalid login credentials") {
-          setError("Invalid login credentials. If you are migrating from Learn or Shop, please select 'Sign Up' and create a new account with the same email to access your data.");
+          setError("Invalid login credentials. If you have an account from Learn or Shop, your account has been migrated. Please click 'Forgot password?' to set a new password.");
         } else {
           setError(error.message || 'Failed to sign in');
         }
@@ -101,7 +101,11 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
 
       const { error, confirmationRequired } = await signUp(signUpEmail, signUpPassword, signUpName, role);
       if (error) {
-        setError(error.message || 'Failed to sign up');
+        if (error.message.includes("already registered")) {
+          setError("This email is already registered. Please Sign In. If you forgot your password, use 'Forgot password?'.");
+        } else {
+          setError(error.message || 'Failed to sign up');
+        }
       } else if (confirmationRequired) {
         setSuccess('Account created! Please check your email to verify your account.');
       } else {

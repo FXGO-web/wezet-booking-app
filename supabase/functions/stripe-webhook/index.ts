@@ -149,6 +149,7 @@ Deno.serve(async (req) => {
             // Send Confirmation Email via Resend
             let RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
             let emailTemplate = null;
+            let notifyEmail = null;
 
             // Fallback: Try to get RESEND_API_KEY and Template from DB if not in Env
             if (!RESEND_API_KEY) {
@@ -156,11 +157,12 @@ Deno.serve(async (req) => {
                 try {
                     const { data: settings } = await supabase
                         .from("platform_settings")
-                        .select("resend_api_key, email_template_confirmation") // Fetch template too
+                        .select("resend_api_key, email_template_confirmation, notify_email") // Fetch template and notify_email
                         .single();
                     if (settings?.resend_api_key) {
                         RESEND_API_KEY = settings.resend_api_key;
                         emailTemplate = settings.email_template_confirmation; // Store template
+                        notifyEmail = settings.notify_email;
                         console.log("RESEND_API_KEY fetched from database.");
                     } else {
                         console.error("RESEND_API_KEY not found in database settings either.");
@@ -173,10 +175,15 @@ Deno.serve(async (req) => {
                 try {
                     const { data: settings } = await supabase
                         .from("platform_settings")
-                        .select("email_template_confirmation")
+                        .select("email_template_confirmation, notify_email")
                         .single();
-                    if (settings?.email_template_confirmation) {
-                        emailTemplate = settings.email_template_confirmation;
+                    if (settings) {
+                        if (settings.email_template_confirmation) {
+                            emailTemplate = settings.email_template_confirmation;
+                        }
+                        if (settings.notify_email) {
+                            notifyEmail = settings.notify_email;
+                        }
                     }
                 } catch (err) {
                     console.log("Could not fetch custom template, using default.");
@@ -236,6 +243,7 @@ Deno.serve(async (req) => {
                             body: JSON.stringify({
                                 from: "Wezet <confirmations@wezet.xyz>",
                                 to: [customerEmail],
+                                bcc: notifyEmail ? [notifyEmail] : undefined,
                                 subject: `Booking Confirmed: ${sessionName}`,
                                 html: htmlContent
                             })
