@@ -48,6 +48,7 @@ import { BundlesList } from "./components/BundlesList";
 import { BundleCheckout } from "./components/BundleCheckout";
 import { EducationAdmin } from "./components/admin/EducationAdmin";
 import { BundleManagement } from "./components/BundleManagement";
+import { ClientProgramsDirectory } from "./components/ClientProgramsDirectory";
 import {
   Wind,
   Sparkles,
@@ -788,6 +789,23 @@ function AppContent() {
       <div>
         <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
         <ProductsOnDemand onBack={() => setActiveView("admin-dashboard")} />
+      </div>
+    );
+  }
+
+  if (activeView === "programs-directory") {
+    return (
+      <div>
+        <HeaderBar onBack={() => setActiveView("home")} />
+        <ClientProgramsDirectory
+          onNavigate={(route) => setActiveView(route)}
+          onSelectProgram={(programId) => {
+            setSelectedProgramId(programId);
+            setReturnView("programs-directory");
+            setActiveView("program-checkout");
+          }}
+          onBack={() => setActiveView("home")}
+        />
       </div>
     );
   }

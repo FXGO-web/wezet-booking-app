@@ -19,10 +19,11 @@ import {
   Plus,
   Users,
   Loader2,
-  Package, // Added
-  ArrowRight
+  Package,
+  ArrowRight,
+  MapPin // Added
 } from "lucide-react";
-import { bookingsAPI, sessionsAPI, availabilityAPI, bundlesAPI } from "../utils/api";
+import { bookingsAPI, sessionsAPI, availabilityAPI, bundlesAPI, programsAPI } from "../utils/api";
 import { useAuth } from "../hooks/useAuth";
 import { useCurrency } from "../context/CurrencyContext";
 
@@ -48,6 +49,7 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
   const [pastSessions, setPastSessions] = useState<any[]>([]);
   const [availableSlots, setAvailableSlots] = useState<any[]>([]);
   const [myBundles, setMyBundles] = useState<any[]>([]); // Added
+  const [programs, setPrograms] = useState<any[]>([]); // Added
   const [recommendation, setRecommendation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -78,6 +80,12 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
         // 4. Fetch My Bundles
         const { myBundles } = await bundlesAPI.getMyBundles(user.id);
         setMyBundles(myBundles);
+
+        // 5. Fetch Programs (Added)
+        const programsData = await programsAPI.getAll();
+        if (programsData && programsData.programs) {
+          setPrograms(programsData.programs.filter((p: any) => p.is_active));
+        }
 
         // Process Bookings
         const upcoming: any[] = [];
@@ -449,6 +457,60 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
               )}
             </div>
 
+            {/* Programs & Retreats Section */}
+            {programs.length > 0 && (
+              <div className="space-y-6 mt-12">
+                <div className="flex items-center justify-between">
+                  <h2>Programs & Retreats</h2>
+                  <Button variant="ghost" size="sm" onClick={() => onNavigate?.('programs-directory')}>
+                    View All
+                    <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {programs.slice(0, 2).map((program) => (
+                    <Card key={program.id} className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border-primary/20" onClick={() => onNavigate?.('programs-directory')}>
+                      <div className="h-32 w-full bg-muted relative">
+                        {program.image_url ? (
+                          <img src={program.image_url} alt={program.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-secondary/30">
+                            <Mountain className="h-8 w-8 text-muted-foreground/30" />
+                          </div>
+                        )}
+                        <div className="absolute top-2 right-2">
+                          <Badge className="bg-background/80 backdrop-blur text-foreground">
+                            {program.category?.name || "Retreat"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <CardContent className="p-4 space-y-2">
+                        <h3 className="font-medium truncate">{program.name}</h3>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span>{(program.location && typeof program.location === 'object') ? program.location.name : (program.location || 'TBD')}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          <span>
+                            {program.start_date ? new Date(program.start_date).toLocaleDateString() : 'TBD'}
+                          </span>
+                        </div>
+                        <div className="pt-2 flex items-center justify-between">
+                          <span className="text-sm font-medium">
+                            {convertAndFormat(program.price || program.basePrice, program.currency || 'EUR')}
+                          </span>
+                          <Button size="sm" variant="outline" className="h-7 text-xs">
+                            Details
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Past Sessions */}
             <div className="space-y-4 mt-12">
               <h3>Recent History</h3>
@@ -526,7 +588,7 @@ export function ClientDashboard({ onNavigate, onBookSession }: ClientDashboardPr
                   <Calendar className="mr-2 h-4 w-4" />
                   Book a Session
                 </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('calendar')}>
+                <Button variant="outline" className="w-full justify-start" onClick={() => onNavigate?.('programs-directory')}>
                   <Mountain className="mr-2 h-4 w-4" />
                   Programs & Retreats
                 </Button>
