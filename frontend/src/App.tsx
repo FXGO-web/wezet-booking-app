@@ -206,6 +206,74 @@ function AppContent() {
     }
   }, [activeView, bookingPreselection]);
 
+  // URL Synchronization
+  useEffect(() => {
+    // Skip if we are in an embed mode and we don't want to mess with parent URL (though usually iframe isolates this)
+    // or if we are just initializing
+
+    const params = new URLSearchParams(window.location.search);
+    const currentView = params.get("view");
+
+    // Construct new search params based on state
+    const newParams = new URLSearchParams();
+
+    if (embedMode) {
+      newParams.set("embed", "true");
+    }
+
+    if (activeView && activeView !== "home") {
+      newParams.set("view", activeView);
+    }
+
+    // Add specific ID params based on view
+    if (activeView === "program-checkout" && selectedProgramId) {
+      newParams.set("programId", selectedProgramId);
+    }
+
+    if (activeView === "bundle-checkout" && selectedBundleId) {
+      newParams.set("bundleId", selectedBundleId);
+    }
+
+    if (activeView === "booking" && bookingPreselection?.preselectedService) {
+      newParams.set("serviceId", bookingPreselection.preselectedService);
+      if (bookingPreselection.preselectedTeamMember) {
+        newParams.set("teamMemberId", bookingPreselection.preselectedTeamMember);
+      }
+      if (bookingPreselection.preselectedDate) {
+        newParams.set("date", bookingPreselection.preselectedDate);
+      }
+      if (bookingPreselection.preselectedTime) {
+        newParams.set("time", bookingPreselection.preselectedTime);
+      }
+    }
+
+    if (activeView === "calendar" && initialCategory) {
+      newParams.set("category", initialCategory);
+    }
+
+    // Preserve other important params like 'success' or debug flags if needed, 
+    // but generally we want to reflect *current* state.
+    // However, if we just landed on a URL with specific params that initialized state,
+    // this effect will run.
+
+    // Compare new string with old to avoid loops or unnecessary updates
+    const newSearch = newParams.toString();
+    const currentSearch = window.location.search.replace(/^\?/, '');
+
+    if (newSearch !== currentSearch) {
+      const newUrl = `${window.location.pathname}${newSearch ? '?' + newSearch : ''}${window.location.hash}`;
+
+      // Use pushState to allow back button navigation, or replaceState?
+      // Usually replaceState is better for minor state updates to avoid clogging history,
+      // but for major view changes (like navigating to a program), pushState is better.
+      // For now, let's use replaceState to be safe and avoid confusing back-button behavior 
+      // unless we build a full history stack manager or use a router.
+      // Given this is a simple "Sync URL to State" approach:
+      window.history.replaceState({ ...window.history.state }, '', newUrl);
+    }
+
+  }, [activeView, selectedProgramId, selectedBundleId, bookingPreselection, embedMode, initialCategory]);
+
   // Role Helpers
   // Derived state for roles
   const role = (user?.user_metadata?.role || "Client").toLowerCase();
