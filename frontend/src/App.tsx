@@ -251,6 +251,12 @@ function AppContent() {
       newParams.set("category", initialCategory);
     }
 
+    // Preserve SSO redirect parameter
+    const redirectParam = params.get("redirect");
+    if (redirectParam) {
+      newParams.set("redirect", redirectParam);
+    }
+
     // Preserve other important params like 'success' or debug flags if needed, 
     // but generally we want to reflect *current* state.
     // However, if we just landed on a URL with specific params that initialized state,
