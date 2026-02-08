@@ -37,20 +37,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return session;
   };
 
-  // Helper to ensure team member record exists (Self-Healing)
-  const ensureTeamMemberRecord = async (session: Session | null) => {
+  // Helper to ensure profile record exists (Self-Healing)
+  const ensureProfileRecord = async (session: Session | null) => {
     if (!session?.user?.email) return;
 
     try {
-      // Check if record exists
-      const { data: existingMember } = await supabase
-        .from('team_members')
+      // Check if record exists in PROFILES
+      const { data: existingProfile } = await supabase
+        .from('profiles')
         .select('id')
-        .eq('email', session.user.email)
+        .eq('id', session.user.id)
         .single();
 
-      if (!existingMember) {
-        console.log('🧟 Zombie User detected! Resurrecting team member record...');
+      if (!existingProfile) {
+        console.log('🧟 Zombie User detected! Resurrecting profile record...');
 
         // Determine role based on metadata or whitelist
         const adminEmails = ['fx@fxcreativestudio.com', 'admin@wezet.com', 'demo@wezet.com', 'recovery@wezet.com', 'fx.admin@fxcreativestudio.com'];
@@ -58,19 +58,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const role = isWhitelistedAdmin ? 'Admin' : (session.user.user_metadata?.role || 'Client');
 
         // Create missing record
-        const newMember = {
+        const newProfile = {
           id: session.user.id, // Sync ID with Auth ID
           email: session.user.email,
-          name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+          full_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email.split('@')[0],
           role: role,
           status: 'active',
-          specialties: [],
-          services: []
+          avatar_url: session.user.user_metadata?.avatar_url || null
         };
 
         const { error: insertError } = await supabase
-          .from('team_members')
-          .insert([newMember] as any);
+          .from('profiles')
+          .insert([newProfile] as any);
 
         if (insertError) {
           console.error('Failed to resurrect user:', insertError);
@@ -90,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
-      // if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
+      // if (enhancedSession) ensureProfileRecord(enhancedSession);
     });
 
     // Listen for auth changes
@@ -101,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(enhancedSession);
       setUser(enhancedSession?.user ?? null);
       setLoading(false);
-      // if (enhancedSession) ensureTeamMemberRecord(enhancedSession);
+      // if (enhancedSession) ensureProfileRecord(enhancedSession);
     });
 
     return () => subscription.unsubscribe();
