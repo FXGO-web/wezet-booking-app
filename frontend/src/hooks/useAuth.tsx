@@ -135,6 +135,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // If we have a session, we are effectively signed in.
       if (data.session) {
+        // Trigger Welcome Email manually to ensure delivery
+        supabase.functions.invoke('on-signup', {
+          body: { email, name }
+        }).catch(err => console.error("Failed to send welcome email:", err));
+
         return { error: null };
       }
 
