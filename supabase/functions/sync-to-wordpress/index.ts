@@ -33,7 +33,7 @@ serve(async (req) => {
         // Target WordPress Sites
         const targets = [
             "https://learn.wezet.xyz/wp-json/wezet/v1/user",
-            "https://shop.learn.xyz/wp-json/wezet/v1/user"
+            "https://shop.wezet.xyz/wp-json/wezet/v1/user"
         ];
 
         const secret = Deno.env.get("WEZET_SYNC_SECRET") || "wezet_sync_secret_fallback";
