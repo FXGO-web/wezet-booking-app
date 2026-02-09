@@ -75,7 +75,9 @@ export const teamMembersAPI = {
 
     if (filters?.role) query = query.eq("role", filters.role);
     if (filters?.status) query = query.eq("status", filters.status);
-    if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
+    if (filters?.search) {
+      query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    }
 
     // Sort by newest first
     query = query.order('created_at', { ascending: false });

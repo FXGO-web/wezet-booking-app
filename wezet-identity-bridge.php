@@ -47,6 +47,80 @@ class Wezet_Identity_Bridge
 
         // Optional: Shortcode for Login Button
         add_shortcode('wezet_login_button', array($this, 'render_login_button'));
+
+        // --- INBOUND SYNC (Supabase -> WP) ---
+        add_action('rest_api_init', array($this, 'register_sync_route'));
+    }
+
+    /**
+     * Register REST API Route for Sync
+     */
+    public function register_sync_route() {
+        register_rest_route('wezet/v1', '/user', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'handle_incoming_sync'),
+            'permission_callback' => '__return_true' // We validate secret manually
+        ));
+    }
+
+    /**
+     * Handle Incoming Sync Payload
+     */
+    public function handle_incoming_sync($request) {
+        $secret = $request->get_header('X-Wezet-Sync-Secret');
+        // Ideally matches Deno.env.get("WEZET_SYNC_SECRET")
+        // forcing a soft check for now, user should configure this in wp-config
+        $expected = defined('WEZET_SYNC_SECRET') ? WEZET_SYNC_SECRET : 'wezet_sync_secret_fallback';
+        
+        if ($secret !== $expected) {
+            return new WP_Error('forbidden', 'Invalid Secret', array('status' => 403));
+        }
+
+        $params = $request->get_json_params();
+        $email = sanitize_email($params['email']);
+        
+        if (!$email) {
+            return new WP_Error('missing_email', 'Email required', array('status' => 400));
+        }
+
+        // Find or Create User
+        $user = get_user_by('email', $email);
+        $user_id = 0;
+        $is_new = false;
+
+        if (!$user) {
+            $username = $email;
+            $password = wp_generate_password(16, false);
+            $user_id = wp_create_user($username, $password, $email);
+            if (is_wp_error($user_id)) {
+                return $user_id;
+            }
+            $is_new = true;
+            $user = get_user_by('id', $user_id);
+        } else {
+            $user_id = $user->ID;
+        }
+
+        // Update Metadata
+        if (!empty($params['full_name'])) {
+            $name_parts = explode(' ', $params['full_name'], 2);
+            wp_update_user(array(
+                'ID' => $user_id,
+                'first_name' => $name_parts[0],
+                'last_name' => isset($name_parts[1]) ? $name_parts[1] : '',
+                'display_name' => $params['full_name']
+            ));
+        }
+
+        // Assign Role if needed (e.g. if Supabase role is 'Admin')
+        // For now, we default to 'customer' or 'subscriber' to be safe
+        $user->add_role('customer');
+
+        return array(
+            'success' => true,
+            'user_id' => $user_id,
+            'action' => $is_new ? 'created' : 'updated'
+        );
     }
 
     /**
