@@ -77,6 +77,9 @@ export const teamMembersAPI = {
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
 
+    // Sort by newest first
+    query = query.order('created_at', { ascending: false });
+
     const { data, error } = await query;
     if (error) throw error;
 
