@@ -39,7 +39,7 @@ import { Database } from "../types/database.types";
 // AUTH
 // ===========================================================
 
-console.log("WEZET API VERSION: EDGE_FUNCTION_UPDATE_V1");
+console.log("WEZET API VERSION: SYNC_FIX_V2");
 
 import { MOCK_COURSE, MOCK_MODULES, MOCK_LESSONS } from "./education-mock-data";
 
