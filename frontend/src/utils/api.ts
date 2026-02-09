@@ -73,7 +73,7 @@ export const teamMembersAPI = {
   getAll: async (filters?: { role?: string; search?: string; status?: string }) => {
     let query = supabase.from("profiles").select("*");
 
-    if (filters?.role) query = query.eq("role", filters.role);
+    if (filters?.role) query = query.ilike("role", filters.role);
     if (filters?.status) query = query.eq("status", filters.status);
     if (filters?.search) {
       query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
@@ -203,9 +203,14 @@ export const teamMembersAPI = {
 
 export const customersAPI = {
   getAll: async (filters?: { search?: string }) => {
-    let query = supabase.from("profiles").select("*").eq("role", "client");
+    let query = supabase.from("profiles").select("*").ilike("role", "client");
 
-    if (filters?.search) query = query.ilike("full_name", `%${filters.search}%`);
+    if (filters?.search) {
+      query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+    }
+
+    // Sort by newest first
+    query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
     if (error) throw error;
