@@ -22,6 +22,9 @@ class Wezet_Identity_Bridge
 
     public function __construct()
     {
+        // --- BYPASS REST AUTH (for our specific route) ---
+        add_filter('rest_authentication_errors', array($this, 'allow_unauthenticated_rest_access'), 10, 1);
+
         // --- OUTBOUND LIGIC (WP -> Supabase) ---
         // Hook into WooCommerce Customer creation
         add_action('woocommerce_created_customer', array($this, 'sync_woocommerce_customer'), 10, 3);
@@ -53,9 +56,30 @@ class Wezet_Identity_Bridge
     }
 
     /**
+     * Whitelist our Sync Route from "Force Login" plugins
+     */
+    public function allow_unauthenticated_rest_access($result)
+    {
+        // If a previous authentication error occurred, check if it's ours to bypass
+        if (!empty($result)) {
+            return $result;
+        }
+
+        // Check if the current request is for our route
+        $route = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+
+        if (strpos($route, '/wezet/v1/user') !== false) {
+            return true; // Return true to allow access
+        }
+
+        return $result;
+    }
+
+    /**
      * Register REST API Route for Sync
      */
-    public function register_sync_route() {
+    public function register_sync_route()
+    {
         register_rest_route('wezet/v1', '/user', array(
             'methods' => 'POST',
             'callback' => array($this, 'handle_incoming_sync'),
@@ -66,19 +90,20 @@ class Wezet_Identity_Bridge
     /**
      * Handle Incoming Sync Payload
      */
-    public function handle_incoming_sync($request) {
+    public function handle_incoming_sync($request)
+    {
         $secret = $request->get_header('X-Wezet-Sync-Secret');
         // Ideally matches Deno.env.get("WEZET_SYNC_SECRET")
         // forcing a soft check for now, user should configure this in wp-config
         $expected = defined('WEZET_SYNC_SECRET') ? WEZET_SYNC_SECRET : 'wezet_sync_secret_fallback';
-        
+
         if ($secret !== $expected) {
             return new WP_Error('forbidden', 'Invalid Secret', array('status' => 403));
         }
 
         $params = $request->get_json_params();
         $email = sanitize_email($params['email']);
-        
+
         if (!$email) {
             return new WP_Error('missing_email', 'Email required', array('status' => 400));
         }
