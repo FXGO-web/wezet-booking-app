@@ -32,7 +32,8 @@ serve(async (req) => {
     );
 
     // 2. Parse Payload
-    const { email, firstName, lastName, role = "Client", source = "external" } = await req.json();
+    const { email, firstName, lastName, role: rawRole = "client", source = "external" } = await req.json();
+    const role = rawRole.toLowerCase();
 
     if (!email) {
       throw new Error("Email is required");

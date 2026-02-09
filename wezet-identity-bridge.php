@@ -56,20 +56,18 @@ class Wezet_Identity_Bridge
     }
 
     /**
-     * Whitelist our Sync Route from "Force Login" plugins
+     * Whitelist our Sync Route from "Force Login" plugins and Security Firewalls
      */
     public function allow_unauthenticated_rest_access($result)
     {
-        // If a previous authentication error occurred, check if it's ours to bypass
-        if (!empty($result)) {
-            return $result;
-        }
-
-        // Check if the current request is for our route
+        // Check if the current request is for our route early
         $route = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
 
         if (strpos($route, '/wezet/v1/user') !== false) {
-            return true; // Return true to allow access
+            // If it's our route, we ALWAYS want to return true to bypass other auth blocks
+            // regardless of whether Wordfence/iThemes says otherwise
+            remove_all_filters('rest_authentication_errors');
+            return true;
         }
 
         return $result;
@@ -137,7 +135,7 @@ class Wezet_Identity_Bridge
             ));
         }
 
-        // Assign Role if needed (e.g. if Supabase role is 'Admin')
+        // Assign Role if needed (e.g. if Supabase role is 'admin')
         // For now, we default to 'customer' or 'subscriber' to be safe
         $user->add_role('customer');
 
@@ -186,7 +184,7 @@ class Wezet_Identity_Bridge
             'email' => $user_info->user_email,
             'firstName' => $user_info->first_name,
             'lastName' => $user_info->last_name,
-            'role' => in_array('administrator', $user_info->roles) ? 'Admin' : 'Client',
+            'role' => in_array('administrator', $user_info->roles) ? 'admin' : 'client',
             'source' => $source,
             'wp_user_id' => $user_id
         );

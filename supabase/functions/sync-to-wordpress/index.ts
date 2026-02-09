@@ -22,7 +22,7 @@ serve(async (req) => {
         const user = {
             email: record.email,
             full_name: record.full_name,
-            role: record.role,
+            role: (record.role || 'client').toLowerCase(),
             id: record.id
         };
 
