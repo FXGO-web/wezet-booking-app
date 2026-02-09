@@ -13,6 +13,7 @@ interface AuthContextType {
   getAccessToken: () => string | null;
   resetPassword: (email: string) => Promise<{ error: any }>;
   updatePassword: (password: string) => Promise<{ error: any }>;
+  checkUserExists: (email: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,6 +115,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error('Sign in error:', error);
+
+      // Check if user exists to provide better feedback
+      const { data: exists } = await supabase.rpc('check_user_exists', { email_to_check: email } as any);
+
+      if (!exists) {
+        return { error: { message: "User not found, please sign up" } };
+      }
+
+      if (error.message === "Invalid login credentials") {
+        return { error: { message: "Wrong password? Click forgot password" } };
+      }
+
       return { error };
     }
 
@@ -195,6 +208,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { error } = await supabase.auth.updateUser({ password });
       return { error };
     },
+    checkUserExists: async (email: string) => {
+      const { data } = await supabase.rpc('check_user_exists', { email_to_check: email } as any);
+      return !!data;
+    }
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

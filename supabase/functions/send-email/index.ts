@@ -1,5 +1,5 @@
 
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getWelcomeTemplate, getPasswordResetTemplate, getBookingConfirmationTemplate } from "../_shared/email-templates.ts";
 
 const corsHeaders = {
@@ -14,6 +14,7 @@ interface EmailRequest {
 }
 
 Deno.serve(async (req) => {
+    console.log("[Send-Email] Incoming request...");
     if (req.method === "OPTIONS") {
         return new Response("ok", { headers: corsHeaders });
     }

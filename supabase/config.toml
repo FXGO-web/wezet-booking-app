@@ -378,3 +378,7 @@ verify_jwt = false
 import_map = "./functions/stripe-webhook/deno.json"
 entrypoint = "./functions/stripe-webhook/index.ts"
 
+[functions.send-email]
+enabled = true
+verify_jwt = false
+

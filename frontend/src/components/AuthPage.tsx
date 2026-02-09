@@ -42,7 +42,11 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
     try {
       const { error } = await resetPassword(resetEmail);
       if (error) {
-        setError(error.message || 'Failed to send reset email');
+        if (error.message.includes("not found")) {
+          setError("User not found, please sign up");
+        } else {
+          setError(error.message || 'Failed to send reset email');
+        }
       } else {
         setResetSent(true);
         setSuccess('Password reset email sent! Check your inbox.');
@@ -62,11 +66,8 @@ export function AuthPage({ mode = "signin" }: { mode?: "signin" | "signup" | "up
     try {
       const { error } = await signIn(signInEmail, signInPassword);
       if (error) {
-        if (error.message === "Invalid login credentials") {
-          setError("Invalid login credentials. If you have an account from Learn or Shop, your account has been migrated. Please click 'Forgot password?' to set a new password.");
-        } else {
-          setError(error.message || 'Failed to sign in');
-        }
+        // useAuth now returns the specific strings we want
+        setError(error.message || 'Failed to sign in');
       }
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
