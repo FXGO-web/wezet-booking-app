@@ -53,16 +53,16 @@ export function LocationModal({ isOpen, onClose, onSuccess, location }: Location
       }
 
       if (location) {
-        await locationsAPI.update(location.id, formData, accessToken);
+        await locationsAPI.update(location.id, formData);
       } else {
-        await locationsAPI.create(formData, accessToken);
+        await locationsAPI.create(formData);
       }
 
       onSuccess();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving location:", error);
-      alert("Failed to save location. Please try again.");
+      alert(`Failed to save location: ${error.message || "Please try again."}`);
     } finally {
       setLoading(false);
     }

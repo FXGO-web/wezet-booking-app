@@ -415,6 +415,8 @@ export const locationsAPI = {
       address: location.address || null,
       type: location.type || "in-person",
       capacity: location.capacity ? Number(location.capacity) : null,
+      description: location.description || null,
+      status: location.status || "active",
     };
 
     console.log("Creating location with payload:", payload);
@@ -430,9 +432,19 @@ export const locationsAPI = {
   },
 
   update: async (id: string, updates: any) => {
+    const payload: any = {};
+    if (updates.name) payload.name = updates.name;
+    if (updates.address) payload.address = updates.address;
+    if (updates.type) payload.type = updates.type;
+    if (updates.capacity !== undefined) payload.capacity = Number(updates.capacity) || null;
+    if (updates.description !== undefined) payload.description = updates.description;
+    if (updates.status) payload.status = updates.status;
+
+    console.log("Updating location", id, "with payload:", payload);
+
     const { data, error } = await supabase
       .from("locations")
-      .update(updates)
+      .update(payload)
       .eq("id", id)
       .select()
       .single();

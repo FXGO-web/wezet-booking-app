@@ -22,7 +22,7 @@ const CATEGORIES = [
 ];
 
 export function ServicesCategories() {
-  const { convertAndFormat } = useCurrency();
+  const { formatFixedPrice } = useCurrency();
   const [services, setServices] = useState<Service[]>([]);
   const [dynamicCategories, setDynamicCategories] = useState<any[]>([]); // New state
   const [loading, setLoading] = useState(true);
@@ -61,9 +61,9 @@ export function ServicesCategories() {
       key: 'price',
       label: 'Price',
       sortable: true,
-      render: (value: number, row: Service) => (
+      render: (value: number, row: any) => (
         <span className="font-medium">
-          {convertAndFormat(value, row.currency)}
+          {formatFixedPrice(row.fixed_prices, value, row.currency)}
         </span>
       ),
     },
@@ -177,7 +177,7 @@ export function ServicesCategories() {
 
   const handleExport = () => {
     const headers = ['Session Name', 'Category', 'Duration (min)', 'Price', 'Currency', 'Status'];
-    const rows = filteredServices.map(s => [
+    const rows = filteredServices.map((s: any) => [
       s.name,
       s.category?.name || 'Uncategorized',
       s.duration_minutes.toString(),
@@ -289,7 +289,7 @@ export function ServicesCategories() {
           {dynamicCategories.map((category) => {
             const Icon = category.icon;
             // s.category is an object { id, name } or null
-            const count = services.filter(s => s.category && s.category.id === category.id).length;
+            const count = services.filter((s: any) => s.category && s.category.id === category.id).length;
 
             return (
               <Card
