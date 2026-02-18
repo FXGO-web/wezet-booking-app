@@ -21,13 +21,13 @@ import {
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Separator } from "./ui/separator";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
-  UserCheck, 
-  CreditCard, 
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  UserCheck,
+  CreditCard,
   MessageSquare,
   Loader2,
   CheckCircle2,
@@ -90,6 +90,42 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
     status: booking?.status || "pending",
     notes: booking?.notes || "",
   });
+
+  // Sync formData with booking prop changes
+  useEffect(() => {
+    if (booking) {
+      setFormData({
+        clientName: booking.clientName || "",
+        clientEmail: booking.clientEmail || "",
+        clientPhone: booking.clientPhone || "",
+        serviceId: booking.serviceId || "",
+        teamMemberId: booking.teamMemberId || "",
+        date: booking.date || "",
+        time: booking.time || "",
+        location: booking.location || "",
+        price: booking.price || "",
+        currency: booking.currency || "USD",
+        status: booking.status || "pending",
+        notes: booking.notes || "",
+      });
+    } else if (isOpen) {
+      // Reset for new booking
+      setFormData({
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+        serviceId: "",
+        teamMemberId: "",
+        date: "",
+        time: "",
+        location: "",
+        price: "",
+        currency: "USD",
+        status: "pending",
+        notes: "",
+      });
+    }
+  }, [booking, isOpen]);
 
   // Fetch services and team members
   useEffect(() => {
@@ -162,7 +198,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
 
   const handleStatusChange = async (newStatus: string) => {
     if (!booking) return;
-    
+
     setLoading(true);
     try {
       const accessToken = getAccessToken();
