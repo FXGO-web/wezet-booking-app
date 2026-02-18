@@ -12,31 +12,65 @@ serve(async (req) => {
     }
 
     try {
+        const authHeader = req.headers.get("Authorization");
+        if (!authHeader) {
+            return new Response(JSON.stringify({ error: "No Authorization header provided" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 401,
+            });
+        }
+
         const supabaseClient = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-            { global: { headers: { Authorization: req.headers.get("Authorization")! } } }
+            { global: { headers: { Authorization: authHeader } } }
         );
 
         // 1. Check if the caller is an admin
         const { data: { user: caller }, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !caller) throw new Error("Unauthorized: Invalid token");
+        if (userError || !caller) {
+            return new Response(JSON.stringify({ error: "Unauthorized: Invalid token", details: userError?.message }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 401,
+            });
+        }
 
         // Initialize Admin Client (Service Role)
         const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (!serviceRoleKey) {
+            throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set in environment");
+        }
+
         const supabaseAdmin = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
-            serviceRoleKey ?? ""
+            serviceRoleKey
         );
 
         // Robust Admin Check
         const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_app_admin');
-        if (adminCheckError || !isAdmin) {
-            console.error("Admin check failed or user not admin:", adminCheckError);
-            throw new Error("Unauthorized: Professional access required.");
+        if (adminCheckError) {
+            return new Response(JSON.stringify({ error: "Admin check RPC failed", details: adminCheckError.message }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 500,
+            });
+        }
+
+        if (!isAdmin) {
+            console.error(`User ${caller.email} (${caller.id}) is not an admin.`);
+            return new Response(JSON.stringify({ error: "Unauthorized: You do not have permission to manage team members." }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 403,
+            });
         }
 
         const { email, password, fullName, role, phone, bio, specialties, status, avatarUrl } = await req.json();
+
+        if (!email) {
+            return new Response(JSON.stringify({ error: "Email is required" }), {
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+                status: 400,
+            });
+        }
 
         console.log(`[PROCESS] Creating/Syncing user: ${email} with role: ${role}`);
 
@@ -53,15 +87,28 @@ serve(async (req) => {
         });
 
         if (createError) {
+            // Check if user already exists
             if (createError.message.includes("already has been registered") || createError.status === 422) {
-                console.log(`[INFO] User ${email} already exists. Attempting to update existing profile.`);
-                // Get existing user ID
-                const { data: existingUsers, error: listError } = await supabaseAdmin.from("profiles").select("id").eq("email", email).single();
-                if (listError || !existingUsers) {
-                    console.error("Could not find existing user profile for email:", email);
-                    throw new Error(`User exists in Auth but no profile found: ${email}`);
+                console.log(`[INFO] User ${email} already exists in Auth. Looking up profile.`);
+                const { data: existingProfile, error: profileError } = await supabaseAdmin
+                    .from("profiles")
+                    .select("id")
+                    .eq("email", email)
+                    .maybeSingle();
+
+                if (profileError) {
+                    throw new Error(`Error looking up existing profile: ${profileError.message}`);
                 }
-                targetUser = { id: existingUsers.id };
+
+                if (!existingProfile) {
+                    // This happens if Auth user exists but trigger failed or profile was deleted
+                    // We can try to list users from Auth directly or handle it
+                    console.log(`[WARN] Auth user exists but no profile found for ${email}. Attempting to recover by getting Auth ID.`);
+                    // We don't have an easy way to get ID from email in auth.admin without listing (which is slow)
+                    // But we can try to "create" again without throwing, or just use the error data if it returns ID
+                    throw new Error(`User ${email} exists in Auth but has no profile. Please contact support to sync.`);
+                }
+                targetUser = { id: existingProfile.id };
             } else {
                 console.error("Supabase Auth Create Error:", createError);
                 throw createError;
@@ -88,7 +135,7 @@ serve(async (req) => {
 
             if (updateError) {
                 console.error("Error updating profile:", updateError);
-                // We keep going as the primary goal (auth user) is done or exists
+                // Return 200 anyway since the user/auth is established/exists
             }
         }
 
@@ -99,7 +146,7 @@ serve(async (req) => {
 
     } catch (error: any) {
         console.error("Create/Sync User Error:", error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error.message, details: error.toString() }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
         });
