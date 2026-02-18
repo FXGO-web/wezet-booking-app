@@ -146,9 +146,13 @@ serve(async (req) => {
 
     } catch (error: any) {
         console.error("Create/Sync User Error:", error);
-        return new Response(JSON.stringify({ error: error.message, details: error.toString() }), {
+        return new Response(JSON.stringify({
+            error: error.message || "Unknown error occurred",
+            details: error.toString(),
+            success: false
+        }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-            status: 400,
+            status: 200, // Return 200 to allow frontend to read the body easily
         });
     }
 });
