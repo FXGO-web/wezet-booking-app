@@ -180,10 +180,10 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
 
       if (booking) {
         // Update existing booking
-        await bookingsAPI.update(booking.id, bookingData, accessToken);
+        await bookingsAPI.update(booking.id, bookingData);
       } else {
         // Create new booking
-        await bookingsAPI.create(bookingData, accessToken);
+        await bookingsAPI.create(bookingData);
       }
 
       onSuccess();
@@ -207,7 +207,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
         return;
       }
 
-      await bookingsAPI.update(booking.id, { status: newStatus }, accessToken);
+      await bookingsAPI.update(booking.id, { status: newStatus });
       setFormData({ ...formData, status: newStatus });
       onSuccess();
     } catch (error) {
@@ -309,7 +309,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="service">Service *</Label>
                 <Select
                   value={formData.serviceId}
-                  onValueChange={(value) => setFormData({ ...formData, serviceId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, serviceId: value })}
                   disabled={!!booking}
                 >
                   <SelectTrigger>
@@ -329,7 +329,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="teamMember">Team Member *</Label>
                 <Select
                   value={formData.teamMemberId}
-                  onValueChange={(value) => setFormData({ ...formData, teamMemberId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, teamMemberId: value })}
                   disabled={!!booking}
                 >
                   <SelectTrigger>
@@ -439,7 +439,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="status">Booking Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={handleStatusChange}
+                  onValueChange={(value: string) => handleStatusChange(value)}
                   disabled={loading}
                 >
                   <SelectTrigger>
