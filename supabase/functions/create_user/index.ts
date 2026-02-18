@@ -47,7 +47,7 @@ serve(async (req) => {
         );
 
         // Robust Admin Check
-        const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_app_admin');
+        const { data: isAdmin, error: adminCheckError } = await supabaseClient.rpc('is_app_admin');
         if (adminCheckError) {
             return new Response(JSON.stringify({ error: "Admin check RPC failed", details: adminCheckError.message }), {
                 headers: { ...corsHeaders, "Content-Type": "application/json" },
