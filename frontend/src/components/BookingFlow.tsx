@@ -309,6 +309,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const dateTime = `${dateStr}T${selectedTime}:00`;
 
+      const isFree = (effectivePrice || 0) === 0;
       const bookingData = {
         serviceId: selectedService || displayService?.id,
         serviceName: displayService?.name || selectedServiceData?.name,
@@ -327,7 +328,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         price: effectivePrice || 0,
         currency: displayService?.currency || selectedServiceData?.currency || 'EUR',
         duration: displayService?.duration || selectedServiceData?.duration,
-        status: appliedCode ? 'confirmed' : 'pending',
+        status: (appliedCode || isFree) ? 'confirmed' : 'pending',
       };
 
       // Handle Bundle Redemption Flow (Legacy Code or Active Bundle)
@@ -362,7 +363,31 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         // 2. Create Booking (Confirmed)
         const bookingRes: any = await bookingsAPI.create(bookingData);
         setCreatedBooking(bookingRes);
-        toast.success("Booking confirmed with bundle!");
+
+        // Trigger Email for Bundle/Free booking
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'booking_confirmation',
+              to: formData.email,
+              payload: {
+                clientName: formData.name,
+                sessionName: bookingData.serviceName,
+                date: format(selectedDate, 'PPPP'),
+                time: selectedTimeRange || selectedTime,
+                instructorName: bookingData.teamMemberName,
+                locationName: displayService?.location?.name || "Online",
+                address: displayService?.location?.address || "",
+                price: `${bookingData.price} ${bookingData.currency}`,
+                bookingId: bookingRes.id
+              }
+            }
+          });
+        } catch (e) {
+          console.error("Error sending confirmation email:", e);
+        }
+
+        toast.success("Booking confirmed!");
         setCurrentStep(3);
         return; // Exit, no Stripe needed
       }
@@ -370,7 +395,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       const bookingRes: any = await bookingsAPI.create(bookingData);
 
       // If price > 0, redirect to Stripe
-      if ((effectivePrice || 0) > 0) {
+      if (!isFree) {
         toast.loading("Redirecting to payment...");
         const { data, error } = await supabase.functions.invoke('create-checkout', {
           body: {
@@ -402,10 +427,31 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         }
       }
 
-      // If free or error in checkout url (fallback)
-      setCreatedBooking(bookingRes);
-      toast.success("Booking confirmed!");
-      setCurrentStep(3);
+      // If free booking (not bundle, but service price is 0)
+      if (isFree) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'booking_confirmation',
+              to: formData.email,
+              payload: {
+                clientName: formData.name,
+                sessionName: bookingData.serviceName,
+                date: format(selectedDate, 'PPPP'),
+                time: selectedTimeRange || selectedTime,
+                instructorName: bookingData.teamMemberName,
+                locationName: displayService?.location?.name || "Online",
+                address: displayService?.location?.address || "",
+                price: `${bookingData.price} ${bookingData.currency}`,
+                bookingId: bookingRes.id
+              }
+            }
+          });
+        } catch (e) {
+          console.error("Error sending confirmation email:", e);
+        }
+      }
+
       setCreatedBooking(bookingRes);
       toast.success("Booking confirmed!");
       setCurrentStep(3);
