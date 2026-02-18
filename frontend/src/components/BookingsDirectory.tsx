@@ -268,6 +268,11 @@ export function BookingsDirectory() {
       return false;
     }
 
+    // Default filter: hide pending (abandoned) from admin main view unless specifically asked
+    if (!filterValues.status || filterValues.status === 'all') {
+      if (booking.status === 'pending') return false;
+    }
+
     return true;
   });
 
