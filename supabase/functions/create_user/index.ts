@@ -19,25 +19,29 @@ serve(async (req) => {
         );
 
         // 1. Check if the caller is an admin
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        if (userError || !user) throw new Error("Unauthorized: Invalid token");
+        const { data: { user: caller }, error: userError } = await supabaseClient.auth.getUser();
+        if (userError || !caller) throw new Error("Unauthorized: Invalid token");
 
-        // 2. Initialize Admin Client (Service Role)
+        // Initialize Admin Client (Service Role)
         const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        console.log("Service Role Key present:", !!serviceRoleKey);
-
         const supabaseAdmin = createClient(
             Deno.env.get("SUPABASE_URL") ?? "",
             serviceRoleKey ?? ""
         );
 
-        /* ... admin check commented out ... */
+        // Robust Admin Check
+        const { data: isAdmin, error: adminCheckError } = await supabaseAdmin.rpc('is_app_admin');
+        if (adminCheckError || !isAdmin) {
+            console.error("Admin check failed or user not admin:", adminCheckError);
+            throw new Error("Unauthorized: Professional access required.");
+        }
 
         const { email, password, fullName, role, phone, bio, specialties, status, avatarUrl } = await req.json();
 
-        console.log(`Attempting to create user: ${email}`);
+        console.log(`[PROCESS] Creating/Syncing user: ${email} with role: ${role}`);
 
-        // 3. Create the user
+        // 3. Create or Get the user
+        let targetUser;
         const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password: password || "TempPass123!",
@@ -49,14 +53,26 @@ serve(async (req) => {
         });
 
         if (createError) {
-            console.error("Supabase Auth Create Error:", createError);
-            throw createError;
+            if (createError.message.includes("already has been registered") || createError.status === 422) {
+                console.log(`[INFO] User ${email} already exists. Attempting to update existing profile.`);
+                // Get existing user ID
+                const { data: existingUsers, error: listError } = await supabaseAdmin.from("profiles").select("id").eq("email", email).single();
+                if (listError || !existingUsers) {
+                    console.error("Could not find existing user profile for email:", email);
+                    throw new Error(`User exists in Auth but no profile found: ${email}`);
+                }
+                targetUser = { id: existingUsers.id };
+            } else {
+                console.error("Supabase Auth Create Error:", createError);
+                throw createError;
+            }
+        } else {
+            targetUser = newUser.user;
         }
 
         // 4. Update the profile with extra details
-        // The trigger 'on_auth_user_created' usually creates the profile row, 
-        // but we want to update it immediately with bio, phone, etc.
-        if (newUser.user) {
+        if (targetUser) {
+            console.log(`[UPDATE] Syncing profile for user ${targetUser.id} (${email})`);
             const { error: updateError } = await supabaseAdmin
                 .from("profiles")
                 .update({
@@ -68,23 +84,22 @@ serve(async (req) => {
                     status: status || "active",
                     avatar_url: avatarUrl || null
                 })
-                .eq("id", newUser.user.id);
+                .eq("id", targetUser.id);
 
             if (updateError) {
                 console.error("Error updating profile:", updateError);
-                // Don't throw here, the user is created, just return the user
+                // We keep going as the primary goal (auth user) is done or exists
             }
         }
 
-        console.error(`[INFO] Returning successful response for new user ${newUser.user?.id}.`);
-        return new Response(JSON.stringify(newUser), {
+        return new Response(JSON.stringify({ user: targetUser, message: "User synced successfully" }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 200,
         });
 
     } catch (error: any) {
-        console.error("Create User Error:", error);
-        return new Response(JSON.stringify({ error: error.message, stack: error.stack }), {
+        console.error("Create/Sync User Error:", error);
+        return new Response(JSON.stringify({ error: error.message }), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             status: 400,
         });

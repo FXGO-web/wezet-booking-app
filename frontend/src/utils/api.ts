@@ -115,8 +115,13 @@ export const teamMembersAPI = {
     });
 
     if (error) {
-      console.error("Error creating team member:", error);
+      console.error("Invoke error creating team member:", error);
       throw error;
+    }
+
+    if (data?.error) {
+      console.error("Function error creating team member:", data.error);
+      throw new Error(data.error);
     }
 
     // The function returns { user: ... }, we want to return the profile-like object
