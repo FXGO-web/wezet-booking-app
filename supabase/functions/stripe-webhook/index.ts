@@ -192,6 +192,7 @@ Deno.serve(async (req) => {
 
             if (RESEND_API_KEY && bookingData) {
                 try {
+                    console.log(`Preparing to send confirmation email for booking ${bookingId}`);
                     const sessionData = bookingData.sessions;
                     const sessionName = sessionData?.session_templates?.name || "Session";
                     const instructorName = sessionData?.profiles?.full_name || "Wezet Instructor";
@@ -205,10 +206,12 @@ Deno.serve(async (req) => {
                     const customerEmail = session.customer_details?.email || session.customer_email;
 
                     if (customerEmail) {
+                        console.log(`Sending email to: ${customerEmail}`);
                         let htmlContent = "";
 
                         // Replace placeholders in custom template
                         if (emailTemplate) {
+                            console.log("Using custom email template from database.");
                             htmlContent = emailTemplate
                                 .replace(/{{client_name}}/g, clientName)
                                 .replace(/{{session_name}}/g, sessionName)
@@ -221,6 +224,7 @@ Deno.serve(async (req) => {
                                 .replace(/{{booking_id}}/g, bookingData.id);
                         } else {
                             // Use Shared Template
+                            console.log("Using default shared email template.");
                             htmlContent = getBookingConfirmationTemplate({
                                 clientName,
                                 sessionName,
@@ -249,16 +253,20 @@ Deno.serve(async (req) => {
                             })
                         });
                         const emailData = await res.json();
-                        console.log("Email sent result:", emailData);
+                        if (!res.ok) {
+                            console.error("Resend API high-level error:", emailData);
+                        } else {
+                            console.log("Email sent successfully:", emailData.id);
+                        }
                     } else {
-                        console.log("No customer email found in session, skipping email.");
+                        console.warn("No customer email found in Stripe session, skipping email.");
                     }
                 } catch (emailError) {
-                    console.error("Error sending email:", emailError);
+                    console.error("Critical error in email sending logic:", emailError);
                     // Do NOT throw error here, as main booking was confirmed.
                 }
             } else {
-                console.log("RESEND_API_KEY not set or booking data lookup failed, skipping email.");
+                console.warn(`Skipping email: RESEND_API_KEY present: ${!!RESEND_API_KEY}, BookingData present: ${!!bookingData}`);
             }
 
         } else {

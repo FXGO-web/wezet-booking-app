@@ -115,8 +115,13 @@ export const teamMembersAPI = {
     });
 
     if (error) {
-      console.error("Error creating team member:", error);
+      console.error("Invoke error creating team member:", error);
       throw error;
+    }
+
+    if (data?.error) {
+      console.error("Function error creating team member:", data.error);
+      throw new Error(data.error);
     }
 
     // The function returns { user: ... }, we want to return the profile-like object
@@ -487,7 +492,7 @@ export const bookingsAPI = {
       .select(
         `
         *,
-        customer:customer_id ( id, full_name, email ),
+        customer:customer_id ( id, full_name, email, phone ),
         session:sessions!bookings_session_id_fkey (
           id,
           start_time,
@@ -520,10 +525,13 @@ export const bookingsAPI = {
           id: b.id,
           clientName: b.customer?.full_name ?? "Unknown client",
           clientEmail: b.customer?.email ?? "",
+          clientPhone: b.customer?.phone ?? "",
           serviceName: b.session?.template?.name ?? "Unknown service",
+          serviceId: b.session?.template?.id ?? "",
           category: b.session?.template?.category?.name ?? "General",
           teamMemberName:
             b.session?.instructor?.full_name ?? "Unknown instructor",
+          teamMemberId: b.session?.instructor?.id ?? "",
           mentorId: b.session?.instructor?.id,
           practitionerAvatar: b.session?.instructor?.avatar_url,
           startTime: start ? start.toISOString() : null, // Added for robust date handling
@@ -534,6 +542,7 @@ export const bookingsAPI = {
               minute: "2-digit",
             })
             : "",
+          location: b.session?.location?.name ?? "",
           price:
             b.price ?? b.session?.template?.price ?? null,
           currency:
@@ -541,6 +550,7 @@ export const bookingsAPI = {
             b.session?.template?.currency ??
             "EUR",
           status: b.status,
+          notes: b.notes ?? "",
         };
       }) ?? [];
 

@@ -21,13 +21,13 @@ import {
 import { Badge } from "./ui/badge";
 import { Avatar, AvatarFallback } from "./ui/avatar";
 import { Separator } from "./ui/separator";
-import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  User, 
-  UserCheck, 
-  CreditCard, 
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  User,
+  UserCheck,
+  CreditCard,
   MessageSquare,
   Loader2,
   CheckCircle2,
@@ -91,6 +91,42 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
     notes: booking?.notes || "",
   });
 
+  // Sync formData with booking prop changes
+  useEffect(() => {
+    if (booking) {
+      setFormData({
+        clientName: booking.clientName || "",
+        clientEmail: booking.clientEmail || "",
+        clientPhone: booking.clientPhone || "",
+        serviceId: booking.serviceId || "",
+        teamMemberId: booking.teamMemberId || "",
+        date: booking.date || "",
+        time: booking.time || "",
+        location: booking.location || "",
+        price: booking.price || "",
+        currency: booking.currency || "USD",
+        status: booking.status || "pending",
+        notes: booking.notes || "",
+      });
+    } else if (isOpen) {
+      // Reset for new booking
+      setFormData({
+        clientName: "",
+        clientEmail: "",
+        clientPhone: "",
+        serviceId: "",
+        teamMemberId: "",
+        date: "",
+        time: "",
+        location: "",
+        price: "",
+        currency: "USD",
+        status: "pending",
+        notes: "",
+      });
+    }
+  }, [booking, isOpen]);
+
   // Fetch services and team members
   useEffect(() => {
     const fetchData = async () => {
@@ -144,10 +180,10 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
 
       if (booking) {
         // Update existing booking
-        await bookingsAPI.update(booking.id, bookingData, accessToken);
+        await bookingsAPI.update(booking.id, bookingData);
       } else {
         // Create new booking
-        await bookingsAPI.create(bookingData, accessToken);
+        await bookingsAPI.create(bookingData);
       }
 
       onSuccess();
@@ -162,7 +198,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
 
   const handleStatusChange = async (newStatus: string) => {
     if (!booking) return;
-    
+
     setLoading(true);
     try {
       const accessToken = getAccessToken();
@@ -171,7 +207,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
         return;
       }
 
-      await bookingsAPI.update(booking.id, { status: newStatus }, accessToken);
+      await bookingsAPI.update(booking.id, { status: newStatus });
       setFormData({ ...formData, status: newStatus });
       onSuccess();
     } catch (error) {
@@ -273,7 +309,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="service">Service *</Label>
                 <Select
                   value={formData.serviceId}
-                  onValueChange={(value) => setFormData({ ...formData, serviceId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, serviceId: value })}
                   disabled={!!booking}
                 >
                   <SelectTrigger>
@@ -293,7 +329,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="teamMember">Team Member *</Label>
                 <Select
                   value={formData.teamMemberId}
-                  onValueChange={(value) => setFormData({ ...formData, teamMemberId: value })}
+                  onValueChange={(value: string) => setFormData({ ...formData, teamMemberId: value })}
                   disabled={!!booking}
                 >
                   <SelectTrigger>
@@ -403,7 +439,7 @@ export function BookingModal({ isOpen, onClose, onSuccess, booking }: BookingMod
                 <Label htmlFor="status">Booking Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={handleStatusChange}
+                  onValueChange={(value: string) => handleStatusChange(value)}
                   disabled={loading}
                 >
                   <SelectTrigger>

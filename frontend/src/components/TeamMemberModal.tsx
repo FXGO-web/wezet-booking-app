@@ -147,9 +147,10 @@ export function TeamMemberModal({ isOpen, onClose, onSuccess, member }: TeamMemb
       onSuccess();
       onClose();
       toast.success(member ? "Team member updated successfully" : "Team member created successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving team member:", error);
-      alert("Failed to save team member. Please try again.");
+      const errorMessage = error.message || "Failed to save team member. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
