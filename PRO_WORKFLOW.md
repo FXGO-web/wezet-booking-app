@@ -67,17 +67,42 @@ Use only for critical incidents:
 scripts/actions/run-hotfix-deploy.sh "critical login outage" production
 ```
 
-## 4) Run Action commands (Codex / Antigravity)
+For stricter incident PRs, use the hotfix template:
+
+`https://github.com/FXGO-web/wezet-booking-app/compare/main...<your-branch>?expand=1&template=hotfix.md`
+
+## 4) Automatic versioning and changelog
+
+The `Release` workflow now runs on every push to `main` and:
+
+- Detects semantic bump from commit messages:
+  - `BREAKING CHANGE` or `!:` -> major
+  - `feat:` -> minor
+  - anything else -> patch
+- Creates a new tag (`vX.Y.Z`)
+- Creates a GitHub Release with auto-generated notes/changelog
+
+Manual release trigger (optional):
+
+```bash
+scripts/actions/run-release.sh auto
+scripts/actions/run-release.sh patch
+scripts/actions/run-release.sh minor
+scripts/actions/run-release.sh major
+```
+
+## 5) Run Action commands (Codex / Antigravity)
 
 Use these command actions:
 
 - `scripts/actions/commit-push.sh "<message>"`
 - `scripts/actions/create-pr.sh "<title>"`
 - `scripts/actions/run-hotfix-deploy.sh "<reason>" production`
+- `scripts/actions/run-release.sh "auto|patch|minor|major"`
 
 This gives you one-click speed without exposing tokens.
 
-## 5) Token safety
+## 6) Token safety
 
 - Never paste tokens in chat.
 - Keep auth in keychain (`gh auth login --with-token`).
