@@ -49,18 +49,13 @@ Deno.serve(async (req) => {
         const { data: profiles, error: profilesError } = await supabase
             .from("profiles")
             .select("id, full_name, avatar_url, role, email")
-            .in("email", [
-                "hanna@wezet.xyz",
-                "saszeline@theassana.com",
-                "pakosub@gmail.com",
-                "fx_dev@wezet.xyz",
-                "contact@mroffbeat.com"
-            ]);
+            .in("role", ["admin", "instructor", "teacher", "team_member"]);
+
         if (profilesError) throw profilesError;
 
         const teamMembers = profiles?.map((p: any) => ({
             id: p.id,
-            name: p.full_name || "Unknown",
+            name: p.full_name || p.email || "Unknown",
             avatarUrl: p.avatar_url
         })) || [];
 
@@ -75,7 +70,7 @@ Deno.serve(async (req) => {
             day.setDate(day.getDate() + 1)
         ) {
             const d = new Date(day);
-            const dateStr = d.toISOString().split("T")[0];
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
             const weekday = d.getDay(); // 0=Sun, 1=Mon, ...
 
             // 1. Get all raw weekly slots for this day
