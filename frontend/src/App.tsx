@@ -49,6 +49,7 @@ import { BundleCheckout } from "./components/BundleCheckout";
 import { EducationAdmin } from "./components/admin/EducationAdmin";
 import { BundleManagement } from "./components/BundleManagement";
 import { ClientProgramsDirectory } from "./components/ClientProgramsDirectory";
+import { ScheduledSessionsList } from "./components/ScheduledSessionsList";
 import {
   Wind,
   Sparkles,
@@ -307,6 +308,7 @@ function AppContent() {
       "availability-management",
       "locations-directory",
       "bookings-directory",
+      "scheduled-sessions",
       "education-dashboard", // Added
       "education-module",    // Added
       "education-lesson"     // Added
@@ -324,6 +326,7 @@ function AppContent() {
         "analytics-dashboard",
         "user-management",
         "settings-page",
+        "scheduled-sessions",
         "admin-education",
         "education-dashboard", // Added to admin-only for now
         "education-module",
@@ -823,6 +826,20 @@ function AppContent() {
           backLabel={isAdmin || isInstructor ? "Back to Dashboard" : "Back to Home"}
         />
         <BookingsDirectory />
+      </div>
+    );
+  }
+
+  if (activeView === "scheduled-sessions") {
+    return (
+      <div>
+        <HeaderBar
+          onBack={() => setActiveView("admin-dashboard")}
+          backLabel="Back to Dashboard"
+        />
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <ScheduledSessionsList />
+        </div>
       </div>
     );
   }

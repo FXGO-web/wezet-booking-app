@@ -71,6 +71,12 @@ const navigationCards: NavigationCard[] = [
     route: "bookings-directory",
   },
   {
+    title: "Scheduled Sessions List",
+    description: "Full list of all active calendar slots",
+    icon: Calendar,
+    route: "scheduled-sessions",
+  },
+  {
     title: "Sessions & Categories",
     description: "Configure sessions, pricing & categories",
     icon: Layers,
