@@ -49,6 +49,7 @@ import { BundleCheckout } from "./components/BundleCheckout";
 import { EducationAdmin } from "./components/admin/EducationAdmin";
 import { BundleManagement } from "./components/BundleManagement";
 import { ClientProgramsDirectory } from "./components/ClientProgramsDirectory";
+import { ScheduledSessionsList } from "./components/ScheduledSessionsList";
 import {
   Wind,
   Sparkles,
@@ -307,6 +308,7 @@ function AppContent() {
       "availability-management",
       "locations-directory",
       "bookings-directory",
+      "scheduled-sessions",
       "education-dashboard", // Added
       "education-module",    // Added
       "education-lesson"     // Added
@@ -324,6 +326,7 @@ function AppContent() {
         "analytics-dashboard",
         "user-management",
         "settings-page",
+        "scheduled-sessions",
         "admin-education",
         "education-dashboard", // Added to admin-only for now
         "education-module",
@@ -559,9 +562,14 @@ function AppContent() {
         ) : (
           <HeaderBar
             onBack={() => {
-              setActiveView(returnView || "home");
+              if (isAdmin) {
+                setActiveView("admin-dashboard");
+              } else {
+                setActiveView(returnView || "home");
+              }
               setBookingPreselection(null);
             }}
+            backLabel={isAdmin ? "Admin Dashboard" : (returnView === "calendar" ? "Back to Calendar" : "Back to Home")}
           />
         )}
         <BookingFlow preselection={bookingPreselection} />
@@ -613,7 +621,10 @@ function AppContent() {
   if (activeView === "analytics-dashboard") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
         <AnalyticsDashboard />
       </div>
     );
@@ -622,7 +633,10 @@ function AppContent() {
   if (activeView === "availability-editor") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : isInstructor ? "team-dashboard" : "home")}
+          backLabel={isAdmin || isInstructor ? "Back to Dashboard" : "Back to Home"}
+        />
         <AvailabilityEditor />
       </div>
     );
@@ -631,7 +645,10 @@ function AppContent() {
   if (activeView === "availability-management") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : isInstructor ? "team-dashboard" : "home")}
+          backLabel={isAdmin || isInstructor ? "Back to Dashboard" : "Back to Home"}
+        />
         <AvailabilityManagement />
       </div>
     );
@@ -721,7 +738,13 @@ function AppContent() {
 
   if (activeView === "user-management") {
     return (
-      <UserManagement onBack={() => setActiveView("admin-dashboard")} />
+      <div>
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
+        <UserManagement onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")} />
+      </div>
     );
   }
 
@@ -735,7 +758,7 @@ function AppContent() {
   if (activeView === "team-member-detail") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "user-management" : "home")} backLabel={isAdmin ? "Back to User Management" : "Back to Home"} />
         <TeamMemberDetail />
       </div>
     );
@@ -744,7 +767,10 @@ function AppContent() {
   if (activeView === "services-categories") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
         <ServicesCategories />
       </div>
     );
@@ -765,7 +791,7 @@ function AppContent() {
   if (activeView === "service-detail") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "services-categories" : "home")} backLabel={isAdmin ? "Back to Services" : "Back to Home"} />
         <ServiceDetail />
       </div>
     );
@@ -774,7 +800,10 @@ function AppContent() {
   if (activeView === "locations-directory") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
         <LocationsDirectory />
       </div>
     );
@@ -783,7 +812,7 @@ function AppContent() {
   if (activeView === "location-detail") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "locations-directory" : "home")} backLabel={isAdmin ? "Back to Locations" : "Back to Home"} />
         <LocationDetail />
       </div>
     );
@@ -792,8 +821,25 @@ function AppContent() {
   if (activeView === "bookings-directory") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : isInstructor ? "team-dashboard" : "home")}
+          backLabel={isAdmin || isInstructor ? "Back to Dashboard" : "Back to Home"}
+        />
         <BookingsDirectory />
+      </div>
+    );
+  }
+
+  if (activeView === "scheduled-sessions") {
+    return (
+      <div>
+        <HeaderBar
+          onBack={() => setActiveView("admin-dashboard")}
+          backLabel="Back to Dashboard"
+        />
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <ScheduledSessionsList />
+        </div>
       </div>
     );
   }
@@ -801,7 +847,7 @@ function AppContent() {
   if (activeView === "booking-detail") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "bookings-directory" : "home")} backLabel={isAdmin ? "Back to Bookings" : "Back to Home"} />
         <BookingDetail />
       </div>
     );
@@ -834,7 +880,7 @@ function AppContent() {
   if (activeView === "digital-content-management") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView("admin-dashboard")} backLabel="Back to Dashboard" />
         <DigitalContentManagement />
       </div>
     );
@@ -843,7 +889,7 @@ function AppContent() {
   if (activeView === "digital-content-detail") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "digital-content-management" : "home")} backLabel={isAdmin ? "Back to Content" : "Back to Home"} />
         <DigitalContentDetail />
       </div>
     );
@@ -870,7 +916,7 @@ function AppContent() {
   if (activeView === "programs-directory") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")} backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"} />
         <ClientProgramsDirectory
           onNavigate={(route) => setActiveView(route)}
           onSelectProgram={(programId) => {
@@ -896,7 +942,10 @@ function AppContent() {
   if (activeView === "settings-page") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
         <SettingsPage />
       </div>
     );
@@ -935,7 +984,10 @@ function AppContent() {
   if (activeView === "education-dashboard") {
     return (
       <div>
-        <HeaderBar onBack={() => setActiveView("home")} />
+        <HeaderBar
+          onBack={() => setActiveView(isAdmin ? "admin-dashboard" : "home")}
+          backLabel={isAdmin ? "Back to Dashboard" : "Back to Home"}
+        />
         <EducationDashboard
           onNavigate={(view, id) => {
             if (id) setSelectedEducationId(id);
