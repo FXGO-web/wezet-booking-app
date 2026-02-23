@@ -254,11 +254,21 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         let currentAvailability: Record<number, any> = {};
 
         rawSlots.forEach((slot: any) => {
-          const slotDate = new Date(slot.date);
-          // Ensure we are in the correct month
-          if (slotDate.getMonth() + 1 !== month || slotDate.getFullYear() !== year) return;
+          let sYear, sMonth, day;
+          if (slot.date && slot.date.includes('-')) {
+            const parts = slot.date.split('T')[0].split('-');
+            sYear = parseInt(parts[0], 10);
+            sMonth = parseInt(parts[1], 10);
+            day = parseInt(parts[2], 10);
+          } else {
+            const slotDate = new Date(slot.date);
+            sYear = slotDate.getFullYear();
+            sMonth = slotDate.getMonth() + 1;
+            day = slotDate.getDate();
+          }
 
-          const day = slotDate.getDate();
+          // Ensure we are in the correct month
+          if (sMonth !== month || sYear !== year) return;
           const time = slot.start.slice(0, 5); // HH:MM
 
           if (!currentAvailability[day]) {
@@ -711,7 +721,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                       const day = index + 1;
                       const isSelected = selectedDay === day;
                       const isAvailable = hasAvailableSlots(day);
-                      const isPast = day < 5; // Mock: first few days are past
+
+                      const now = new Date();
+                      const currentRealMonth = now.getMonth() + 1;
+                      const currentRealYear = now.getFullYear();
+                      const currentRealDay = now.getDate();
+
+                      const isPast = (year < currentRealYear) ||
+                        (year === currentRealYear && (currentDate.getMonth() + 1) < currentRealMonth) ||
+                        (year === currentRealYear && (currentDate.getMonth() + 1) === currentRealMonth && day < currentRealDay);
 
                       return (
                         <button
