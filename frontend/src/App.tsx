@@ -517,6 +517,22 @@ function AppContent() {
           initialCategory={initialCategory}
           isEmbedded={embedMode}
           onNavigateToBooking={(bookingData) => {
+            if (embedMode) {
+              const url = new URL("https://booking.wezet.xyz/");
+              url.searchParams.set("view", "booking");
+              if (bookingData.preselectedService) url.searchParams.set("serviceId", bookingData.preselectedService);
+              if (bookingData.preselectedTeamMember) url.searchParams.set("teamMemberId", bookingData.preselectedTeamMember);
+              if (bookingData.preselectedDate) url.searchParams.set("date", bookingData.preselectedDate);
+              if (bookingData.preselectedTime) url.searchParams.set("time", bookingData.preselectedTime);
+
+              try {
+                if (window.top) window.top.location.href = url.toString();
+                else window.location.href = url.toString();
+              } catch (e) {
+                window.location.href = url.toString();
+              }
+              return;
+            }
             // Store booking data for BookingFlow
             console.log(
               "Navigating to booking with data:",
@@ -527,6 +543,19 @@ function AppContent() {
             setActiveView("booking");
           }}
           onNavigateToProgram={(programId) => {
+            if (embedMode) {
+              const url = new URL("https://booking.wezet.xyz/");
+              url.searchParams.set("view", "program-checkout");
+              url.searchParams.set("programId", programId);
+
+              try {
+                if (window.top) window.top.location.href = url.toString();
+                else window.location.href = url.toString();
+              } catch (e) {
+                window.location.href = url.toString();
+              }
+              return;
+            }
             console.log("Navigating to program:", programId);
             setSelectedProgramId(programId);
             setReturnView("calendar");
@@ -572,7 +601,9 @@ function AppContent() {
             backLabel={isAdmin ? "Admin Dashboard" : (returnView === "calendar" ? "Back to Calendar" : "Back to Home")}
           />
         )}
-        <BookingFlow preselection={bookingPreselection} />
+        <div className={`mx-auto ${embedMode ? "max-w-4xl px-4" : "max-w-5xl px-6"} py-12`}>
+          <BookingFlow preselection={bookingPreselection} />
+        </div>
       </div>
     );
   }
@@ -715,12 +746,37 @@ function AppContent() {
           <HeaderBar onBack={() => setActiveView("home")} />
         )}
         <div
-          className={`min-h-screen ${embedMode ? "bg-[#f8f7f4] py-10" : "bg-background py-24"
+          className={`min-h-screen ${embedMode ? "bg-[#f8f7f4] py-6" : "bg-background py-24"
             }`}
         >
-          <div className="max-w-6xl mx-auto px-4 md:px-8">
+          <div className={`${embedMode ? "max-w-4xl" : "max-w-6xl"} mx-auto px-4 md:px-8`}>
             <WordPressCalendarWidget
               onNavigateToBooking={(bookingData) => {
+                if (embedMode) {
+                  // If we are in an iframe (embedMode), redirect the TOP window to the full booking page
+                  // instead of continuing inside the iframe, to avoid Stripe iframe restrictions.
+                  const url = new URL("https://booking.wezet.xyz/");
+                  url.searchParams.set("view", "booking");
+                  if (bookingData.preselectedService) {
+                    url.searchParams.set("serviceId", bookingData.preselectedService);
+                  }
+                  if (bookingData.preselectedTeamMember) url.searchParams.set("teamMemberId", bookingData.preselectedTeamMember);
+                  if (bookingData.preselectedDate) url.searchParams.set("date", bookingData.preselectedDate);
+                  if (bookingData.preselectedTime) url.searchParams.set("time", bookingData.preselectedTime);
+
+                  try {
+                    // Force top-level redirect
+                    if (window.top) {
+                      window.top.location.href = url.toString();
+                    } else {
+                      window.location.href = url.toString();
+                    }
+                  } catch (e) {
+                    // Fallback if top access is restricted
+                    window.location.href = url.toString();
+                  }
+                  return;
+                }
                 setReturnView("wordpress-calendar-widget");
                 setBookingPreselection(bookingData);
                 setActiveView("booking");

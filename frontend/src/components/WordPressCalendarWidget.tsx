@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Separator } from "./ui/separator";
 import { availabilityAPI, sessionsAPI } from "../utils/api";
 import { useCurrency } from "../context/CurrencyContext";
+import { Skeleton } from "./ui/skeleton";
 
 interface TeamMember {
   id: string;
@@ -240,35 +241,35 @@ export function WordPressCalendarWidget({
 
             const serviceObj: Service = baseService
               ? {
-                  ...(baseService as any),
-                  id: String(baseService?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
-                  name:
-                    baseService?.name ||
-                    dateSlot.serviceName ||
-                    dateSlot.title ||
-                    "Session",
-                  basePrice:
-                    (normalizedPrice ?? normalizePrice(fallbackService)) ?? null,
-                  currency: baseService?.currency || normalizedCurrency,
-                  description:
-                    baseService?.description ||
-                    dateSlot.description ||
-                    dateSlot.notes ||
-                    "",
-                  duration: baseService?.duration || normalizedDuration,
-                  category: baseService?.category || dateSlot.category || "Session",
-                  availableWith: [],
-                }
+                ...(baseService as any),
+                id: String(baseService?.id || dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
+                name:
+                  baseService?.name ||
+                  dateSlot.serviceName ||
+                  dateSlot.title ||
+                  "Session",
+                basePrice:
+                  (normalizedPrice ?? normalizePrice(fallbackService)) ?? null,
+                currency: baseService?.currency || normalizedCurrency,
+                description:
+                  baseService?.description ||
+                  dateSlot.description ||
+                  dateSlot.notes ||
+                  "",
+                duration: baseService?.duration || normalizedDuration,
+                category: baseService?.category || dateSlot.category || "Session",
+                availableWith: [],
+              }
               : {
-                  id: String(dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
-                  name: dateSlot.serviceName || dateSlot.title || "Session",
-                  description: dateSlot.description || dateSlot.notes || "",
-                  duration: normalizedDuration,
-                  basePrice: normalizedPrice ?? null,
-                  currency: normalizedCurrency,
-                  category: dateSlot.category || "Session",
-                  availableWith: [],
-                };
+                id: String(dateSlot.serviceId || `generic-${day}-${time}-${member.id}`),
+                name: dateSlot.serviceName || dateSlot.title || "Session",
+                description: dateSlot.description || dateSlot.notes || "",
+                duration: normalizedDuration,
+                basePrice: normalizedPrice ?? null,
+                currency: normalizedCurrency,
+                category: dateSlot.category || "Session",
+                availableWith: [],
+              };
 
             let serviceInSlot = slot.services.find((s) => s.id === serviceObj.id);
             if (!serviceInSlot) {
@@ -467,9 +468,21 @@ export function WordPressCalendarWidget({
               </div>
 
               {loading || loadingServices ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#e36b35]" />
-                  <p className="text-sm text-muted-foreground">Loading availability…</p>
+                <div className="divide-y animate-pulse">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="p-4 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-3 w-20" />
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Skeleton className="h-10 w-10 rounded-full" />
+                        <div className="space-y-2 flex-1">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : eventsForSelectedDay.length > 0 ? (
                 <div className="divide-y">
@@ -518,9 +531,9 @@ export function WordPressCalendarWidget({
                           <span className="text-sm font-semibold">
                             {normalizePrice(service) !== null
                               ? convertAndFormat(
-                                  normalizePrice(service) as number,
-                                  service.currency || "EUR"
-                                )
+                                normalizePrice(service) as number,
+                                service.currency || "EUR"
+                              )
                               : "Price varies"}
                           </span>
                           {onNavigateToBooking && (
