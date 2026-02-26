@@ -634,7 +634,9 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         {/* Header - Hidden in Embed Mode */}
         {!isEmbedded && (
           <div className="space-y-4">
-            <h1 className="text-3xl font-medium tracking-tight">Book a Session</h1>
+            <h1 className="text-3xl font-medium tracking-tight capitalize">
+              {activeCategory ? `${activeCategory} Sessions` : "Book a Session"}
+            </h1>
             <p className="text-muted-foreground max-w-2xl text-lg">
               Explore our programs, digital products, and book a session with our team.
             </p>
@@ -648,8 +650,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
           <div className="space-y-2">
             <h2>Available Sessions</h2>
             <div className="flex items-center gap-2">
-              <p className="text-muted-foreground">
-                Select a date and time to book a session
+              <p className="text-muted-foreground capitalize">
+                {activeCategory
+                  ? `Sessions for ${activeCategory}`
+                  : "Select a date and time to book a session"}
               </p>
               <div className="flex items-center gap-2 ml-auto">
                 <Select
