@@ -4,7 +4,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Separator } from "./ui/separator";
-import { Loader2, ArrowLeft, Calendar, MapPin, CheckCircle2, CreditCard, Clock, User } from "lucide-react";
+import { Loader2, ArrowLeft, Calendar, MapPin, User, CheckCircle2 } from "lucide-react";
 import { programsAPI, bookingsAPI } from "../utils/api";
 import { supabase } from "../utils/supabase/client";
 import { useCurrency } from "../context/CurrencyContext";
@@ -20,14 +20,13 @@ interface ProgramCheckoutProps {
 }
 
 export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
-    const { convertAndFormat, formatFixedPrice } = useCurrency();
-    const { user, getAccessToken } = useAuth();
+    const { formatFixedPrice } = useCurrency();
+    const { user } = useAuth();
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [program, setProgram] = useState<any>(null);
     const [showAuth, setShowAuth] = useState(false);
-    const [step, setStep] = useState<"details" | "confirmation">("details");
 
     // Form data
     const [formData, setFormData] = useState({
@@ -35,9 +34,6 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
         email: "",
         phone: "",
         notes: "",
-        cardNumber: "",
-        expiry: "",
-        cvc: "",
     });
 
     useEffect(() => {
@@ -45,18 +41,6 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
             loadProgram(programId);
         }
     }, [programId]);
-
-    // Handle return from Stripe
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("success") === "true") {
-            setStep("confirmation");
-            toast.success("Payment successful! You are booked.");
-        }
-        if (params.get("canceled") === "true") {
-            toast.error("Payment was cancelled.");
-        }
-    }, []);
 
     // Pre-fill user data if logged in
     useEffect(() => {
@@ -88,6 +72,10 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
 
     const handleSubmit = async () => {
         if (!program) return;
+        if (!user) {
+            setShowAuth(true);
+            return;
+        }
 
         setSubmitting(true);
         try {
@@ -102,6 +90,8 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                 clientName: formData.name,
                 clientEmail: formData.email,
                 clientPhone: formData.phone,
+                customerId: user.id,
+                customer_id: user.id,
                 notes: formData.notes,
                 price: program.price || 0,
                 currency: program.currency || 'EUR',
@@ -121,7 +111,7 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                     currency: program.currency || 'EUR',
                     description: `Booking: ${program.name}`,
                     booking_id: booking.id,
-                    return_url: window.location.href, // Returns to this page
+                    return_url: window.location.href.split('?')[0],
                     customer_email: formData.email,
                 }
             });
@@ -129,6 +119,11 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
             if (checkoutError) {
                 console.error("Stripe Checkout Error:", checkoutError);
                 throw new Error("Failed to initialize payment");
+            }
+
+            if (checkoutData?.error) {
+                console.error("Stripe logical error:", checkoutData);
+                throw new Error(checkoutData.error || "Failed to initialize payment");
             }
 
             if (checkoutData?.url) {
@@ -174,30 +169,6 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                     Back to Booking
                 </Button>
                 <AuthPage />
-            </div>
-        );
-    }
-
-    if (step === "confirmation") {
-        return (
-            <div className="min-h-screen bg-background p-6 md:p-12 flex items-center justify-center">
-                <Card className="max-w-md w-full">
-                    <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
-                        <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center">
-                            <CheckCircle2 className="h-10 w-10 text-green-600" />
-                        </div>
-                        <div className="space-y-2">
-                            <h2 className="text-2xl font-bold">Booking Confirmed!</h2>
-                            <p className="text-muted-foreground">
-                                Thank you for booking <strong>{program.name}</strong>.
-                                We have sent a confirmation email to {formData.email}.
-                            </p>
-                        </div>
-                        <Button className="w-full" onClick={onBack}>
-                            Return to Calendar
-                        </Button>
-                    </CardContent>
-                </Card>
             </div>
         );
     }
@@ -284,50 +255,6 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base">Payment Details</CardTitle>
-                                <CardDescription>
-                                    Secure payment processing
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="cardNumber">Card Number</Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="cardNumber"
-                                            placeholder="1234 5678 9012 3456"
-                                            value={formData.cardNumber}
-                                            onChange={(e) => handleInputChange("cardNumber", e.target.value)}
-                                        />
-                                        <CreditCard className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="expiry">Expiry Date</Label>
-                                        <Input
-                                            id="expiry"
-                                            placeholder="MM/YY"
-                                            value={formData.expiry}
-                                            onChange={(e) => handleInputChange("expiry", e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="cvc">CVC</Label>
-                                        <Input
-                                            id="cvc"
-                                            placeholder="123"
-                                            value={formData.cvc}
-                                            onChange={(e) => handleInputChange("cvc", e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
                         <Button
                             size="lg"
                             className="w-full"
@@ -340,7 +267,7 @@ export function ProgramCheckout({ programId, onBack }: ProgramCheckoutProps) {
                                     Processing...
                                 </>
                             ) : (
-                                `Pay ${formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}`
+                                `Continue to Stripe • ${formatFixedPrice(program.fixed_prices || program.fixedPrices, program.price || 0, program.currency || "EUR")}`
                             )}
                         </Button>
                     </div>

@@ -92,6 +92,7 @@ function AppContent() {
     "auth",
     "wordpress-calendar-widget",
     "program-checkout",
+    "booking-success",
   ];
   const { user, loading, signOut, getAccessToken } = useAuth();
 

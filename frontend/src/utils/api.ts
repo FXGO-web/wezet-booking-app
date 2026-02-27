@@ -586,22 +586,45 @@ export const bookingsAPI = {
     // But our improved logic relies on template_id + time if session doesn't exist.
 
     if (booking.serviceId && booking.date) {
-      // Use RPC
-      const { data, error } = await supabase.rpc('create_booking_from_template', {
-        p_template_id: booking.serviceId,
-        p_start_time: booking.date, // BookingFlow sends ISO string
-        p_customer_id: booking.customer_id || booking.customerId,
-        p_status: booking.status || 'confirmed',
-        p_price: booking.price || 0,
-        p_currency: booking.currency || 'EUR',
-        p_notes: booking.notes || null
-      });
+      try {
+        // Preferred path: DB RPC
+        const { data, error } = await supabase.rpc('create_booking_from_template', {
+          p_template_id: booking.serviceId,
+          p_start_time: booking.date, // BookingFlow sends ISO string
+          p_customer_id: booking.customer_id || booking.customerId,
+          p_status: booking.status || 'confirmed',
+          p_price: booking.price || 0,
+          p_currency: booking.currency || 'EUR',
+          p_notes: booking.notes || null
+        });
 
-      if (error) {
-        console.error("Error creating booking via RPC:", error);
-        throw error;
+        if (error) {
+          throw error;
+        }
+        return data;
+      } catch (rpcError: any) {
+        console.warn("RPC create_booking_from_template failed, trying edge function fallback:", rpcError);
+
+        // Fallback path: Edge Function with service role backing (works even if RPC is missing in this environment)
+        const { data: fallbackData, error: fallbackError } = await supabase.functions.invoke('create-booking', {
+          body: {
+            template_id: booking.serviceId,
+            start_time: booking.date,
+            customer_id: booking.customer_id || booking.customerId || null,
+            status: booking.status || 'confirmed',
+            price: booking.price || 0,
+            currency: booking.currency || 'EUR',
+            notes: booking.notes || null,
+          }
+        });
+
+        if (fallbackError || fallbackData?.error) {
+          console.error("Error creating booking via fallback function:", fallbackError || fallbackData);
+          throw fallbackError || new Error(fallbackData?.error || "Booking creation failed");
+        }
+
+        return fallbackData;
       }
-      return data;
     }
 
     // Fallback for direct session ID (legacy or specific use case)
