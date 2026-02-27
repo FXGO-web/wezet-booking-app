@@ -9,8 +9,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  deploy-skip-info:
+    name: Deploy skipped (missing Vercel secrets)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.VERCEL_TOKEN == '' || secrets.VERCEL_ORG_ID == '' || secrets.VERCEL_PROJECT_ID == '' }}
+    steps:
+      - name: Explain skip
+        run: |
+          echo "Skipping Vercel deploy from GitHub Actions because required secrets are missing."
+          echo "Set VERCEL_TOKEN, VERCEL_ORG_ID and VERCEL_PROJECT_ID to enable this workflow."
+
   deploy-vercel:
     name: Deploy to Vercel Production
+    if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_ORG_ID != '' && secrets.VERCEL_PROJECT_ID != '' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,12 +37,6 @@ jobs:
 
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
-
-      - name: Validate required secrets
-        run: |
-          test -n "${{ secrets.VERCEL_TOKEN }}"
-          test -n "${{ secrets.VERCEL_ORG_ID }}"
-          test -n "${{ secrets.VERCEL_PROJECT_ID }}"
 
       - name: Pull Vercel project settings
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
