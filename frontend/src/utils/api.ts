@@ -246,7 +246,7 @@ export const servicesAPI = {
         *,
         instructor:instructor_id ( id, full_name ),
         category:category_id ( id, name ),
-        location:location_id ( id, name )
+        location:location_id ( id, name, address )
       `
       );
 
@@ -267,7 +267,7 @@ export const servicesAPI = {
         *,
         instructor:instructor_id ( id, full_name ),
         category:category_id ( id, name ),
-        location:location_id ( id, name )
+        location:location_id ( id, name, address )
       `
       )
       .eq("id", id)
@@ -1037,6 +1037,24 @@ export const availabilityAPI = {
     const { data: exceptions, error: exError } = await exQuery;
     if (exError) throw exError;
 
+    const locationIds = Array.from(
+      new Set(
+        (exceptions || [])
+          .map((e: any) => e.location_id)
+          .filter((id: any) => !!id)
+      )
+    );
+
+    let locationById = new Map<string, any>();
+    if (locationIds.length > 0) {
+      const { data: locations, error: locationsError } = await supabase
+        .from("locations")
+        .select("id, name, address")
+        .in("id", locationIds as string[]);
+      if (locationsError) throw locationsError;
+      locationById = new Map((locations || []).map((loc: any) => [String(loc.id), loc]));
+    }
+
     const { data: blocked, error: blockedError } = await supabase
       .from("availability_blocked_dates")
       .select("*")
@@ -1053,6 +1071,8 @@ export const availabilityAPI = {
         sessionTemplateId: e.session_template_id,
         isAvailable: e.is_available,
         locationId: e.location_id,
+        location_name: e.location_id ? locationById.get(String(e.location_id))?.name || null : null,
+        location_address: e.location_id ? locationById.get(String(e.location_id))?.address || null : null,
       })) ?? [],
       blockedDates: blocked ?? [],
     };

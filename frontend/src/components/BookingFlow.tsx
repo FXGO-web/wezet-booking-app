@@ -44,6 +44,7 @@ interface BookingFlowProps {
     preselectedDuration?: number;
     preselectedFixedPrices?: Record<string, number> | null;
     preselectedLocationName?: string;
+    preselectedLocationAddress?: string;
   } | null;
 }
 
@@ -68,6 +69,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     duration?: number;
     fixedPrices?: Record<string, number> | null;
     locationName?: string;
+    locationAddress?: string;
   } | null>(preselection
     ? {
       id: preselection.preselectedService,
@@ -78,6 +80,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       duration: preselection.preselectedDuration,
       fixedPrices: preselection.preselectedFixedPrices,
       locationName: preselection.preselectedLocationName,
+      locationAddress: preselection.preselectedLocationAddress,
     }
     : null);
 
@@ -177,6 +180,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         duration: preselection.preselectedDuration,
         fixedPrices: preselection.preselectedFixedPrices,
         locationName: preselection.preselectedLocationName,
+        locationAddress: preselection.preselectedLocationAddress,
       });
 
       // If we have all required data (service, team member, date, time), skip to step 2
@@ -283,8 +287,41 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       return rawLocation.name;
     }
 
+    const rawAddress =
+      source?.locationAddress ||
+      source?.location_address ||
+      (typeof source?.location === "object" ? source?.location?.address : undefined);
+
+    if (typeof rawAddress === "string" && rawAddress.trim()) {
+      return "Location";
+    }
+
     return "Location to be confirmed";
   }, [selectedServiceData, displayService, prefilledServiceInfo, preselection?.preselectedLocationName]);
+
+  const selectedLocationAddress = useMemo(() => {
+    if (preselection?.preselectedLocationAddress) {
+      return preselection.preselectedLocationAddress;
+    }
+
+    const source = selectedServiceData || displayService || prefilledServiceInfo;
+    const rawAddress =
+      source?.locationAddress ||
+      source?.location_address ||
+      (typeof source?.location === "object" ? source?.location?.address : undefined);
+
+    if (typeof rawAddress === "string" && rawAddress.trim()) {
+      return rawAddress.trim();
+    }
+
+    return "";
+  }, [selectedServiceData, displayService, prefilledServiceInfo, preselection?.preselectedLocationAddress]);
+
+  const selectedLocationDisplay = useMemo(() => {
+    return selectedLocationAddress
+      ? `${selectedLocationLabel} · ${selectedLocationAddress}`
+      : selectedLocationLabel;
+  }, [selectedLocationLabel, selectedLocationAddress]);
 
   // Available time slots
   const timeSlots = [
@@ -402,8 +439,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 date: format(selectedDate, 'PPPP'),
                 time: selectedTimeRange || selectedTime,
                 instructorName: bookingData.teamMemberName,
-                locationName: displayService?.location?.name || "Online",
-                address: displayService?.location?.address || "",
+                locationName: selectedLocationLabel,
+                address: selectedLocationAddress,
                 price: `${bookingData.price} ${bookingData.currency}`,
                 bookingId: bookingRes.id
               }
@@ -466,8 +503,8 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                 date: format(selectedDate, 'PPPP'),
                 time: selectedTimeRange || selectedTime,
                 instructorName: bookingData.teamMemberName,
-                locationName: displayService?.location?.name || "Online",
-                address: displayService?.location?.address || "",
+                locationName: selectedLocationLabel,
+                address: selectedLocationAddress,
                 price: `${bookingData.price} ${bookingData.currency}`,
                 bookingId: bookingRes.id
               }
@@ -765,7 +802,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         <span>•</span>
                         <span className="inline-flex items-center gap-1.5">
                           <MapPin className="h-3.5 w-3.5" />
-                          {selectedLocationLabel}
+                          {selectedLocationDisplay}
                         </span>
                         {selectedPrice !== null && (
                           <>
@@ -861,6 +898,11 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <MapPin className="h-4 w-4 text-primary" />
                       <span>{selectedLocationLabel}</span>
                     </div>
+                    {!!selectedLocationAddress && (
+                      <div className="pl-6 text-xs text-muted-foreground">
+                        {selectedLocationAddress}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -876,6 +918,11 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                       <MapPin className="h-4 w-4 text-primary" />
                       <span>{selectedLocationLabel}</span>
                     </div>
+                    {!!selectedLocationAddress && (
+                      <div className="pl-6 text-xs text-muted-foreground">
+                        {selectedLocationAddress}
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -920,7 +967,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <MapPin className="h-4 w-4" />
-                              {selectedLocationLabel}
+                              {selectedLocationDisplay}
                             </span>
                           </>
                         </div>

@@ -28,6 +28,7 @@ interface Service {
   currency: string;
   category: string;
   locationName?: string;
+  locationAddress?: string;
   availableWith: TeamMember[];
   fixedPrices?: Record<string, number> | null;
 }
@@ -57,6 +58,7 @@ interface PublicCalendarProps {
     preselectedDuration?: number;
     preselectedEndTime?: string;
     preselectedLocationName?: string;
+    preselectedLocationAddress?: string;
   }) => void;
   onNavigateToProgram?: (programId: string) => void;
   onNavigateToProduct?: (productId: string) => void;
@@ -375,6 +377,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                   serviceDetails.location_name ||
                   (typeof serviceDetails.location === "object" ? serviceDetails.location?.name : serviceDetails.location) ||
                   "Location to be confirmed",
+                locationAddress:
+                  slot.location_address ||
+                  (typeof slot.location === "object" ? slot.location?.address : undefined) ||
+                  (typeof serviceDetails.location === "object" ? serviceDetails.location?.address : undefined) ||
+                  "",
                 availableWith: [],
                 fixedPrices: serviceDetails.fixed_prices || serviceDetails.fixedPrices || null
               }
@@ -389,6 +396,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                   slot.location_name ||
                   (typeof slot.location === "object" ? slot.location?.name : slot.location) ||
                   "Location to be confirmed",
+                locationAddress:
+                  slot.location_address ||
+                  (typeof slot.location === "object" ? slot.location?.address : undefined) ||
+                  "",
                 availableWith: [],
                 fixedPrices: null
               };
@@ -609,7 +620,17 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     if (typeof service.locationName === "string" && service.locationName.trim()) {
       return service.locationName.trim();
     }
+    if (getLocationAddress(service)) {
+      return "Location";
+    }
     return "Location to be confirmed";
+  };
+
+  const getLocationAddress = (service: Service) => {
+    if (typeof service.locationAddress === "string" && service.locationAddress.trim()) {
+      return service.locationAddress.trim();
+    }
+    return "";
   };
 
   const handleServiceSlotClick = (
@@ -644,6 +665,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         preselectedDuration: service.duration,
         preselectedEndTime: slot.endTime,
         preselectedLocationName: getLocationLabel(service),
+        preselectedLocationAddress: getLocationAddress(service),
       });
     }
   };
@@ -863,8 +885,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                                   <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                                                  <MapPin className="h-3.5 w-3.5" />
-                                                  <span className="truncate">{getLocationLabel(service)}</span>
+                                                  <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                                  <div className="min-w-0">
+                                                    <div className="truncate">{getLocationLabel(service)}</div>
+                                                    {getLocationAddress(service) && (
+                                                      <div className="truncate text-[11px] text-muted-foreground/90">
+                                                        {getLocationAddress(service)}
+                                                      </div>
+                                                    )}
+                                                  </div>
                                                 </div>
                                               </div>
                                               <div className="flex flex-col items-end gap-1 shrink-0">
@@ -964,8 +993,15 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                                       <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                                                     </div>
                                                     <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
-                                                      <MapPin className="h-3.5 w-3.5" />
-                                                      <span className="truncate">{getLocationLabel(service)}</span>
+                                                      <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                                                      <div className="min-w-0">
+                                                        <div className="truncate">{getLocationLabel(service)}</div>
+                                                        {getLocationAddress(service) && (
+                                                          <div className="truncate text-[11px] text-muted-foreground/90">
+                                                            {getLocationAddress(service)}
+                                                          </div>
+                                                        )}
+                                                      </div>
                                                     </div>
                                                   </div>
                                                   <div className="flex flex-col items-end gap-1 shrink-0">

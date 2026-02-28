@@ -32,6 +32,7 @@ interface Service {
   category: string;
   description?: string;
   locationName?: string;
+  locationAddress?: string;
   availableWith: TeamMember[];
 }
 
@@ -58,6 +59,7 @@ interface WordPressCalendarWidgetProps {
     preselectedDuration?: number;
     preselectedEndTime?: string;
     preselectedLocationName?: string;
+    preselectedLocationAddress?: string;
   }) => void;
 }
 
@@ -266,6 +268,11 @@ export function WordPressCalendarWidget({
                     dateSlot.location ||
                     (typeof baseService?.location === "object" ? baseService?.location?.name : baseService?.location) ||
                     "Location to be confirmed",
+                  locationAddress:
+                    dateSlot.location_address ||
+                    (typeof dateSlot.location === "object" ? dateSlot.location?.address : undefined) ||
+                    (typeof baseService?.location === "object" ? baseService?.location?.address : undefined) ||
+                    "",
                   availableWith: [],
                 }
               : {
@@ -282,6 +289,10 @@ export function WordPressCalendarWidget({
                     (typeof dateSlot.location === "object" ? dateSlot.location?.name : dateSlot.location) ||
                     dateSlot.location ||
                     "Location to be confirmed",
+                  locationAddress:
+                    dateSlot.location_address ||
+                    (typeof dateSlot.location === "object" ? dateSlot.location?.address : undefined) ||
+                    "",
                   availableWith: [],
                 };
 
@@ -374,6 +385,7 @@ export function WordPressCalendarWidget({
       preselectedDuration: service.duration,
       preselectedEndTime: slot.endTime,
       preselectedLocationName: service.locationName || "Location to be confirmed",
+      preselectedLocationAddress: service.locationAddress || "",
     });
   };
 
@@ -552,8 +564,17 @@ export function WordPressCalendarWidget({
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span>{service.locationName || "Location to be confirmed"}</span>
+                        <MapPin className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <div className="min-w-0">
+                          <div className="truncate">
+                            {service.locationName || (service.locationAddress ? "Location" : "Location to be confirmed")}
+                          </div>
+                          {service.locationAddress && (
+                            <div className="truncate text-[11px] text-muted-foreground/90">
+                              {service.locationAddress}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
