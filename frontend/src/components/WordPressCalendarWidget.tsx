@@ -31,6 +31,7 @@ interface Service {
   currency: string;
   category: string;
   description?: string;
+  locationName?: string;
   availableWith: TeamMember[];
 }
 
@@ -56,6 +57,7 @@ interface WordPressCalendarWidgetProps {
     preselectedCurrency?: string;
     preselectedDuration?: number;
     preselectedEndTime?: string;
+    preselectedLocationName?: string;
   }) => void;
 }
 
@@ -257,6 +259,13 @@ export function WordPressCalendarWidget({
                     "",
                   duration: baseService?.duration || normalizedDuration,
                   category: baseService?.category || dateSlot.category || "Session",
+                  locationName:
+                    dateSlot.location_name ||
+                    dateSlot.locationName ||
+                    (typeof dateSlot.location === "object" ? dateSlot.location?.name : dateSlot.location) ||
+                    dateSlot.location ||
+                    (typeof baseService?.location === "object" ? baseService?.location?.name : baseService?.location) ||
+                    "Location to be confirmed",
                   availableWith: [],
                 }
               : {
@@ -267,6 +276,12 @@ export function WordPressCalendarWidget({
                   basePrice: normalizedPrice ?? null,
                   currency: normalizedCurrency,
                   category: dateSlot.category || "Session",
+                  locationName:
+                    dateSlot.location_name ||
+                    dateSlot.locationName ||
+                    (typeof dateSlot.location === "object" ? dateSlot.location?.name : dateSlot.location) ||
+                    dateSlot.location ||
+                    "Location to be confirmed",
                   availableWith: [],
                 };
 
@@ -358,6 +373,7 @@ export function WordPressCalendarWidget({
       preselectedCurrency: service.currency || "EUR",
       preselectedDuration: service.duration,
       preselectedEndTime: slot.endTime,
+      preselectedLocationName: service.locationName || "Location to be confirmed",
     });
   };
 
@@ -537,7 +553,7 @@ export function WordPressCalendarWidget({
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <MapPin className="h-3.5 w-3.5" />
-                        <span>Session — in person or online</span>
+                        <span>{service.locationName || "Location to be confirmed"}</span>
                       </div>
                     </div>
                   ))}

@@ -27,6 +27,7 @@ interface Service {
   basePrice: number | null;
   currency: string;
   category: string;
+  locationName?: string;
   availableWith: TeamMember[];
   fixedPrices?: Record<string, number> | null;
 }
@@ -55,6 +56,7 @@ interface PublicCalendarProps {
     preselectedCurrency?: string;
     preselectedDuration?: number;
     preselectedEndTime?: string;
+    preselectedLocationName?: string;
   }) => void;
   onNavigateToProgram?: (programId: string) => void;
   onNavigateToProduct?: (productId: string) => void;
@@ -367,6 +369,12 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 basePrice: serviceDetails.price ?? serviceDetails.basePrice,
                 currency: serviceDetails.currency || "EUR",
                 category: typeof serviceDetails.category === 'object' ? serviceDetails.category?.name : (serviceDetails.category || "General"),
+                locationName:
+                  slot.location_name ||
+                  (typeof slot.location === "object" ? slot.location?.name : slot.location) ||
+                  serviceDetails.location_name ||
+                  (typeof serviceDetails.location === "object" ? serviceDetails.location?.name : serviceDetails.location) ||
+                  "Location to be confirmed",
                 availableWith: [],
                 fixedPrices: serviceDetails.fixed_prices || serviceDetails.fixedPrices || null
               }
@@ -377,6 +385,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                 basePrice: null,
                 currency: "EUR",
                 category: "General",
+                locationName:
+                  slot.location_name ||
+                  (typeof slot.location === "object" ? slot.location?.name : slot.location) ||
+                  "Location to be confirmed",
                 availableWith: [],
                 fixedPrices: null
               };
@@ -593,6 +605,13 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     return availability[day].hasAvailability;
   };
 
+  const getLocationLabel = (service: Service) => {
+    if (typeof service.locationName === "string" && service.locationName.trim()) {
+      return service.locationName.trim();
+    }
+    return "Location to be confirmed";
+  };
+
   const handleServiceSlotClick = (
     slot: TimeSlot,
     service: Service,
@@ -624,6 +643,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
         preselectedCurrency: service.currency || "EUR",
         preselectedDuration: service.duration,
         preselectedEndTime: slot.endTime,
+        preselectedLocationName: getLocationLabel(service),
       });
     }
   };
@@ -842,6 +862,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                                   </Avatar>
                                                   <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                                                 </div>
+                                                <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                                                  <MapPin className="h-3.5 w-3.5" />
+                                                  <span className="truncate">{getLocationLabel(service)}</span>
+                                                </div>
                                               </div>
                                               <div className="flex flex-col items-end gap-1 shrink-0">
                                                 <span className="text-sm">
@@ -938,6 +962,10 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
                                                         </AvatarFallback>
                                                       </Avatar>
                                                       <span className="text-xs text-muted-foreground truncate">{member.name}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                                                      <MapPin className="h-3.5 w-3.5" />
+                                                      <span className="truncate">{getLocationLabel(service)}</span>
                                                     </div>
                                                   </div>
                                                   <div className="flex flex-col items-end gap-1 shrink-0">

@@ -43,6 +43,7 @@ interface BookingFlowProps {
     preselectedCurrency?: string;
     preselectedDuration?: number;
     preselectedFixedPrices?: Record<string, number> | null;
+    preselectedLocationName?: string;
   } | null;
 }
 
@@ -66,6 +67,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     currency?: string;
     duration?: number;
     fixedPrices?: Record<string, number> | null;
+    locationName?: string;
   } | null>(preselection
     ? {
       id: preselection.preselectedService,
@@ -75,6 +77,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
       currency: preselection.preselectedCurrency,
       duration: preselection.preselectedDuration,
       fixedPrices: preselection.preselectedFixedPrices,
+      locationName: preselection.preselectedLocationName,
     }
     : null);
 
@@ -173,6 +176,7 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
         currency: preselection.preselectedCurrency,
         duration: preselection.preselectedDuration,
         fixedPrices: preselection.preselectedFixedPrices,
+        locationName: preselection.preselectedLocationName,
       });
 
       // If we have all required data (service, team member, date, time), skip to step 2
@@ -259,6 +263,28 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
     const endStr = `${String(endH).padStart(2, "0")}:${String(endM).padStart(2, "0")}`;
     return `${selectedTime} - ${endStr}`;
   }, [selectedTime, displayService?.duration, selectedServiceData?.duration, preselection?.preselectedEndTime]);
+
+  const selectedLocationLabel = useMemo(() => {
+    if (preselection?.preselectedLocationName) {
+      return preselection.preselectedLocationName;
+    }
+
+    const source = selectedServiceData || displayService || prefilledServiceInfo;
+    const rawLocation =
+      source?.locationName ||
+      source?.location_name ||
+      source?.location;
+
+    if (typeof rawLocation === "string" && rawLocation.trim()) {
+      return rawLocation.trim();
+    }
+
+    if (rawLocation && typeof rawLocation === "object" && rawLocation.name) {
+      return rawLocation.name;
+    }
+
+    return "Location to be confirmed";
+  }, [selectedServiceData, displayService, prefilledServiceInfo, preselection?.preselectedLocationName]);
 
   // Available time slots
   const timeSlots = [
@@ -736,6 +762,11 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                         <span>
                           {selectedTimeRange || selectedTime || "Time TBD"}
                         </span>
+                        <span>•</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {selectedLocationLabel}
+                        </span>
                         {selectedPrice !== null && (
                           <>
                             <span>•</span>
@@ -817,23 +848,33 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                     </div>
                   </div>
                 ) : (
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-2 text-sm">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-foreground">
-                      {selectedDate
-                        ? `${format(selectedDate, 'EEEE, MMMM d, yyyy')} at ${selectedTimeRange || selectedTime}`
-                        : "No date selected"}
-                    </span>
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <span className="text-foreground">
+                        {selectedDate
+                          ? `${format(selectedDate, 'EEEE, MMMM d, yyyy')} at ${selectedTimeRange || selectedTime}`
+                          : "No date selected"}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span>{selectedLocationLabel}</span>
+                    </div>
                   </div>
                 )}
 
                 {selectedDate && selectedTime && allowDateChange && (
-                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+                  <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="h-4 w-4 text-primary" />
                       <span className="text-foreground">
                         {format(selectedDate, 'EEEE, MMMM d, yyyy')} at {selectedTimeRange || selectedTime}
                       </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span>{selectedLocationLabel}</span>
                     </div>
                   </div>
                 )}
@@ -875,6 +916,13 @@ export function BookingFlow({ preselection }: BookingFlowProps) {
                               </span>
                             </>
                           )}
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-4 w-4" />
+                              {selectedLocationLabel}
+                            </span>
+                          </>
                         </div>
                         {selectedDate && (
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">

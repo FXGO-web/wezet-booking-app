@@ -53,6 +53,17 @@ Deno.serve(async (req) => {
 
         if (profilesError) throw profilesError;
 
+        // 6) Get locations to resolve slot location names from location_id
+        const { data: locations, error: locationsError } = await supabase
+            .from("locations")
+            .select("id, name, address");
+
+        if (locationsError) throw locationsError;
+
+        const locationMap = new Map(
+            (locations || []).map((loc: any) => [String(loc.id), loc])
+        );
+
         const teamMembers = profiles?.map((p: any) => ({
             id: p.id,
             name: p.full_name || p.email || "Unknown",
@@ -112,6 +123,8 @@ Deno.serve(async (req) => {
                     template_id: w.session_template_id,
                     instructor_id: w.instructor_id,
                     location_id: w.location_id,
+                    location_name: w.location_id ? locationMap.get(String(w.location_id))?.name || null : null,
+                    location_address: w.location_id ? locationMap.get(String(w.location_id))?.address || null : null,
                     source: 'rule', // It's a weekly rule
                     rule_id: w.id
                 }));
@@ -140,6 +153,8 @@ Deno.serve(async (req) => {
                     template_id: s.session_template_id,
                     instructor_id: s.instructor_id,
                     location_id: s.location_id,
+                    location_name: s.location_id ? locationMap.get(String(s.location_id))?.name || null : null,
+                    location_address: s.location_id ? locationMap.get(String(s.location_id))?.address || null : null,
                     source: 'exception', // It's a manual exception
                     exception_id: s.id
                 }));
