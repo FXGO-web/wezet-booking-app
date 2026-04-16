@@ -1,5 +1,6 @@
 
 import { createRoot } from "react-dom/client";
+import { ThemeProvider } from "next-themes@0.4.6";
 import App from "./App.tsx";
 import "./index.css";
 
@@ -24,4 +25,14 @@ try {
   console.error("Error checking token size:", e);
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+createRoot(document.getElementById("root")!).render(
+  <ThemeProvider
+    attribute="class"
+    defaultTheme="system"
+    enableSystem
+    disableTransitionOnChange
+    storageKey="wezet-theme"
+  >
+    <App />
+  </ThemeProvider>,
+);

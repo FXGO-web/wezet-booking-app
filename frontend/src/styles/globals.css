@@ -221,6 +221,11 @@
 
 html {
   font-size: var(--font-size);
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 /* Wellness-specific utilities */

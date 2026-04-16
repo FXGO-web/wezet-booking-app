@@ -33,6 +33,7 @@ import { AuthPage } from "./components/AuthPage";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { CurrencyProvider } from "./context/CurrencyContext";
 import { CurrencySelector } from "./components/CurrencySelector";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { PublicServiceDetail } from "./components/PublicServiceDetail";
 import { Toaster } from "./components/ui/sonner";
 // Force Vercel Rebuild
@@ -399,6 +400,7 @@ function AppContent() {
           </Button>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
+          <ThemeToggle />
           <CurrencySelector />
           <NotificationCenter />
           {user ? (
