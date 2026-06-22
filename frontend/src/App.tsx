@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "./components/ui/button";
 import { DesignSystem } from "./components/DesignSystem";
 import { PublicCalendar } from "./components/PublicCalendar";
@@ -165,6 +165,11 @@ function AppContent() {
     return params.get("category") || undefined;
   });
 
+  const [calendarMonth, setCalendarMonth] = useState<string | undefined>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("month") || undefined;
+  });
+
   // Handle URL cleanup and specific side effects
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -254,6 +259,10 @@ function AppContent() {
       newParams.set("category", initialCategory);
     }
 
+    if (activeView === "calendar" && calendarMonth) {
+      newParams.set("month", calendarMonth);
+    }
+
     // Preserve SSO redirect parameter
     const redirectParam = params.get("redirect");
     if (redirectParam) {
@@ -281,7 +290,7 @@ function AppContent() {
       window.history.replaceState({ ...window.history.state }, '', newUrl);
     }
 
-  }, [activeView, selectedProgramId, selectedBundleId, bookingPreselection, embedMode, initialCategory]);
+  }, [activeView, selectedProgramId, selectedBundleId, bookingPreselection, embedMode, initialCategory, calendarMonth]);
 
   // Role Helpers
   // Derived state for roles
@@ -293,6 +302,14 @@ function AppContent() {
 
   const isAdmin = role === "admin" || isAdminEmail;
   const isInstructor = role === "instructor" || role === "teacher";
+
+  const handleCalendarStateChange = useCallback(
+    ({ month, category }: { month: string; category?: string | null }) => {
+      setCalendarMonth(month);
+      setInitialCategory(category || undefined);
+    },
+    []
+  );
 
   // Check Access Permissions
   useEffect(() => {
@@ -518,7 +535,9 @@ function AppContent() {
         )}
         <PublicCalendar
           initialCategory={initialCategory}
+          initialMonth={calendarMonth}
           isEmbedded={embedMode}
+          onCalendarStateChange={handleCalendarStateChange}
           onNavigateToBooking={(bookingData) => {
             // Store booking data for BookingFlow
             console.log(

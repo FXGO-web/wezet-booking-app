@@ -62,13 +62,28 @@ interface PublicCalendarProps {
   }) => void;
   onNavigateToProgram?: (programId: string) => void;
   onNavigateToProduct?: (productId: string) => void;
+  onCalendarStateChange?: (state: { month: string; category?: string | null }) => void;
   initialCategory?: string;
+  initialMonth?: string;
   isEmbedded?: boolean;
 }
 
-export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct, initialCategory, isEmbedded }: PublicCalendarProps) {
+const parseInitialMonth = (value?: string) => {
+  if (!value) return new Date();
+  const match = value.match(/^(\d{4})-(\d{2})$/);
+  if (!match) return new Date();
+  const year = Number(match[1]);
+  const monthIndex = Number(match[2]) - 1;
+  if (!Number.isFinite(year) || monthIndex < 0 || monthIndex > 11) return new Date();
+  return new Date(year, monthIndex, 1);
+};
+
+const formatCalendarMonth = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNavigateToProduct, onCalendarStateChange, initialCategory, initialMonth, isEmbedded }: PublicCalendarProps) {
   const { convertAndFormat, formatFixedPrice } = useCurrency();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => parseInitialMonth(initialMonth));
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [availability, setAvailability] = useState<any>(null);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -221,6 +236,13 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
       setActiveCategory(initialCategory);
     }
   }, [initialCategory]);
+
+  useEffect(() => {
+    onCalendarStateChange?.({
+      month: formatCalendarMonth(currentDate),
+      category: activeCategory,
+    });
+  }, [currentDate, activeCategory, onCalendarStateChange]);
 
   const daysInMonth = new Date(
     currentDate.getFullYear(),
