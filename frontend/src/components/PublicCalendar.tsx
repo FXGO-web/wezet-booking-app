@@ -95,6 +95,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [servicesLoaded, setServicesLoaded] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
 
   // Filter state
@@ -262,6 +263,11 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
   // Fetch availability data
   useEffect(() => {
     const fetchAvailability = async () => {
+      if (activeCategory && !servicesLoaded) {
+        setLoading(true);
+        return;
+      }
+
       setLoading(true);
       try {
         const month = currentDate.getMonth() + 1;
@@ -470,7 +476,7 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
     };
 
     fetchAvailability();
-  }, [currentDate, allServices, activeCategory, refreshKey]);
+  }, [currentDate, allServices, activeCategory, servicesLoaded, refreshKey]);
 
   // Debug Availability State changes
   useEffect(() => {
@@ -526,6 +532,8 @@ export function PublicCalendar({ onNavigateToBooking, onNavigateToProgram, onNav
       } catch (error: any) {
         console.error("Failed to fetch services:", error);
         toast.error(`System Error: Failed to load services. ${error.message || error}`);
+      } finally {
+        setServicesLoaded(true);
       }
     };
     fetchServices();
